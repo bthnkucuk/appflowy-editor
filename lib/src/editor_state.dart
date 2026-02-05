@@ -162,8 +162,13 @@ class EditorState extends _EditorStateBase {
     ApplyOptions options = const ApplyOptions(),
     bool withUpdateSelection = true,
     bool skipHistoryDebounce = false,
+    bool skipEditableCheck = false,
   }) async {
-    if (!editable || isDisposed) {
+    if (isDisposed) {
+      return;
+    }
+
+    if (!editable && !skipEditableCheck) {
       return;
     }
 
