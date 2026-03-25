@@ -27,8 +27,12 @@ class SelectionMenuItem {
     this.deleteSlash = true,
   }) {
     this.handler = (editorState, menuService, context) {
-      if (deleteSlash || deleteKeywords) {
-        _deleteSlash(editorState);
+      try {
+        if (deleteSlash || deleteKeywords) {
+          _deleteSlash(editorState);
+        }
+      } catch (e) {
+        AppFlowyEditorLog.ui.debug('Error deleting slash or keywords: $e');
       }
 
       handler(editorState, menuService, context);
