@@ -17,19 +17,18 @@ dependencies:
   collection: "^1.19.1"
   device_info_plus: 12.4.0
   diff_match_patch: "^0.4.1"
-  file_picker: ^11.0.0
+  file_picker: ^11.0.2
   flutter:
     sdk: flutter
-  flutter_svg: 2.2.4
+  flutter_svg: 2.3.0
   html: ^0.15.6
   http: "^1.6.0"
   intl: "^0.20.2"
   keyboard_height_plugin: 0.3.0
   logging: "^1.3.0"
   markdown: "^7.3.1"
-  # nanoid: "^1.0.0"
-  numerus: "^2.3.0"
-  pdf: "^3.11.3"
+  numerus: "^2.3.2"
+  pdf: "^3.12.0"
   provider: "^6.1.5+1"
   scroll_to_index: "^3.0.1"
   string_validator: "^1.2.0"
@@ -38,7 +37,6 @@ dependencies:
   url_launcher: "^6.3.2"
   equatable: ^2.0.8
   flutter_animate: ^4.5.2
-  # scrollview_observer: ^1.26.0
   uuid: ^4.5.3
 
 dev_dependencies:
@@ -53,7 +51,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   intl_utils: "^2.8.2"
-  mockito: "^5.4.1"
+  mockito: "^5.6.4"
   network_image_mock: "^2.1.1"
   path_provider: "^2.0.5"
   pubspec_dependency_sorter: "^1.0.5"
