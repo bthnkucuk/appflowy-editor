@@ -50,7 +50,14 @@ class PdfHTMLEncoder {
     final nodes = await _parseElement(body.nodes);
     final newPdf = pw.Document();
     newPdf.addPage(
-      pw.MultiPage(build: (pw.Context context) => nodes.toList()),
+      pw.MultiPage(
+        // Default is 20. Raised as a safety net for book-length documents.
+        // The real guard against runaway layout is each child being a
+        // SpanningWidget (RichText w/ TextOverflow.span, Paragraph, Bullet,
+        // TableHelper.fromTextArray) — see https://github.com/DavBfr/dart_pdf/issues/1589
+        maxPages: 10000,
+        build: (pw.Context context) => nodes.toList(),
+      ),
     );
 
     return newPdf;
@@ -190,13 +197,13 @@ class PdfHTMLEncoder {
         ];
 
       case HTMLTags.paragraph:
-        return [await _parseParagraphElement(element)];
+        return _parseParagraphElement(element);
 
       case HTMLTags.image:
         return [await _parseImageElement(element)];
 
       default:
-        return [await _parseParagraphElement(element)];
+        return _parseParagraphElement(element);
     }
   }
 
@@ -431,7 +438,7 @@ class PdfHTMLEncoder {
     }
   }
 
-  Future<pw.Widget> _parseParagraphElement(dom.Element element) {
+  Future<List<pw.Widget>> _parseParagraphElement(dom.Element element) {
     return _parseDeltaElement(element);
   }
 
@@ -439,15 +446,19 @@ class PdfHTMLEncoder {
     final src = element.attributes['src'];
     try {
       if (src != null) {
+        final pw.ImageProvider provider;
         if (src.startsWith('https')) {
-          final networkImage = await _fetchImage(src);
-
-          return pw.Image(pw.MemoryImage(networkImage));
+          provider = pw.MemoryImage(await _fetchImage(src));
         } else {
-          File localImage = File(src);
-
-          return pw.Image(pw.MemoryImage(await localImage.readAsBytes()));
+          provider = pw.MemoryImage(await File(src).readAsBytes());
         }
+        // Cap height so an image taller than the page can't stall MultiPage
+        // in an infinite loop (https://github.com/DavBfr/dart_pdf/issues/1762).
+        // 700pt sits safely under A4 / Letter usable height (~750pt).
+        return pw.LimitedBox(
+          maxHeight: 700,
+          child: pw.Image(provider, fit: pw.BoxFit.contain),
+        );
       } else {
         return pw.Text('');
       }
@@ -466,7 +477,7 @@ class PdfHTMLEncoder {
     }
   }
 
-  Future<pw.Widget> _parseDeltaElement(
+  Future<List<pw.Widget>> _parseDeltaElement(
     dom.Element element,
   ) async {
     final textSpan = <pw.TextSpan>[];
@@ -518,21 +529,21 @@ class PdfHTMLEncoder {
       }
     }
 
-    return pw.Wrap(
-      children: [
-        pw.SizedBox(
-          width: double.infinity,
-          child: pw.RichText(
-            textAlign: textAlign,
-            text: pw.TextSpan(
-              children: textSpan,
-              style: pw.TextStyle(font: font, fontFallback: fontFallback),
-            ),
+    // No pw.Wrap here: Wrap does NOT span pages, so a single long paragraph
+    // would push the MultiPage layout into TooManyPagesException. RichText
+    // with TextOverflow.span is the SpanningWidget that breaks across pages.
+    return [
+      if (textSpan.isNotEmpty)
+        pw.RichText(
+          textAlign: textAlign,
+          overflow: pw.TextOverflow.span,
+          text: pw.TextSpan(
+            children: textSpan,
+            style: pw.TextStyle(font: font, fontFallback: fontFallback),
           ),
         ),
-        ...subNodes,
-      ],
-    );
+      ...subNodes,
+    ];
   }
 
   static pw.TextStyle _assignTextDecorations(

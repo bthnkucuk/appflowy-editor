@@ -23,6 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:universal_platform/universal_platform.dart';
 
@@ -106,7 +107,14 @@ class _HomePageState extends State<HomePage> {
         foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         title: const Text('AppFlowy Editor'),
-        actions: const [],
+        actions: [
+          if (UniversalPlatform.isMobile)
+            IconButton(
+              tooltip: 'Export & share',
+              icon: const Icon(Icons.ios_share),
+              onPressed: _openExportSheet,
+            ),
+        ],
       ),
       body: SafeArea(
         maintainBottomViewPadding: true,
@@ -372,6 +380,55 @@ class _HomePageState extends State<HomePage> {
       completer.complete();
     });
     return completer.future;
+  }
+
+  Future<void> _openExportSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => AppFlowyEditorExportSheet(
+        editorState: _editorState,
+        fileName: 'appflowy-document',
+        // Primary font MUST be a real TTF (not the default Helvetica) — the
+        // pdf package's built-in Helvetica claims to cover WinAnsi codepoints
+        // like U+2019 (’) and renders them as the wrong glyph, never falling
+        // through to pdfFontFallback. A TTF's CMap routes missing glyphs to
+        // the fallback chain correctly.
+        pdfFont: () => PdfGoogleFonts.notoSansRegular(),
+        // Order matters — pdf consults these in order for any codepoint Noto
+        // Sans Regular doesn't have. Each family covers a disjoint range, so
+        // there is no overlap; placement is for fast-path locality only.
+        pdfFontFallback: () async => await Future.wait([
+          // Color emoji — must come BEFORE the symbol fonts. The B&W
+          // notoEmojiRegular is missing many SMP emoji codepoints (e.g.
+          // U+1F389, U+1F680); with it first, those fall through to
+          // notoSansSymbols/Symbols2 which render them as random dingbat
+          // outlines. notoColorEmoji has full coverage and the pdf package
+          // renders its glyph table even if the CBDT color layer is dropped.
+          PdfGoogleFonts.notoColorEmoji(),
+          // Arrows, geometric shapes, misc dingbats.
+          PdfGoogleFonts.notoSansSymbolsRegular(),
+          PdfGoogleFonts.notoSansSymbols2Regular(),
+          // Mathematical operators, blackboard, integrals, summations.
+          PdfGoogleFonts.notoSansMathRegular(),
+
+          // CJK scripts — large fonts (~10MB each), pulled from Google Fonts
+          // on first export and disk-cached by the printing package thereafter.
+          PdfGoogleFonts.notoSansSCRegular(),
+          PdfGoogleFonts.notoSansJPRegular(),
+          PdfGoogleFonts.notoSansKRRegular(),
+        ]),
+        onExport: (callbackContext, file) async {
+          final box = callbackContext.findRenderObject() as RenderBox?;
+          await Share.shareXFiles(
+            [file],
+            subject: file.name,
+            sharePositionOrigin:
+                box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+          );
+        },
+      ),
+    );
   }
 
   void _exportFile(

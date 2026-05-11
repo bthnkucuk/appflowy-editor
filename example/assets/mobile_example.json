@@ -421,6 +421,127 @@
         }
       },
       {
+        "type": "heading",
+        "data": {
+          "level": 3,
+          "delta": [
+            {
+              "insert": "PDF Glyph Coverage Test"
+            }
+          ]
+        }
+      },
+      {
+        "type": "paragraph",
+        "data": {
+          "delta": [
+            {
+              "insert": "1. Smart quotes & punctuation: “hello” ‘world’ — – … · • ¶ § † ‡"
+            }
+          ]
+        }
+      },
+      {
+        "type": "paragraph",
+        "data": {
+          "delta": [
+            {
+              "insert": "2. Turkish lowercase: çğıöşü — Uppercase: ÇĞİÖŞÜ — Mixed: Şişli, İstanbul, soğan, üçgen"
+            }
+          ]
+        }
+      },
+      {
+        "type": "paragraph",
+        "data": {
+          "delta": [
+            {
+              "insert": "3. Accents (Latin Extended): à á â ä ã å æ ç è é ê ë ì í î ï ñ ò ó ô ö õ ø ù ú û ü ý ÿ"
+            }
+          ]
+        }
+      },
+      {
+        "type": "paragraph",
+        "data": {
+          "delta": [
+            {
+              "insert": "4. Currency: € £ ¥ ₺ ₽ ₹ ₩ ¢ $ ¤"
+            }
+          ]
+        }
+      },
+      {
+        "type": "paragraph",
+        "data": {
+          "delta": [
+            {
+              "insert": "5. Math: × ÷ ± ∓ ≠ ≈ ≡ ≤ ≥ ∞ √ ∑ ∏ ∫ ∂ ∆ π Σ Ω µ ‰"
+            }
+          ]
+        }
+      },
+      {
+        "type": "paragraph",
+        "data": {
+          "delta": [
+            {
+              "insert": "6. Arrows: → ← ↑ ↓ ↔ ⇒ ⇐ ⇑ ⇓ ⇔ ↩ ↪"
+            }
+          ]
+        }
+      },
+      {
+        "type": "paragraph",
+        "data": {
+          "delta": [
+            {
+              "insert": "7. Symbols: © ® ™ ° № ★ ☆ ✓ ✗ ✦ ♥ ♦ ♣ ♠"
+            }
+          ]
+        }
+      },
+      {
+        "type": "paragraph",
+        "data": {
+          "delta": [
+            {
+              "insert": "8. Greek/Cyrillic: αβγδεζηθικλμ — АБВГДЕЁЖЗИЙКЛ"
+            }
+          ]
+        }
+      },
+      {
+        "type": "paragraph",
+        "data": {
+          "delta": [
+            {
+              "insert": "9. CJK sample: 你好世界 こんにちは 안녕하세요"
+            }
+          ]
+        }
+      },
+      {
+        "type": "paragraph",
+        "data": {
+          "delta": [
+            {
+              "insert": "10. Emoji mix: 🎉 🚀 ✨ ❤️ 👋 🔥 💯 🎨 ☕ 📚 🌍 ⚡ 🧪 🛠️"
+            }
+          ]
+        }
+      },
+      {
+        "type": "paragraph",
+        "data": {
+          "delta": [
+            {
+              "insert": "11. Combined real-world: “Merhaba dünya!” — fiyat: 100€ ≈ ₺3500, indirim ≥ %15… 🎉"
+            }
+          ]
+        }
+      },
+      {
         "id": "74774815-c84f-4f99-9a10-1e38acd675b7",
         "type": "end_duba",
         "data": {
