@@ -31,6 +31,11 @@ final class Node extends ChangeNotifier
     with LinkedListEntry<Node>, RankedLinkedListEntry<Node> {
   Node({
     required this.type,
+    @Deprecated(
+      'databaseIndex is carried through to JSON but never read inside the '
+      'editor. Kept for downstream callers that still depend on the field '
+      '(remove once those migrate). Prefer `rank` for ordering.',
+    )
     this.databaseIndex = -1,
     String? id,
     String? initialRank,
@@ -104,6 +109,16 @@ final class Node extends ChangeNotifier
   /// In most cases, you don't need to modify it after the node is created.
   String id;
 
+  /// Numeric position carried verbatim through `toJson` / `fromJson` for
+  /// downstream callers that wire it into a backend's row index. The editor
+  /// itself doesn't read this — node ordering is driven by [rank] (fractional
+  /// indexing). New code shouldn't depend on this; treat it as
+  /// opaque metadata.
+  @Deprecated(
+    'databaseIndex is carried through to JSON but never read inside the '
+    'editor. Kept for downstream callers that still depend on the field '
+    '(remove once those migrate). Prefer `rank` for ordering.',
+  )
   final double databaseIndex;
 
   // @Deprecated('Use type instead')
@@ -121,10 +136,49 @@ final class Node extends ChangeNotifier
   /// The attributes of the node.
   Attributes _attributes;
 
-  Attributes get attributes => {..._attributes};
+  /// Read-only view onto the node's attribute map.
+  ///
+  /// Previously this getter returned a fresh `{..._attributes}` copy on
+  /// every call — there are ~150 read sites across the editor and several
+  /// fire on every keystroke / selection update, so the copy was real
+  /// per-frame overhead. `UnmodifiableMapView` (from `dart:collection`,
+  /// already imported) is O(1) to construct and read-through; the only
+  /// behavioral difference is that callers can't mutate the returned map
+  /// directly. The fresh-copy version silently swallowed any such
+  /// mutation anyway (writes went into the throwaway copy), so this is
+  /// strictly safer for callers and faster for the editor.
+  Attributes get attributes => UnmodifiableMapView(_attributes);
 
   /// The path of the node.
-  Path get path => _computePath();
+  ///
+  /// Walking back up to the root is non-trivial — each level calls
+  /// `parent.children.indexOf(this)`, which is O(siblings). For deeply
+  /// nested blocks (tables, columns, lists) this getter is called many
+  /// times per frame (selection paths, transaction.dart, builder
+  /// contexts), so the computed path is memoized and invalidated
+  /// whenever any tree mutation runs (via [_bumpPathGeneration]).
+  Path get path {
+    if (_cachedPath != null && _cachedPathGeneration == _globalPathGeneration) {
+      return _cachedPath!;
+    }
+    final computed = _computePath();
+    _cachedPath = computed;
+    _cachedPathGeneration = _globalPathGeneration;
+    return computed;
+  }
+
+  Path? _cachedPath;
+  int _cachedPathGeneration = -1;
+
+  // Bumped every time the tree shape changes anywhere in the process.
+  // `path` cached on a Node is valid only while its `_cachedPathGeneration`
+  // matches this counter. We use a single global counter rather than a
+  // per-document one so any reachable Node can invalidate without needing
+  // a back-reference to a Document.
+  static int _globalPathGeneration = 0;
+  static void _bumpPathGeneration() {
+    _globalPathGeneration++;
+  }
 
   NodeExternalValues? externalValues;
 
@@ -177,6 +231,7 @@ final class Node extends ChangeNotifier
     entry.parent = this;
 
     _children.markAsDirty();
+    _bumpPathGeneration();
 
     // if the rank is already exists, it will throw an error
     _children.insert(rank, entry);
@@ -193,13 +248,15 @@ final class Node extends ChangeNotifier
     final length = _children.length;
     index ??= length;
 
-    AppFlowyEditorLog.editor
-        .debug('insert Node $entry at path ${path + [index]}}');
+    AppFlowyEditorLog.editor.debug(
+      'insert Node $entry at path ${path + [index]}}',
+    );
 
     entry._resetRelationshipIfNeeded();
     entry.parent = this;
 
     _children.markAsDirty();
+    _bumpPathGeneration();
 
     if (_children.isEmpty) {
       _children.add(entry);
@@ -227,6 +284,7 @@ final class Node extends ChangeNotifier
     super.insertAfter(entry);
 
     parent?._children.markAsDirty();
+    _bumpPathGeneration();
 
     // Notifies the new node.
     parent?.notifyListeners();
@@ -239,6 +297,7 @@ final class Node extends ChangeNotifier
     super.insertBefore(entry);
 
     parent?._children.markAsDirty();
+    _bumpPathGeneration();
 
     // Notifies the new node.
     parent?.notifyListeners();
@@ -257,6 +316,7 @@ final class Node extends ChangeNotifier
     rank = null;
 
     parent?._children.markAsDirty();
+    _bumpPathGeneration();
 
     parent?.notifyListeners();
     parent = null;
@@ -311,17 +371,33 @@ final class Node extends ChangeNotifier
           )
           .toList(growable: false);
     }
-    if (attributes.isNotEmpty) {
-      // filter the null value
-      map['data'] = attributes..removeWhere((_, value) => value == null);
+    if (_attributes.isNotEmpty) {
+      // filter the null value; build a fresh map so we don't mutate the
+      // unmodifiable view returned by `attributes`.
+      final data = <String, Object>{};
+      _attributes.forEach((key, value) {
+        if (value != null) data[key] = value;
+      });
+      if (data.isNotEmpty) {
+        map['data'] = data;
+      }
     }
 
     return map;
   }
 
+  /// Backwards-compatible serializer for downstream apps that wire a
+  /// `databaseIndex` into their persistence layer. The editor itself never
+  /// calls this; new code should use [toJson] instead.
+  @Deprecated(
+    'toJsonIndexed is kept only for downstream callers still relying on '
+    'databaseIndex. New code should use toJson (which already serializes '
+    'databaseIndex when includeDatabaseIndex is true).',
+  )
   Map<String, Object> toJsonIndexed({double? index}) {
     final map = <String, Object>{
       'id': id,
+      // ignore: deprecated_member_use_from_same_package
       'databaseIndex': index ?? databaseIndex,
       'type': type,
     };
@@ -330,9 +406,16 @@ final class Node extends ChangeNotifier
           .map((node) => node.toJson())
           .toList(growable: false);
     }
-    if (attributes.isNotEmpty) {
-      // filter the null value
-      map['data'] = attributes..removeWhere((_, value) => value == null);
+    if (_attributes.isNotEmpty) {
+      // Mirror toJson's null-filtering; can't `..removeWhere` the
+      // unmodifiable view, so copy as we go.
+      final data = <String, Object>{};
+      _attributes.forEach((key, value) {
+        if (value != null) data[key] = value;
+      });
+      if (data.isNotEmpty) {
+        map['data'] = data;
+      }
     }
     return map;
   }
@@ -389,10 +472,7 @@ final class Node extends ChangeNotifier
       final errorMessage =
           '''Please submit an issue to https://github.com/AppFlowy-IO/appflowy-editor/issues if you see this error!
           node = ${toJson()}''';
-      assert(
-        parent != null,
-        errorMessage,
-      );
+      assert(parent != null, errorMessage);
       // also, its parent should contain this node
       assert(
         parent!.children.where((element) => element.id == id).length == 1,
@@ -404,84 +484,6 @@ final class Node extends ChangeNotifier
       child.checkDocumentIntegrity();
     }
   }
-}
-
-@Deprecated('Use Paragraph instead')
-final class TextNode extends Node {
-  TextNode({
-    required Delta delta,
-    Iterable<Node>? children,
-    Attributes? attributes,
-  })  : _delta = delta,
-        super(
-          type: 'text',
-          children: children?.toList() ?? [],
-          attributes: attributes ?? {},
-          id: '',
-        );
-
-  TextNode.empty({Attributes? attributes})
-      : _delta = Delta(operations: [TextInsert('')]),
-        super(
-          type: 'text',
-          attributes: attributes ?? {},
-        );
-
-  @override
-  @Deprecated('Use type instead')
-  String get subtype => '';
-
-  Delta _delta;
-
-  @override
-  Delta get delta => _delta;
-
-  set delta(Delta v) {
-    _delta = v;
-    notifyListeners();
-  }
-
-  @override
-  Map<String, Object> toJson({
-    bool includeDatabaseIndex = true,
-    bool includeId = true,
-    bool includeRank = true,
-  }) {
-    final map = super.toJson(
-      includeDatabaseIndex: includeDatabaseIndex,
-      includeId: includeId,
-      includeRank: includeRank,
-    );
-    map['delta'] = delta.toJson();
-
-    return map;
-  }
-
-  @override
-  TextNode copyWith({
-    String? type = 'text',
-    Iterable<Node>? children,
-    Attributes? attributes,
-    Delta? delta,
-    String? id,
-  }) {
-    final textNode = TextNode(
-      children: children ?? [],
-      attributes: attributes ?? this.attributes,
-      delta: delta ?? this.delta,
-    );
-    if (children == null && this.children.isNotEmpty) {
-      for (final child in this.children) {
-        textNode._children.add(
-          child.copyWith()..parent = textNode,
-        );
-      }
-    }
-
-    return textNode;
-  }
-
-  String toPlainText() => _delta.toPlainText();
 }
 
 extension NodeEquality on Iterable<Node> {
