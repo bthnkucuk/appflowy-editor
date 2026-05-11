@@ -154,24 +154,32 @@ class TableBlockComponentBuilder extends BlockComponentBuilder {
           return false;
         }
 
-        // all children should contain rowPosition and colPosition
+        // Index children by (col, row) in a single pass so the validation
+        // is O(rows*cols), not O((rows*cols)²) like the old per-cell
+        // `where` scan. This getter is called on every transaction; for
+        // a 20×20 table the difference is 400 vs 160_000 attribute
+        // comparisons.
+        final cellCountAt = <int, Map<int, int>>{};
+        for (final child in children) {
+          final col = child.attributes[TableCellBlockKeys.colPosition];
+          final row = child.attributes[TableCellBlockKeys.rowPosition];
+          if (col is! int || row is! int) continue;
+          final columnCounts = cellCountAt[col] ??= <int, int>{};
+          columnCounts[row] = (columnCounts[row] ?? 0) + 1;
+        }
+
         for (var i = 0; i < colsLen; i++) {
+          final columnCounts = cellCountAt[i];
           for (var j = 0; j < rowsLen; j++) {
-            final child = children.where(
-              (n) =>
-                  n.attributes[TableCellBlockKeys.colPosition] == i &&
-                  n.attributes[TableCellBlockKeys.rowPosition] == j,
-            );
-            if (child.isEmpty) {
+            final count = columnCounts?[j] ?? 0;
+            if (count == 0) {
               AppFlowyEditorLog.editor.debug(
                 'TableBlockComponentBuilder: child($i, $j) is empty',
               );
 
               return false;
             }
-
-            // should only contains one child
-            if (child.length != 1) {
+            if (count != 1) {
               AppFlowyEditorLog.editor.debug(
                 'TableBlockComponentBuilder: child($i, $j) is not unique',
               );

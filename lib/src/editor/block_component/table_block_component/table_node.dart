@@ -52,17 +52,25 @@ class TableNode {
       }
     }
 
+    // Index children by (col, row) once instead of scanning the entire
+    // children list for each of the colsLen*rowsLen cells. The original
+    // nested `where` was O(rows*cols * children) — and since
+    // `children.length == rows*cols`, that's O(N²) per TableNode build.
+    // For a 20×20 table that's 160_000 attribute comparisons every time
+    // the block tree rebuilds.
+    final cellByPosition = <int, Map<int, Node>>{};
+    for (final child in node.children) {
+      final col = child.attributes[TableCellBlockKeys.colPosition];
+      final row = child.attributes[TableCellBlockKeys.rowPosition];
+      if (col is! int || row is! int) continue;
+      (cellByPosition[col] ??= <int, Node>{})[row] = child;
+    }
+
     for (var i = 0; i < colsLen; i++) {
       _cells.add([]);
+      final column = cellByPosition[i];
       for (var j = 0; j < rowsLen; j++) {
-        final cell = node.children
-            .where(
-              (n) =>
-                  n.attributes[TableCellBlockKeys.colPosition] == i &&
-                  n.attributes[TableCellBlockKeys.rowPosition] == j,
-            )
-            .firstOrNull;
-
+        final cell = column?[j];
         if (cell == null) {
           AppFlowyEditorLog.editor.debug('TableNode: cell is empty');
           _cells.clear();
