@@ -5,7 +5,7 @@ import 'package:appflowy_editor/src/editor/editor_component/service/selection/mo
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/shared.dart';
 import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
 import 'package:appflowy_editor/src/service/selection/mobile_selection_gesture.dart';
-import 'package:flutter/material.dart' hide Overlay, OverlayEntry;
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class MobileHighlightServiceWidget extends StatefulWidget {
