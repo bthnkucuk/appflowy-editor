@@ -212,6 +212,17 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
     // attach the delta text input service if needed
     final selection = editorState.selection;
 
+    // selectionNotifier is a PropertyValueNotifier, which fires listeners on
+    // every set — including transactions that don't change the selection
+    // itself. Re-attaching the IME in that case re-opens the soft keyboard,
+    // which fights with code that just intentionally closed it (e.g. the
+    // mobile toolbar opening a menu). Skip the no-op re-attach.
+    if (selection != null &&
+        selection == previousSelection &&
+        editorState.selectionUpdateReason != SelectionUpdateReason.uiEvent) {
+      return;
+    }
+
     enableIMEShortcuts = true;
 
     if (selection == null) {
