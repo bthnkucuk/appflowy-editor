@@ -252,6 +252,9 @@ final class Node extends ChangeNotifier
     }
     AppFlowyEditorLog.editor.debug('delete Node $this from path $path');
     super.unlink();
+    // Clear the rank so a subsequent insert can regenerate a valid one;
+    // otherwise the stale rank would fail RankedLinkedList's ordering check.
+    rank = null;
 
     parent?._children.markAsDirty();
 
@@ -284,19 +287,27 @@ final class Node extends ChangeNotifier
     return null;
   }
 
-  Map<String, Object> toJson({bool includeDatabaseIndex = true}) {
+  Map<String, Object> toJson({
+    bool includeDatabaseIndex = true,
+    bool includeId = true,
+    bool includeRank = true,
+  }) {
     final map = <String, Object>{
-      'id': id,
+      if (includeId) 'id': id,
       if (includeDatabaseIndex) 'databaseIndex': databaseIndex,
       'type': type,
     };
-    if (rank != null) {
+    if (includeRank && rank != null) {
       map['rank'] = rank!;
     }
     if (children.isNotEmpty) {
       map['children'] = children
           .map(
-            (node) => node.toJson(includeDatabaseIndex: includeDatabaseIndex),
+            (node) => node.toJson(
+              includeDatabaseIndex: includeDatabaseIndex,
+              includeId: includeId,
+              includeRank: includeRank,
+            ),
           )
           .toList(growable: false);
     }
@@ -431,8 +442,16 @@ final class TextNode extends Node {
   }
 
   @override
-  Map<String, Object> toJson({bool includeDatabaseIndex = true}) {
-    final map = super.toJson();
+  Map<String, Object> toJson({
+    bool includeDatabaseIndex = true,
+    bool includeId = true,
+    bool includeRank = true,
+  }) {
+    final map = super.toJson(
+      includeDatabaseIndex: includeDatabaseIndex,
+      includeId: includeId,
+      includeRank: includeRank,
+    );
     map['delta'] = delta.toJson();
 
     return map;

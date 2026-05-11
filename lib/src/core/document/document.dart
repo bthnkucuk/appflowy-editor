@@ -278,7 +278,17 @@ class Document {
 
   /// Encodes the [Document] into a JSON structure.
   ///
-  Map<String, Object> toJson() {
-    return {'document': root.toJson()};
+  Map<String, Object> toJson({
+    bool includeDatabaseIndex = true,
+    bool includeId = true,
+    bool includeRank = true,
+  }) {
+    return {
+      'document': root.toJson(
+        includeDatabaseIndex: includeDatabaseIndex,
+        includeId: includeId,
+        includeRank: includeRank,
+      ),
+    };
   }
 }
