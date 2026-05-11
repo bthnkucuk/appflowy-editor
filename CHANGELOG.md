@@ -1,3 +1,40 @@
+## Unreleased
+
+### Breaking
+
+* **Removed `FilePicker` / `FilePickerService`
+  (`lib/src/editor/util/file_picker/`).** Those were thin wrappers around the
+  `file_picker` package, added for dependency injection in tests. Nothing in
+  this codebase ever swapped the implementation and consumers were calling the
+  wrapper directly anyway. They're gone now — use the `file_picker` package
+  directly.
+
+  **Migration:**
+
+  ```dart
+  // Before
+  import 'package:appflowy_editor/src/editor/util/file_picker/file_picker_impl.dart';
+
+  final _filePicker = FilePicker();
+  final result = await _filePicker.pickFiles(
+    type: FileType.image,
+    allowMultiple: false,
+  );
+
+  // After
+  import 'package:file_picker/file_picker.dart';
+
+  final result = await FilePicker.pickFiles(
+    type: FileType.image,
+    allowMultiple: false,
+  );
+  ```
+
+  Method signatures (`pickFiles` / `saveFile` / `getDirectoryPath`) already
+  mirrored the upstream package one-to-one, so this is a mechanical
+  search-and-replace. If you had a `class MyMockFilePicker implements
+  FilePickerService` for tests, replace it with a regular `file_picker` mock.
+
 ## 6.1.0
 * fix: unable to input text on windows desktop by @imaachman in https://github.com/AppFlowy-IO/appflowy-editor/pull/1126
 * feat: open html decoder for custom parser by @richardshiue in https://github.com/AppFlowy-IO/appflowy-editor/pull/1145
