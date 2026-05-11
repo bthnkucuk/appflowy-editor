@@ -9,7 +9,7 @@ void main() {
       final document = markdownToDocument(markdownDocument);
       final data = Map<String, Object>.from(json.decode(testDocument));
 
-      expect(document.toJson(), data);
+      expect(document.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), data);
     });
 
     test('soft line break with two spaces', () {

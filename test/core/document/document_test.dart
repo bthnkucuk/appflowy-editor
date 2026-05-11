@@ -75,9 +75,16 @@ void main() async {
     test('serialize', () {
       final json = {
         'document': {
+          'id': 'root',
+          'databaseIndex': -1.0,
           'type': 'editor',
           'children': [
-            {'type': 'text'},
+            {
+              'id': 'child-1',
+              'databaseIndex': -1.0,
+              'type': 'text',
+              'rank': 'a0',
+            },
           ],
           'data': {'a': 'a'},
         },

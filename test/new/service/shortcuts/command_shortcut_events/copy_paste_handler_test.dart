@@ -71,8 +71,16 @@ Future<void> _testCutHandle(
   );
   handleCut(editor.editorState);
   expect(
-    editor.editorState.document.toJson(),
-    Document.fromJson(afterCut).toJson(),
+    editor.editorState.document.toJson(
+      includeId: false,
+      includeDatabaseIndex: false,
+      includeRank: false,
+    ),
+    Document.fromJson(afterCut).toJson(
+      includeId: false,
+      includeDatabaseIndex: false,
+      includeRank: false,
+    ),
   );
 
   await editor.dispose();
@@ -120,7 +128,11 @@ Future<void> _testSameNodeCopyPaste(
   );
   pasteHTML(editor.editorState, documentToHTML(document));
   expect(
-    editor.editorState.document.toJson(),
+    editor.editorState.document.toJson(
+      includeId: false,
+      includeDatabaseIndex: false,
+      includeRank: false,
+    ),
     sameNodeParagraph,
   );
 

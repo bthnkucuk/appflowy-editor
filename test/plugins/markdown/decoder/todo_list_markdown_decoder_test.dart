@@ -17,7 +17,7 @@ void main() async {
 - [ ] Item 3
 ''');
       for (var i = 0; i < result.root.children.length; i++) {
-        expect(result.root.children[i].toJson(), {
+        expect(result.root.children[i].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
           'type': 'todo_list',
           'data': {
             'delta': [
@@ -36,7 +36,7 @@ void main() async {
     - [ ] Item 1.2
 - [ ] Item 2
 ''');
-      expect(result.root.children[0].toJson(), {
+      expect(result.root.children[0].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
         'type': 'todo_list',
         'data': {
           'delta': [
@@ -65,7 +65,7 @@ void main() async {
           },
         ],
       });
-      expect(result.root.children[1].toJson(), {
+      expect(result.root.children[1].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
         'type': 'todo_list',
         'data': {
           'delta': [

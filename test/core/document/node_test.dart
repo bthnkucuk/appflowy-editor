@@ -10,15 +10,15 @@ void main() async {
           'example': 'example',
         },
       );
-      expect(node.toJson(), {
+      expect(node.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
         'type': 'example',
         'data': {
           'example': 'example',
         },
       });
       expect(
-        node.copyWith().toJson(),
-        node.toJson(),
+        node.copyWith().toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        node.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
       );
 
       final nodeWithChildren = Node(
@@ -28,23 +28,28 @@ void main() async {
           'example': 'example',
         },
       );
-      expect(nodeWithChildren.toJson(), {
-        'type': 'example',
-        'data': {
-          'example': 'example',
-        },
-        'children': [
-          {
-            'type': 'example',
-            'data': {
-              'example': 'example',
-            },
-          },
-        ],
-      });
       expect(
-        nodeWithChildren.copyWith().toJson(),
-        nodeWithChildren.toJson(),
+        nodeWithChildren.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        {
+          'type': 'example',
+          'data': {
+            'example': 'example',
+          },
+          'children': [
+            {
+              'type': 'example',
+              'data': {
+                'example': 'example',
+              },
+            },
+          ],
+        },
+      );
+      expect(
+        nodeWithChildren
+            .copyWith()
+            .toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        nodeWithChildren.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
       );
     });
 
@@ -55,7 +60,7 @@ void main() async {
           'example': 'example',
         },
       );
-      expect(node.toJson(), {
+      expect(node.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
         'type': 'paragraph',
         'data': {
           'example': 'example',
@@ -65,8 +70,8 @@ void main() async {
         },
       });
       expect(
-        node.copyWith().toJson(),
-        node.toJson(),
+        node.copyWith().toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        node.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
       );
 
       final nodeWithChildren = paragraphNode(
@@ -76,29 +81,34 @@ void main() async {
           'example': 'example',
         },
       );
-      expect(nodeWithChildren.toJson(), {
-        'type': 'paragraph',
-        'data': {
-          'example': 'example',
-          'delta': [
-            {'insert': 'AppFlowy'},
+      expect(
+        nodeWithChildren.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        {
+          'type': 'paragraph',
+          'data': {
+            'example': 'example',
+            'delta': [
+              {'insert': 'AppFlowy'},
+            ],
+          },
+          'children': [
+            {
+              'type': 'paragraph',
+              'data': {
+                'example': 'example',
+                'delta': [
+                  {'insert': 'AppFlowy'},
+                ],
+              },
+            },
           ],
         },
-        'children': [
-          {
-            'type': 'paragraph',
-            'data': {
-              'example': 'example',
-              'delta': [
-                {'insert': 'AppFlowy'},
-              ],
-            },
-          },
-        ],
-      });
+      );
       expect(
-        nodeWithChildren.copyWith().toJson(),
-        nodeWithChildren.toJson(),
+        nodeWithChildren
+            .copyWith()
+            .toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        nodeWithChildren.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
       );
     });
 

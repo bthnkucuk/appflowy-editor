@@ -103,12 +103,14 @@ void main() {
       final transaction = state.transaction;
       transaction.insertNode([0], item1);
       state.apply(transaction);
+      final insertedNode =
+          (transaction.operations.first as InsertOperation).nodes.first;
       expect(transaction.toJson(), {
         "operations": [
           {
             "op": "insert",
             "path": [0],
-            "nodes": [item1.toJson()],
+            "nodes": [insertedNode.toJson()],
           }
         ],
       });
@@ -125,12 +127,14 @@ void main() {
       final transaction = state.transaction;
       transaction.deleteNode(item1);
       state.apply(transaction);
+      final deletedNode =
+          (transaction.operations.first as DeleteOperation).nodes.first;
       expect(transaction.toJson(), {
         "operations": [
           {
             "op": "delete",
             "path": [0],
-            "nodes": [item1.toJson()],
+            "nodes": [deletedNode.toJson()],
           }
         ],
       });

@@ -16,6 +16,8 @@ void main() async {
       );
     }
 
+    Document blankDoc() => Document(root: Node(type: 'page', id: 'root'));
+
     Future<Document> apply(Document document, List<Operation> ops) async {
       final editorState = EditorState(document: document);
       final transaction = editorState.transaction;
@@ -29,8 +31,8 @@ void main() async {
 
     test('text changes', () async {
       final id = Uuid().v4();
-      final documentA = Document.blank()..insert([0], [buildNodeWithId(id, 'Hello World')]);
-      final documentB = Document.blank()..insert([0], [buildNodeWithId(id, 'Hello AppFlowy!')]);
+      final documentA = blankDoc()..insert([0], [buildNodeWithId(id, 'Hello World')]);
+      final documentB = blankDoc()..insert([0], [buildNodeWithId(id, 'Hello AppFlowy!')]);
 
       final ops = diffDocuments(documentA, documentB);
       expect(ops.length, 1);
@@ -48,12 +50,12 @@ void main() async {
     test('insert', () async {
       final id1 = Uuid().v4();
       final id2 = Uuid().v4();
-      final documentA = Document.blank()
+      final documentA = blankDoc()
         ..insert(
           [0],
           [buildNodeWithId(id1, 'Hello AppFlowy!')],
         );
-      final documentB = Document.blank()
+      final documentB = blankDoc()
         ..insert([
           0,
         ], [
@@ -77,12 +79,12 @@ void main() async {
     test('delete', () async {
       final id1 = Uuid().v4();
       final id2 = Uuid().v4();
-      final documentA = Document.blank()
+      final documentA = blankDoc()
         ..insert(
           [0],
           [buildNodeWithId(id1, 'Hello AppFlowy!')],
         );
-      final documentB = Document.blank()
+      final documentB = blankDoc()
         ..insert([
           0,
         ], [
@@ -109,12 +111,12 @@ void main() async {
       final id3 = Uuid().v4();
       final id4 = Uuid().v4();
       final id5 = Uuid().v4();
-      final documentA = Document.blank()
+      final documentA = blankDoc()
         ..insert(
           [0],
           [buildNodeWithId(id1, 'Hello AppFlowy!')],
         );
-      final documentB = Document.blank()
+      final documentB = blankDoc()
         ..insert([
           0,
         ], [
@@ -148,7 +150,7 @@ void main() async {
       final id3 = Uuid().v4();
       final id4 = Uuid().v4();
       final id5 = Uuid().v4();
-      final documentA = Document.blank()
+      final documentA = blankDoc()
         ..insert(
           [0],
           [
@@ -159,7 +161,7 @@ void main() async {
             buildNodeWithId(id5, '4'),
           ],
         );
-      final documentB = Document.blank()
+      final documentB = blankDoc()
         ..insert([
           0,
         ], [

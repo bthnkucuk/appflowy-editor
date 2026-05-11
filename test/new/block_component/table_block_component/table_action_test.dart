@@ -32,7 +32,11 @@ void main() async {
 
       expect(tableNode.colsLen, 1);
       expect(
-        tableNode.getCell(0, 0).children.first.toJson(),
+        tableNode.getCell(0, 0).children.first.toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
         {
           "type": "paragraph",
           "data": {
@@ -66,7 +70,11 @@ void main() async {
 
       expect(tableNode.rowsLen, 1);
       expect(
-        tableNode.getCell(0, 0).children.first.toJson(),
+        tableNode.getCell(0, 0).children.first.toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
         {
           "type": "paragraph",
           "data": {
@@ -145,8 +153,16 @@ void main() async {
       expect(tableNode.colsLen, 3);
       for (var i = 0; i < tableNode.rowsLen; i++) {
         expect(
-          getCellNode(tableNode.node, 0, i)!.children.first.toJson(),
-          getCellNode(tableNode.node, 1, i)!.children.first.toJson(),
+          getCellNode(tableNode.node, 0, i)!.children.first.toJson(
+            includeId: false,
+            includeDatabaseIndex: false,
+            includeRank: false,
+          ),
+          getCellNode(tableNode.node, 1, i)!.children.first.toJson(
+            includeId: false,
+            includeDatabaseIndex: false,
+            includeRank: false,
+          ),
         );
       }
       await editor.dispose();
@@ -174,8 +190,16 @@ void main() async {
       expect(tableNode.rowsLen, 3);
       for (var i = 0; i < tableNode.colsLen; i++) {
         expect(
-          getCellNode(tableNode.node, i, 0)!.children.first.toJson(),
-          getCellNode(tableNode.node, i, 1)!.children.first.toJson(),
+          getCellNode(tableNode.node, i, 0)!.children.first.toJson(
+            includeId: false,
+            includeDatabaseIndex: false,
+            includeRank: false,
+          ),
+          getCellNode(tableNode.node, i, 1)!.children.first.toJson(
+            includeId: false,
+            includeDatabaseIndex: false,
+            includeRank: false,
+          ),
         );
       }
       await editor.dispose();
@@ -202,7 +226,11 @@ void main() async {
 
       expect(tableNode.colsLen, 3);
       expect(
-        tableNode.getCell(2, 1).children.first.toJson(),
+        tableNode.getCell(2, 1).children.first.toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
         {
           "type": "paragraph",
           "data": {"delta": []},
@@ -233,7 +261,11 @@ void main() async {
 
       expect(tableNode.rowsLen, 3);
       expect(
-        tableNode.getCell(0, 2).children.first.toJson(),
+        tableNode.getCell(0, 2).children.first.toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
         {
           "type": "paragraph",
           "data": {"delta": []},

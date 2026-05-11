@@ -63,8 +63,16 @@ Future<void> _testCutHandle(
   );
 
   expect(
-    editor.editorState.document.toJson(),
-    Document.fromJson(afterCut).toJson(),
+    editor.editorState.document.toJson(
+      includeId: false,
+      includeDatabaseIndex: false,
+      includeRank: false,
+    ),
+    Document.fromJson(afterCut).toJson(
+      includeId: false,
+      includeDatabaseIndex: false,
+      includeRank: false,
+    ),
   );
 
   await editor.dispose();

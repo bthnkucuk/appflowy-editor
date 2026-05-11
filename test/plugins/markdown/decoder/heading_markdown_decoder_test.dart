@@ -21,7 +21,7 @@ void main() async {
 
       final result = parser.convert(headingMarkdown);
       for (var i = 0; i < 6; i++) {
-        expect(result.nodeAtPath([i])!.toJson(), {
+        expect(result.nodeAtPath([i])!.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
           'type': 'heading',
           'data': {
             'level': i + 1,
@@ -57,7 +57,7 @@ void main() async {
       final result = parser.convert(
         '## 👋 **Welcome to** ***[AppFlowy Editor](appflowy.io)***',
       );
-      expect(result.root.children[0].toJson(), {
+      expect(result.root.children[0].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
         'type': 'heading',
         'data': {
           'level': 2,

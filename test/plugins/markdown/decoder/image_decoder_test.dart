@@ -11,7 +11,7 @@ void main() async {
 
     test('convert image', () {
       final result = parser.convert('![image_name](appflowy.io/image.png)');
-      expect(result.root.children[0].toJson(), {
+      expect(result.root.children[0].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
         'type': 'image',
         'data': {
           'url': 'appflowy.io/image.png',

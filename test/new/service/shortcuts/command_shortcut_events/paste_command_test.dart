@@ -405,7 +405,7 @@ Future<void> _testHandleCopyMultiplePaste(
     documentToHTML(Document.fromJson(paragraphData)),
   );
   expect(
-    editor.editorState.document.toJson(),
+    editor.editorState.document.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
     paragraphData,
   );
   await editor.updateSelection(Selection.single(path: [0], startOffset: 10));
@@ -414,7 +414,7 @@ Future<void> _testHandleCopyMultiplePaste(
     documentToHTML(Document.fromJson(paragraphData)),
   );
   expect(
-    editor.document.toJson(),
+    editor.document.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
     secondParagraph,
   );
   pasteHTML(
@@ -422,7 +422,7 @@ Future<void> _testHandleCopyMultiplePaste(
     documentToHTML(Document.fromJson(paragraphData)),
   );
   expect(
-    editor.document.toJson(),
+    editor.document.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
     thirdParagraph,
   );
   await editor.dispose();
@@ -451,7 +451,7 @@ Future<void> _testHandleCopyPaste(
 
   final clipBoardData = await AppFlowyClipboard.getData();
   handlePastePlainText(editor.editorState, clipBoardData.text!);
-  expect(editor.document.toJson(), plainTextJson);
+  expect(editor.document.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), plainTextJson);
 
   await editor.dispose();
 }

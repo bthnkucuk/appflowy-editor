@@ -17,7 +17,7 @@ void main() async {
 | February | \$80     |
 | March    | \$420    |
 ''');
-      expect(result.root.children[0].toJson(), {
+      expect(result.root.children[0].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
         'type': 'table',
         'children': [
           {

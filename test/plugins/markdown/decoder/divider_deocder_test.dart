@@ -11,9 +11,16 @@ void main() async {
 
     test('convert ---', () {
       final result = parser.convert('---');
-      expect(result.root.children[0].toJson(), {
-        'type': 'divider',
-      });
+      expect(
+        result.root.children[0].toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
+        {
+          'type': 'divider',
+        },
+      );
     });
 
     test('the numbered of - <= 2', () {

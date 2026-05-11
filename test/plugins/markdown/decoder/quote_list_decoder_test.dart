@@ -12,7 +12,7 @@ void main() async {
 
     test('convert > to quote ', () {
       final result = parser.convert('> Quote 1');
-      expect(result.root.children[0].toJson(), {
+      expect(result.root.children[0].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
         'type': 'quote',
         'data': {
           'delta': [

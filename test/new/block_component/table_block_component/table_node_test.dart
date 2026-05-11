@@ -107,7 +107,7 @@ void main() {
       expect(tableNode.getRowHeight(1), tableNode.config.rowDefaultHeight);
 
       expect(
-        tableNode.getCell(0, 0).children.first.toJson(),
+        tableNode.getCell(0, 0).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
         {
           'type': 'heading',
           'data': {
@@ -119,7 +119,7 @@ void main() {
         },
       );
       expect(
-        tableNode.getCell(1, 0).children.first.toJson(),
+        tableNode.getCell(1, 0).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
         {
           'type': 'paragraph',
           'data': {
@@ -134,7 +134,7 @@ void main() {
       );
 
       expect(
-        tableNode.getCell(1, 1).children.first.toJson(),
+        tableNode.getCell(1, 1).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
         {
           'type': 'paragraph',
           'data': {
@@ -242,7 +242,7 @@ void main() {
       expect(tableNode.getRowHeight(1), config.rowDefaultHeight);
 
       expect(
-        tableNode.getCell(0, 0).children.first.toJson(),
+        tableNode.getCell(0, 0).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
         {
           'type': 'paragraph',
           'data': {
@@ -253,7 +253,7 @@ void main() {
         },
       );
       expect(
-        tableNode.getCell(1, 0).children.first.toJson(),
+        tableNode.getCell(1, 0).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
         {
           'type': 'paragraph',
           'data': {
@@ -267,7 +267,7 @@ void main() {
       );
 
       expect(
-        tableNode.getCell(1, 1).children.first.toJson(),
+        tableNode.getCell(1, 1).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
         {
           'type': 'paragraph',
           'data': {
@@ -302,7 +302,7 @@ void main() {
       expect(tableNode.getRowHeight(1), config.rowDefaultHeight);
 
       expect(
-        tableNode.getCell(1, 0).children.first.toJson(),
+        tableNode.getCell(1, 0).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
         {
           'type': 'paragraph',
           'data': {

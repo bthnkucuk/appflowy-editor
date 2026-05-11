@@ -8,7 +8,7 @@ void main() async {
     test('built-in json', () {
       final json = jsonDecode(quillDeltaSample.replaceAll('\\\\\n', '\\n'));
       final document = quillDeltaEncoder.convert(Delta.fromJson(json));
-      expect(document.toJson(), jsonDecode(documentSample));
+      expect(document.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), jsonDecode(documentSample));
     });
 
     test('issues 356', () {
