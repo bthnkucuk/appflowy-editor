@@ -821,10 +821,13 @@ class EditorState {
       late AutoScroller scroller;
       scroller = AutoScroller(
         scrollableState,
-        velocityScalar: 0.15,
-        minimumAutoScrollDelta: 0.07,
-        maxAutoScrollDelta: 3.5,
-        animationDuration: Duration.zero,
+        // Framework EdgeDraggingAutoScroller: per-tick duration is
+        // `1000 / velocityScalar` ms, delta per tick is the raw over-drag
+        // (capped to 20 px). 50 ≈ 20ms tick → ~1000 px/s top speed when the
+        // cursor sits hard against the edge. The old fork value 0.15 (with
+        // an 80ms desktop tick) worked out to ~40 px/s, which felt unusably
+        // slow on long documents.
+        velocityScalar: 50,
         onScrollViewScrolled: () {
           _notifyScrollViewScrolledListeners();
           if (!isDesktopOrWeb) {

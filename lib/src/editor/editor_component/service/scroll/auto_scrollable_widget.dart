@@ -58,9 +58,12 @@ class _AutoScrollableWidgetState extends State<AutoScrollableWidget> {
     final bool isDesktopOrWeb = PlatformExtension.isDesktopOrWeb;
     _autoScroller = AutoScroller(
       _scrollableState,
-      velocityScalar: isDesktopOrWeb ? 0.125 : 0.02,
-      minimumAutoScrollDelta: isDesktopOrWeb ? 0.07 : 0.004,
-      maxAutoScrollDelta: isDesktopOrWeb ? 2.75 : 0.053,
+      // See `AutoScroller` for what `velocityScalar` means under the
+      // framework's `EdgeDraggingAutoScroller`. Desktop gets 50 (≈ 20ms tick,
+      // ~1000 px/s top); mobile uses a gentler 20 (≈ 50ms tick, ~400 px/s)
+      // because finger drags don't need to chase as fast a viewport as a
+      // mouse drag would.
+      velocityScalar: isDesktopOrWeb ? 50 : 20,
       onScrollViewScrolled: () {
         if (!isDesktopOrWeb) {
           WidgetsBinding.instance.addPostFrameCallback((_) {

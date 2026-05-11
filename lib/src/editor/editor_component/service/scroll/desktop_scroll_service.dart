@@ -2,8 +2,6 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-const Duration _kDesktopAutoScrollTickDuration = Duration(milliseconds: 80);
-
 class DesktopScrollService extends StatefulWidget {
   const DesktopScrollService({
     super.key,
@@ -103,7 +101,6 @@ class _DesktopScrollServiceState extends State<DesktopScrollService>
     Offset offset, {
     double edgeOffset = 200,
     AxisDirection? direction,
-    Duration? duration,
   }) {
     if (editorState.disableAutoScroll) {
       return;
@@ -113,7 +110,6 @@ class _DesktopScrollServiceState extends State<DesktopScrollService>
       offset,
       edgeOffset: edgeOffset,
       direction: direction,
-      duration: duration ?? _kDesktopAutoScrollTickDuration,
     );
   }
 

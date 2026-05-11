@@ -151,18 +151,6 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
       final endTouchPoint = targetRect.centerRight;
 
       if (PlatformExtension.isMobile) {
-        // Determine if this is a drag operation
-        final bool isDragOperation = dragMode != null &&
-            (dragMode.toString() ==
-                    'MobileSelectionDragMode.leftSelectionHandle' ||
-                dragMode.toString() ==
-                    'MobileSelectionDragMode.rightSelectionHandle' ||
-                dragMode.toString() == 'MobileSelectionDragMode.cursor');
-
-        // Use animation for drag operations, instant for others
-        final scrollDuration =
-            isDragOperation ? const Duration(milliseconds: 2) : Duration.zero;
-
         // soft keyboard
         // workaround: wait for the soft keyboard to show up
         final keyboardDelay = KeyboardHeightObserver.currentKeyboardHeight == 0
@@ -179,7 +167,6 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
             endTouchPoint,
             edgeOffset: editorState.autoScrollEdgeOffset,
             direction: direction,
-            duration: scrollDuration,
           );
         });
       } else {
@@ -190,7 +177,6 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
           endTouchPoint,
           edgeOffset: editorState.autoScrollEdgeOffset,
           direction: direction,
-          duration: Duration.zero,
         );
       }
     });
@@ -242,13 +228,11 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
     Offset offset, {
     double edgeOffset = 100,
     AxisDirection? direction,
-    Duration? duration,
   }) {
     forward.startAutoScroll(
       offset,
       edgeOffset: edgeOffset,
       direction: direction,
-      duration: duration,
     );
   }
 

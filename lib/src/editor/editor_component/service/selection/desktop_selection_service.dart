@@ -433,7 +433,6 @@ class _DesktopSelectionServiceWidgetState
     editorState.service.scrollService?.startAutoScroll(
       _lastPanOffset!,
       edgeOffset: 200,
-      duration: const Duration(milliseconds: 2),
     );
   }
 
