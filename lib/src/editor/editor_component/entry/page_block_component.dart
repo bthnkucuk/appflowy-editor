@@ -8,6 +8,68 @@ class PageBlockKeys {
   static const String type = 'page';
 }
 
+// ----------------------------------------------------------------------------
+// SuperListView extent hinting
+//
+// SuperListView measures each child the first time it lays out, but until
+// then it has to guess every item's height. A rough per-block-type guess
+// keeps `maxScrollExtent`, scrollbar positioning, and index-based jumps
+// stable from the first frame. The numbers below are intentionally
+// approximate — they're hints, not contracts; real layout still wins.
+// ----------------------------------------------------------------------------
+
+const double _defaultBlockExtent = 28.0; // paragraph-ish
+const double _headerExtent = 150.0;
+const double _footerExtent = 100.0;
+
+const Map<String, double> _blockExtentByType = <String, double>{
+  'paragraph': 28.0,
+  'todo_list': 32.0,
+  'bulleted_list': 28.0,
+  'numbered_list': 28.0,
+  'quote': 36.0,
+  'heading': 44.0, // average across h1–h6
+  'divider': 16.0,
+  'image': 220.0,
+  'table': 180.0,
+  'table/cell': 40.0,
+  'page': _defaultBlockExtent,
+};
+
+double _estimateExtentForNode(Node node) {
+  // Heading rows are dramatically different per level; if we have a level
+  // attribute, refine. `attributes['level']` is `1..6`. (Reads through the
+  // unmodifiable view; cheap.)
+  if (node.type == 'heading') {
+    final level = node.attributes['level'];
+    if (level is int) {
+      // Empirical Material-ish line heights, tighter for deeper levels.
+      const headingByLevel = <double>[64, 52, 44, 36, 32, 28];
+      final idx = (level - 1).clamp(0, headingByLevel.length - 1);
+      return headingByLevel[idx];
+    }
+  }
+  return _blockExtentByType[node.type] ?? _defaultBlockExtent;
+}
+
+class _SmallDocumentPrecalcPolicy extends ExtentPrecalculationPolicy {
+  _SmallDocumentPrecalcPolicy();
+
+  // Threshold borrowed from the package's own example: precalculate the
+  // remaining extents only while the list is short enough that the
+  // estimation error per item visibly affects the scrollbar. Above this,
+  // the cost outweighs the benefit (see package README's "Advanced"
+  // section).
+  static const int _precalcThreshold = 100;
+
+  @override
+  bool shouldPrecalculateExtents(ExtentPrecalculationContext context) {
+    return context.numberOfItems < _precalcThreshold;
+  }
+}
+
+final _smallDocumentPrecalcPolicy = _SmallDocumentPrecalcPolicy();
+
 Node pageNode({
   required Iterable<Node> children,
   Attributes attributes = const {},
@@ -100,6 +162,31 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
         scrollDirection: Axis.vertical,
         controller: scrollController.scrollController,
         listController: scrollController.listController,
+        // Without an estimator SuperListView starts every unmeasured item at
+        // its `kDefaultEstimatedItemExtent` (~100 px), then refines as each
+        // item lays out. For a long document that initial guess is way off,
+        // causing the scrollbar to skitter around and `jumpToIndex` /
+        // `pageDown` to land in the wrong place until enough items have
+        // been measured. Feeding back a per-block-type estimate lets the
+        // list stabilize from the first frame.
+        extentEstimation: (index, _) {
+          if (index == null) {
+            // All-same-extent fast path; return non-zero so the package
+            // doesn't ask per index when the list is huge.
+            return _defaultBlockExtent;
+          }
+          if (header != null && index == 0) return _headerExtent;
+          if (footer != null && index == (items.length - 1) + extentCount) {
+            return _footerExtent;
+          }
+          final node = items[index - (header != null ? 1 : 0)];
+          return _estimateExtentForNode(node);
+        },
+        // Small-document precision: precalculate real extents when there
+        // aren't many items, so the scrollbar tracks exactly. For long
+        // documents the package's docs note this has diminishing returns;
+        // we skip it.
+        extentPrecalculationPolicy: _smallDocumentPrecalcPolicy,
         itemCount: items.length + extentCount,
         itemBuilder: (context, index) {
           editorState.updateAutoScroller(Scrollable.of(context));
