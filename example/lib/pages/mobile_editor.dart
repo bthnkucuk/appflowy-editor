@@ -256,7 +256,7 @@ class _MobileEditorState extends State<MobileEditor> {
           },
           child: AppFlowyEditor(
             autoFocus: true,
-            editable: false,
+            editable: true,
 
             // disableSelectionService: true,
             // disableKeyboardService: true,

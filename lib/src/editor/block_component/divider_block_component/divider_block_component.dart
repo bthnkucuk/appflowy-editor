@@ -1,6 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
 class DividerBlockKeys {
@@ -14,11 +13,8 @@ Node dividerNode() {
   return Node(type: DividerBlockKeys.type);
 }
 
-typedef DividerBlockWrapper = Widget Function(
-  BuildContext context,
-  Node node,
-  Widget child,
-);
+typedef DividerBlockWrapper =
+    Widget Function(BuildContext context, Node node, Widget child);
 
 class DividerBlockComponentBuilder extends BlockComponentBuilder {
   DividerBlockComponentBuilder({
@@ -44,19 +40,16 @@ class DividerBlockComponentBuilder extends BlockComponentBuilder {
       height: height,
       wrapper: wrapper,
       showActions: showActions(node),
-      actionBuilder: (context, state) => actionBuilder(
-        blockComponentContext,
-        state,
-      ),
-      actionTrailingBuilder: (context, state) => actionTrailingBuilder(
-        blockComponentContext,
-        state,
-      ),
+      actionBuilder: (context, state) =>
+          actionBuilder(blockComponentContext, state),
+      actionTrailingBuilder: (context, state) =>
+          actionTrailingBuilder(blockComponentContext, state),
     );
   }
 
   @override
-  BlockComponentValidate get validate => (node) => node.children.isEmpty;
+  BlockComponentValidate get validate =>
+      (node) => node.children.isEmpty;
 }
 
 class DividerBlockComponentWidget extends BlockComponentStatefulWidget {
@@ -107,7 +100,7 @@ class _DividerBlockComponentWidgetState
             size: Size(double.infinity, 1),
             painter: _DividerPainter(color: widget.lineColor),
           ),
-        ).animate().fadeIn(duration: 1.seconds),
+        ),
       ),
     );
 
@@ -164,9 +157,7 @@ class _DividerBlockComponentWidgetState
   CursorStyle get cursorStyle => CursorStyle.cover;
 
   @override
-  Rect getBlockRect({
-    bool shiftWithBaseOffset = false,
-  }) {
+  Rect getBlockRect({bool shiftWithBaseOffset = false}) {
     return getRectsInSelection(Selection.invalid()).first;
   }
 
@@ -208,17 +199,11 @@ class _DividerBlockComponentWidgetState
   }
 
   @override
-  Selection getSelectionInRange(Offset start, Offset end) => Selection.single(
-        path: widget.node.path,
-        startOffset: 0,
-        endOffset: 1,
-      );
+  Selection getSelectionInRange(Offset start, Offset end) =>
+      Selection.single(path: widget.node.path, startOffset: 0, endOffset: 1);
 
   @override
-  Offset localToGlobal(
-    Offset offset, {
-    bool shiftWithBaseOffset = false,
-  }) =>
+  Offset localToGlobal(Offset offset, {bool shiftWithBaseOffset = false}) =>
       _renderBox!.localToGlobal(offset);
 
   @override
@@ -246,11 +231,7 @@ class _DividerPainter extends CustomPainter {
     final double endX = size.width;
 
     while (startX < endX) {
-      canvas.drawLine(
-        Offset(startX, 0),
-        Offset(startX + dashWidth, 0),
-        paint,
-      );
+      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
       startX += dashWidth + dashSpace;
     }
   }
