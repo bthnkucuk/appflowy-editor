@@ -714,10 +714,17 @@ class _OpIterator {
   }
 }
 
+// Both-null and both-empty are treated as equal, matching the pre-existing
+// helper. For non-empty maps we delegate to `DeepCollectionEquality` so
+// that nested map/list values (which `flutter/foundation`'s `mapEquals`
+// compares shallowly) are handled correctly — and so the editor uses one
+// equality definition (the same `DeepCollectionEquality` is already used
+// in `diff.dart`).
+const _attributeEquality = DeepCollectionEquality();
+
 bool _mapEquals<T, U>(Map<T, U>? a, Map<T, U>? b) {
   if ((a == null || a.isEmpty) && (b == null || b.isEmpty)) {
     return true;
   }
-
-  return mapEquals(a, b);
+  return _attributeEquality.equals(a, b);
 }

@@ -151,12 +151,16 @@ class TableNode {
       ) ??
       _config.rowDefaultHeight;
 
-  double get colsHeight =>
-      List.generate(rowsLen, (idx) => idx).fold<double>(
-        0,
-        (prev, cur) => prev + getRowHeight(cur) + _config.borderWidth,
-      ) +
-      _config.borderWidth;
+  double get colsHeight {
+    // Plain loop instead of `List.generate(...).fold(...)` — the index
+    // list was a per-call allocation just to drive a fold, with no other
+    // purpose. This getter is read every layout pass.
+    var total = _config.borderWidth;
+    for (var i = 0; i < rowsLen; i++) {
+      total += getRowHeight(i) + _config.borderWidth;
+    }
+    return total;
+  }
 
   double getColWidth(int col) =>
       double.tryParse(
@@ -164,12 +168,14 @@ class TableNode {
       ) ??
       _config.colDefaultWidth;
 
-  double get tableWidth =>
-      List.generate(colsLen, (idx) => idx).fold<double>(
-        0,
-        (prev, cur) => prev + getColWidth(cur) + _config.borderWidth,
-      ) +
-      _config.borderWidth;
+  double get tableWidth {
+    // Same shape as `colsHeight` — plain accumulator, no throwaway list.
+    var total = _config.borderWidth;
+    for (var i = 0; i < colsLen; i++) {
+      total += getColWidth(i) + _config.borderWidth;
+    }
+    return total;
+  }
 
   void setColWidth(
     int col,

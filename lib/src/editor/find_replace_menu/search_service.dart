@@ -1,5 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:appflowy_editor/src/editor/find_replace_menu/search_algorithm.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
 class SearchStyle {
@@ -70,13 +71,12 @@ class SearchService {
 
     if (contents.isEmpty) return [];
 
-    final firstNode = contents.firstWhere(
-      (el) => el.delta != null,
-    );
-
-    final lastNode = contents.lastWhere(
-      (el) => el.delta != null,
-    );
+    // `firstWhere` / `lastWhere` would throw `StateError: No element` for a
+    // document made up entirely of non-text blocks (e.g. only tables or
+    // dividers). Fall back to an empty result in that case instead.
+    final firstNode = contents.firstWhereOrNull((el) => el.delta != null);
+    final lastNode = contents.lastWhereOrNull((el) => el.delta != null);
+    if (firstNode == null || lastNode == null) return [];
 
     //iterate within all the text nodes of the document.
     final nodes = NodeIterator(
