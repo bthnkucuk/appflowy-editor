@@ -1,8 +1,8 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:appflowy_editor/src/editor/block_component/base_component/widget/ignore_parent_gesture.dart';
-import 'package:appflowy_editor/src/flutter/scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 
 class PageBlockKeys {
   static const String type = 'page';
@@ -95,9 +95,11 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
       if (header != null) extentCount++;
       if (footer != null) extentCount++;
 
-      return ScrollablePositionedList.builder(
+      return SuperListView.builder(
         shrinkWrap: scrollController.shrinkWrap,
         scrollDirection: Axis.vertical,
+        controller: scrollController.scrollController,
+        listController: scrollController.listController,
         itemCount: items.length + extentCount,
         itemBuilder: (context, index) {
           editorState.updateAutoScroller(Scrollable.of(context));
@@ -134,10 +136,6 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
             ),
           );
         },
-        itemScrollController: scrollController.itemScrollController,
-        scrollOffsetController: scrollController.scrollOffsetController,
-        itemPositionsListener: scrollController.itemPositionsListener,
-        scrollOffsetListener: scrollController.scrollOffsetListener,
       );
     }
   }
