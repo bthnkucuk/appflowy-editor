@@ -5,6 +5,9 @@ class MarkdownBlockQuoteParserV2 extends CustomMarkdownParser {
   const MarkdownBlockQuoteParserV2();
 
   @override
+  Set<String> get supportedTags => const {'blockquote'};
+
+  @override
   List<Node> transform(
     md.Node element,
     List<CustomMarkdownParser> parsers, {
@@ -21,10 +24,6 @@ class MarkdownBlockQuoteParserV2 extends CustomMarkdownParser {
 
     final deltaDecoder = DeltaMarkdownDecoder();
 
-    return [
-      quoteNode(
-        delta: deltaDecoder.convertNodes(element.children),
-      ),
-    ];
+    return [quoteNode(delta: deltaDecoder.convertNodes(element.children))];
   }
 }

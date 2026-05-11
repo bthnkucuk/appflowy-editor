@@ -5,6 +5,9 @@ class MarkdownOrderedListParserV2 extends CustomMarkdownParser {
   const MarkdownOrderedListParserV2();
 
   @override
+  Set<String> get supportedTags => const {'ol'};
+
+  @override
   List<Node> transform(
     md.Node element,
     List<CustomMarkdownParser> parsers, {

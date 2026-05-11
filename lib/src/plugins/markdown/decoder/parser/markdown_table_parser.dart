@@ -5,6 +5,9 @@ class MarkdownTableListParserV2 extends CustomMarkdownParser {
   const MarkdownTableListParserV2();
 
   @override
+  Set<String> get supportedTags => const {'table'};
+
+  @override
   List<Node> transform(
     md.Node element,
     List<CustomMarkdownParser> parsers, {
@@ -74,8 +77,6 @@ class MarkdownTableListParserV2 extends CustomMarkdownParser {
 
     final tableNode = TableNode.fromList(cells);
 
-    return [
-      tableNode.node,
-    ];
+    return [tableNode.node];
   }
 }

@@ -6,6 +6,9 @@ class MarkdownOrderedListItemParserV2 extends CustomMarkdownParser {
   const MarkdownOrderedListItemParserV2();
 
   @override
+  Set<String> get supportedTags => const {'li'};
+
+  @override
   List<Node> transform(
     md.Node element,
     List<CustomMarkdownParser> parsers, {
@@ -44,9 +47,7 @@ class MarkdownOrderedListItemParserV2 extends CustomMarkdownParser {
     return [
       numberedListNode(
         number: startNumber,
-        delta: deltaDecoder.convertNodes(
-          deltaNodes,
-        ),
+        delta: deltaDecoder.convertNodes(deltaNodes),
         children: parseElementChildren(
           ec.reversed.toList(),
           parsers,

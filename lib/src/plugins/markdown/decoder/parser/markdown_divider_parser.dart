@@ -5,6 +5,9 @@ class MarkdownDividerParserV2 extends CustomMarkdownParser {
   const MarkdownDividerParserV2();
 
   @override
+  Set<String> get supportedTags => const {'hr'};
+
+  @override
   List<Node> transform(
     md.Node element,
     List<CustomMarkdownParser> parsers, {
@@ -19,8 +22,6 @@ class MarkdownDividerParserV2 extends CustomMarkdownParser {
       return [];
     }
 
-    return [
-      dividerNode(),
-    ];
+    return [dividerNode()];
   }
 }

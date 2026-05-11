@@ -7,6 +7,9 @@ class MarkdownHeadingParserV2 extends CustomMarkdownParser {
   const MarkdownHeadingParserV2();
 
   @override
+  Set<String> get supportedTags => const {'h1', 'h2', 'h3', 'h4', 'h5', 'h6'};
+
+  @override
   List<Node> transform(
     md.Node element,
     List<CustomMarkdownParser> parsers, {

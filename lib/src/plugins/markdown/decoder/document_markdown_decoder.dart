@@ -44,9 +44,21 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
 
   // handle node itself and its children
   List<Node> _parseNode(md.Node mdNode) {
-    List<Node> nodes = [];
+    final tag = mdNode is md.Element ? mdNode.tag : null;
+    List<Node> nodes = const [];
 
     for (final parser in markdownElementParsers) {
+      // Parsers that declare `supportedTags` are skipped for tags they don't
+      // claim — turns the per-parser `is md.Element` + tag-equality probe
+      // into a single Set.contains. Parsers returning null keep the old
+      // wildcard behavior (custom user parsers stay compatible).
+      if (tag != null) {
+        final tags = parser.supportedTags;
+        if (tags != null && !tags.contains(tag)) {
+          continue;
+        }
+      }
+
       nodes = parser.transform(
         mdNode,
         markdownElementParsers,

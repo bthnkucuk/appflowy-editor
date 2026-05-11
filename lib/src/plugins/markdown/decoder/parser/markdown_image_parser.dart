@@ -4,6 +4,11 @@ import 'package:markdown/markdown.dart' as md;
 class MarkdownImageParserV2 extends CustomMarkdownParser {
   const MarkdownImageParserV2();
 
+  // 'p' is needed because md.Document wraps img-only paragraphs in <p>,
+  // and the paragraph parser intentionally lets us handle that case.
+  @override
+  Set<String> get supportedTags => const {'img', 'p'};
+
   @override
   List<Node> transform(
     md.Node element,
@@ -16,9 +21,7 @@ class MarkdownImageParserV2 extends CustomMarkdownParser {
     }
 
     if (element.attributes['src'] != null) {
-      return [
-        imageNode(url: element.attributes['src']!),
-      ];
+      return [imageNode(url: element.attributes['src']!)];
     }
 
     if (element.children?.length != 1 ||
@@ -31,8 +34,6 @@ class MarkdownImageParserV2 extends CustomMarkdownParser {
       return [];
     }
 
-    return [
-      imageNode(url: ec.attributes['src']!),
-    ];
+    return [imageNode(url: ec.attributes['src']!)];
   }
 }
