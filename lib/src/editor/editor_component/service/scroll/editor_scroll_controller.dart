@@ -8,16 +8,12 @@ import 'package:super_sliver_list/super_sliver_list.dart';
 ///
 /// It must be provided in the widget tree above the [PageComponent].
 ///
-/// You can use [offsetNotifier] to get the current scroll offset.
-/// And, you can use [visibleRangeNotifier] to get the first level visible items.
+/// You can use [offsetNotifier] to get the current scroll offset, and
+/// [visibleRangeNotifier] to get the first level visible items.
 ///
-/// If the shrinkWrap is true, the scrollController must not be null
-///   and the editor should be wrapped in a SingleChildScrollView.
-///
-/// Implementation note: the editor was previously backed by
-/// `scrollable_positioned_list`. This class still exposes the same public
-/// surface (itemScrollController/scrollOffsetController) via thin adapters
-/// over `super_sliver_list`'s `ListController` + a regular `ScrollController`.
+/// If [shrinkWrap] is true the editor is wrapped in a `SingleChildScrollView`
+/// and the document is laid out as a `Column`. Otherwise it is rendered with
+/// `SuperListView` and items are virtualized.
 class EditorScrollController {
   EditorScrollController({
     required this.editorState,
@@ -26,9 +22,6 @@ class EditorScrollController {
   }) {
     shouldDisposeScrollController = scrollController == null;
     this.scrollController = scrollController ?? ScrollController();
-
-    _itemScrollController = EditorItemScrollController._(this);
-    _scrollOffsetController = EditorScrollOffsetController._(this);
 
     if (shrinkWrap) {
       void updateVisibleRange() {
@@ -52,58 +45,25 @@ class EditorScrollController {
   final EditorState editorState;
   final bool shrinkWrap;
 
-  // Required by [SingleChildScrollView] when shrinkWrap is true and by the
-  // `SuperListView` underneath when shrinkWrap is false.
+  /// Used by `SingleChildScrollView` when shrinkWrap is true and by the
+  /// underlying `SuperListView` when shrinkWrap is false.
   late final ScrollController scrollController;
   bool shouldDisposeScrollController = false;
 
-  /// Drives the `SuperListView` used in non-shrinkWrap mode. Exposed so other
-  /// code (e.g. tests) can introspect, but treat as internal.
+  /// Drives the `SuperListView` used in non-shrinkWrap mode. Useful for
+  /// jumping/animating to a specific item by index.
   final ListController listController = ListController();
 
-  /// Current scroll offset in pixels. Updated whenever the inner scrollable
-  /// reports a new position.
+  /// Current scroll offset in pixels. Updated whenever the underlying
+  /// scrollable reports a new position.
   final ValueNotifier<double> offsetNotifier = ValueNotifier(0);
 
-  /// First-level visible items, e.g.:
+  /// First-level visible items as `(min, max)` indices.
   ///
-  /// 1. text1
-  /// 2. text2 ---
-  ///  2.1 text21|
-  /// ...        |
-  /// 5. text5   | screen
-  /// ...        |
-  /// 9. text9 ---
-  /// 10. text10
-  ///
-  /// would yield visibleRange = (1, 8), index starting from 0.
+  /// Example: with the viewport showing nodes 2..9 of a longer document,
+  /// the value would be `(1, 8)` (0-indexed).
   final ValueNotifier<(int, int)> visibleRangeNotifier =
       ValueNotifier((-1, -1));
-
-  late final EditorItemScrollController _itemScrollController;
-  late final EditorScrollOffsetController _scrollOffsetController;
-
-  /// Backwards-compatible API: behaves like the old
-  /// `scrollable_positioned_list` `ItemScrollController`.
-  EditorItemScrollController get itemScrollController {
-    if (shrinkWrap) {
-      throw UnsupportedError(
-        'ItemScrollController is not supported when shrinkWrap is true',
-      );
-    }
-    return _itemScrollController;
-  }
-
-  /// Backwards-compatible API: behaves like the old
-  /// `scrollable_positioned_list` `ScrollOffsetController`.
-  EditorScrollOffsetController get scrollOffsetController {
-    if (shrinkWrap) {
-      throw UnsupportedError(
-        'ScrollOffsetController is not supported when shrinkWrap is true',
-      );
-    }
-    return _scrollOffsetController;
-  }
 
   void dispose() {
     scrollController.removeListener(_syncOffsetNotifier);
@@ -117,6 +77,10 @@ class EditorScrollController {
     offsetNotifier.dispose();
     visibleRangeNotifier.dispose();
   }
+
+  // ---------------------------------------------------------------------------
+  // Offset-based scrolling
+  // ---------------------------------------------------------------------------
 
   Future<void> animateTo({
     required double offset,
@@ -135,9 +99,7 @@ class EditorScrollController {
     );
   }
 
-  void jumpTo({
-    required double offset,
-  }) {
+  void jumpTo({required double offset}) {
     if (shrinkWrap) {
       if (scrollController.hasClients) {
         scrollController.jumpTo(
@@ -147,7 +109,6 @@ class EditorScrollController {
           ),
         );
       }
-
       return;
     }
 
@@ -155,20 +116,94 @@ class EditorScrollController {
     final (start, end) = visibleRangeNotifier.value;
 
     if (index < start || index > end) {
-      _itemScrollController.jumpTo(
-        index: max(0, index),
-        alignment: 0,
-      );
+      jumpToIndex(index: max(0, index), alignment: 0);
     }
+  }
+
+  /// Relative animated scroll, clamped to `[min, max]ScrollExtent`. The
+  /// "safe" prefix is preserved from the pre-migration API; callers
+  /// (e.g. `editor_state.scrollToHighlight`) use this to nudge the
+  /// viewport by an amount that should never overshoot either edge.
+  Future<void> safeAnimateScroll({
+    required double offset,
+    required Duration duration,
+    Curve curve = Curves.linear,
+  }) async {
+    if (!scrollController.hasClients) return;
+    final position = scrollController.position;
+    final target = (scrollController.offset + offset).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    await scrollController.animateTo(
+      target,
+      duration: duration,
+      curve: curve,
+    );
+  }
+
+  /// Relative non-animated scroll, clamped to `maxScrollExtent` (legacy
+  /// behavior — does not clamp at the top).
+  void safeJumpTo({required double offset}) {
+    if (!scrollController.hasClients) return;
+    final target = scrollController.offset + offset;
+    final maxExtent = scrollController.position.maxScrollExtent;
+    scrollController.jumpTo(target > maxExtent ? maxExtent : target);
+  }
+
+  /// Relative animated scroll without clamping. Mirrors the old
+  /// `ScrollOffsetController.animateScroll` semantics, kept because
+  /// `MobileScrollService.scrollTo` still calls it.
+  Future<void> animateScroll({
+    required double offset,
+    required Duration duration,
+    Curve curve = Curves.linear,
+  }) async {
+    if (!scrollController.hasClients) return;
+    await scrollController.animateTo(
+      scrollController.offset + offset,
+      duration: duration,
+      curve: curve,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Index-based scrolling
+  // ---------------------------------------------------------------------------
+
+  /// Jump to the node at [index]. [alignment] is `0` for top, `0.5` for
+  /// middle, `1` for bottom of the viewport.
+  void jumpToIndex({required int index, double alignment = 0}) {
+    if (!listController.isAttached) return;
+    listController.jumpToItem(
+      index: max(0, index),
+      scrollController: scrollController,
+      alignment: alignment,
+    );
+  }
+
+  /// Animate to the node at [index].
+  void scrollToIndex({
+    required int index,
+    double alignment = 0,
+    required Duration duration,
+    Curve curve = Curves.linear,
+  }) {
+    if (!listController.isAttached) return;
+    listController.animateToItem(
+      index: max(0, index),
+      scrollController: scrollController,
+      alignment: alignment,
+      duration: (_) => duration,
+      curve: (_) => curve,
+    );
   }
 
   void jumpToTop() {
     if (shrinkWrap) {
-      if (scrollController.hasClients) {
-        scrollController.jumpTo(0);
-      }
+      if (scrollController.hasClients) scrollController.jumpTo(0);
     } else {
-      _itemScrollController.jumpTo(index: 0);
+      jumpToIndex(index: 0);
     }
   }
 
@@ -178,11 +213,13 @@ class EditorScrollController {
         scrollController.jumpTo(scrollController.position.maxScrollExtent);
       }
     } else {
-      _itemScrollController.jumpTo(
-        index: editorState.document.root.children.length - 1,
-      );
+      jumpToIndex(index: editorState.document.root.children.length - 1);
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Internals
+  // ---------------------------------------------------------------------------
 
   void _syncOffsetNotifier() {
     if (!scrollController.hasClients) return;
@@ -204,10 +241,9 @@ class EditorScrollController {
     var (min, max) = range;
 
     // Convert from "list with optional header/footer" indexing to document
-    // child indexing. Matches the legacy semantics of the previous
-    // ItemPositionsListener-based code, including its quirks: only `max` is
-    // adjusted; `min` is left as-is because the header (if any) at index 0
-    // collapses to the same document min.
+    // child indexing. Only `max` is adjusted; `min` is left as-is because the
+    // header (if any) at index 0 collapses to the same document min — this
+    // matches the semantics of the pre-migration `_listenItemPositions` code.
     if (editorState.showHeader) {
       max--;
     }
@@ -224,106 +260,4 @@ class EditorScrollController {
 extension ValidIndexedValueNotifier on ValueNotifier<(int, int)> {
   /// Returns true if the value is valid.
   bool get isValid => value.$1 >= 0 && value.$2 >= 0 && value.$1 <= value.$2;
-}
-
-/// Mimics the public surface of the old `ItemScrollController`. Lives on the
-/// owning [EditorScrollController]; do not construct directly.
-class EditorItemScrollController {
-  EditorItemScrollController._(this._owner);
-
-  final EditorScrollController _owner;
-
-  void jumpTo({required int index, double alignment = 0}) {
-    if (!_owner.listController.isAttached) return;
-    _owner.listController.jumpToItem(
-      index: max(0, index),
-      scrollController: _owner.scrollController,
-      alignment: alignment,
-    );
-  }
-
-  Future<void> scrollTo({
-    required int index,
-    double alignment = 0,
-    required Duration duration,
-    Curve curve = Curves.linear,
-  }) async {
-    if (!_owner.listController.isAttached) return;
-    _owner.listController.animateToItem(
-      index: max(0, index),
-      scrollController: _owner.scrollController,
-      alignment: alignment,
-      duration: (_) => duration,
-      curve: (_) => curve,
-    );
-  }
-}
-
-/// Mimics the public surface of the old `ScrollOffsetController`, including
-/// the fork-added `safeAnimateScroll` / `safeJumpTo` wrappers.
-class EditorScrollOffsetController {
-  EditorScrollOffsetController._(this._owner);
-
-  final EditorScrollController _owner;
-
-  double get maxScrollOffset =>
-      _owner.scrollController.position.maxScrollExtent;
-
-  double get minScrollOffset =>
-      _owner.scrollController.position.minScrollExtent;
-
-  /// Relative scroll, clamped to [[minScrollOffset], [maxScrollOffset]].
-  Future<void> safeAnimateScroll({
-    required double offset,
-    required Duration duration,
-    Curve curve = Curves.linear,
-  }) async {
-    if (!_owner.scrollController.hasClients) return;
-    final current = _owner.scrollController.offset;
-    final target = (current + offset).clamp(minScrollOffset, maxScrollOffset);
-    await _owner.scrollController.animateTo(
-      target,
-      duration: duration,
-      curve: curve,
-    );
-  }
-
-  /// Relative scroll, clamped to max only (legacy behavior).
-  void safeJumpTo({required double offset}) {
-    if (!_owner.scrollController.hasClients) return;
-    final current = _owner.scrollController.offset;
-    final target = current + offset;
-    _owner.scrollController.jumpTo(
-      target > maxScrollOffset ? maxScrollOffset : target,
-    );
-  }
-
-  /// Relative scroll, no clamp.
-  Future<void> animateScroll({
-    required double offset,
-    required Duration duration,
-    Curve curve = Curves.linear,
-  }) async {
-    if (!_owner.scrollController.hasClients) return;
-    final current = _owner.scrollController.offset;
-    await _owner.scrollController.animateTo(
-      current + offset,
-      duration: duration,
-      curve: curve,
-    );
-  }
-
-  /// Absolute scroll.
-  Future<void> animateTo({
-    required double offset,
-    required Duration duration,
-    Curve curve = Curves.linear,
-  }) async {
-    if (!_owner.scrollController.hasClients) return;
-    await _owner.scrollController.animateTo(
-      offset,
-      duration: duration,
-      curve: curve,
-    );
-  }
 }

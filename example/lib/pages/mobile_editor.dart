@@ -78,7 +78,7 @@ class _MobileEditorState extends State<MobileEditor> {
             node != null ? editorState.document.nodes.indexOf(node) : null;
         if (index != null) {
           if (index < visibleRange.$1 || index > visibleRange.$2) {
-            editorScrollController.itemScrollController.scrollTo(
+            editorScrollController.scrollToIndex(
               index: index + 1,
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,

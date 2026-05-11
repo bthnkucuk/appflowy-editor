@@ -65,7 +65,7 @@ class _MobileScrollServiceState extends State<MobileScrollService>
       minScrollExtent,
       maxScrollExtent,
     );
-    editorScrollController.scrollOffsetController.animateScroll(
+    editorScrollController.animateScroll(
       offset: dy,
       duration: duration,
     );
@@ -73,7 +73,7 @@ class _MobileScrollServiceState extends State<MobileScrollService>
 
   @override
   void jumpTo(int index) {
-    editorScrollController.itemScrollController.jumpTo(index: index);
+    editorScrollController.jumpToIndex(index: index);
   }
 
   @override

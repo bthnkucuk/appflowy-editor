@@ -750,7 +750,7 @@ class EditorState {
     final top = highlightRects.firstOrNull?.top;
 
     if (top != null) {
-      editorScrollController.scrollOffsetController.safeAnimateScroll(
+      editorScrollController.safeAnimateScroll(
         offset: top - 300,
         duration: const Duration(milliseconds: 700),
         curve: Curves.easeInOut,
@@ -759,7 +759,7 @@ class EditorState {
       if (fromInside) return;
       final index = askedSelection?.start.path.firstOrNull;
       if (index != null) {
-        editorScrollController.itemScrollController.jumpTo(
+        editorScrollController.jumpToIndex(
           index: index,
           alignment: alignToTop ? 0 : 1,
         );
