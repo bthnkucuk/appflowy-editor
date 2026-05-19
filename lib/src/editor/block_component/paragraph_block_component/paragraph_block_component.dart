@@ -26,8 +26,7 @@ Node paragraphNode({
       ParagraphBlockKeys.delta: (delta ?? (Delta()..insert(text ?? '')))
           .toJson(),
       if (attributes != null) ...attributes,
-      if (textDirection != null)
-        ParagraphBlockKeys.textDirection: textDirection,
+      ParagraphBlockKeys.textDirection: ?textDirection,
     },
     children: children,
   );

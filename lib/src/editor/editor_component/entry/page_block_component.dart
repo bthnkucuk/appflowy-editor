@@ -128,7 +128,7 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
 
             return Column(
               children: [
-                if (header != null) header!,
+                ?header,
                 ...items.map((e) {
                   Widget child = editorState.renderer.build(context, e);
                   if (wrapper != null) {
@@ -144,7 +144,7 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
                     child: child,
                   );
                 }),
-                if (footer != null) footer!,
+                ?footer,
               ],
             );
           },

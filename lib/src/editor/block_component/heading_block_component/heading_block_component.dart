@@ -36,7 +36,7 @@ Node headingNode({
       HeadingBlockKeys.delta: (delta ?? (Delta()..insert(text ?? ''))).toJson(),
       HeadingBlockKeys.level: level.clamp(1, 6),
       if (attributes != null) ...attributes,
-      if (textDirection != null) HeadingBlockKeys.textDirection: textDirection,
+      HeadingBlockKeys.textDirection: ?textDirection,
     },
   );
 }

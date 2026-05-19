@@ -35,7 +35,7 @@ Node todoListNode({
       TodoListBlockKeys.delta: (delta ?? (Delta()..insert(text ?? '')))
           .toJson(),
       if (attributes != null) ...attributes,
-      if (textDirection != null) TodoListBlockKeys.textDirection: textDirection,
+      TodoListBlockKeys.textDirection: ?textDirection,
     },
     children: children ?? [],
   );

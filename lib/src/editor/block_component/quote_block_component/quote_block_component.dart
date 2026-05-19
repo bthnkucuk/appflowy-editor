@@ -25,10 +25,7 @@ Node quoteNode({
 
   return Node(
     type: QuoteBlockKeys.type,
-    attributes: {
-      ...attributes,
-      if (textDirection != null) QuoteBlockKeys.textDirection: textDirection,
-    },
+    attributes: {...attributes, QuoteBlockKeys.textDirection: ?textDirection},
     children: children ?? [],
   );
 }

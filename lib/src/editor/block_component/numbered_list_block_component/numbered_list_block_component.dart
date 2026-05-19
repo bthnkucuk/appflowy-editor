@@ -33,8 +33,7 @@ Node numberedListNode({
     type: NumberedListBlockKeys.type,
     attributes: {
       ...attributes,
-      if (textDirection != null)
-        NumberedListBlockKeys.textDirection: textDirection,
+      NumberedListBlockKeys.textDirection: ?textDirection,
     },
     children: children ?? [],
   );

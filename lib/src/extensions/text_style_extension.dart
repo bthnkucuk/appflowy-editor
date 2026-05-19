@@ -66,7 +66,7 @@ extension TextStyleExtensions on TextStyle {
       fontFeatures: other.fontFeatures,
       fontVariations: other.fontVariations,
       decoration: TextDecoration.combine([
-        if (decoration != null) decoration!,
+        ?decoration,
         if (other.decoration != null) other.decoration!,
       ]),
       decorationColor: other.decorationColor,
