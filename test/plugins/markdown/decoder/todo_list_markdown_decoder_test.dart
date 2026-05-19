@@ -17,15 +17,22 @@ void main() async {
 - [ ] Item 3
 ''');
       for (var i = 0; i < result.root.children.length; i++) {
-        expect(result.root.children[i].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
-          'type': 'todo_list',
-          'data': {
-            'delta': [
-              {'insert': 'Item ${i + 1}'},
-            ],
-            'checked': i == 1,
+        expect(
+          result.root.children[i].toJson(
+            includeId: false,
+            includeDatabaseIndex: false,
+            includeRank: false,
+          ),
+          {
+            'type': 'todo_list',
+            'data': {
+              'delta': [
+                {'insert': 'Item ${i + 1}'},
+              ],
+              'checked': i == 1,
+            },
           },
-        });
+        );
       }
     });
 
@@ -36,44 +43,58 @@ void main() async {
     - [ ] Item 1.2
 - [ ] Item 2
 ''');
-      expect(result.root.children[0].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
-        'type': 'todo_list',
-        'data': {
-          'delta': [
-            {'insert': 'Item 1'},
-          ],
-          'checked': false,
-        },
-        'children': [
-          {
-            'type': 'todo_list',
-            'data': {
-              'delta': [
-                {'insert': 'Item 1.1'},
-              ],
-              'checked': false,
-            },
+      expect(
+        result.root.children[0].toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
+        {
+          'type': 'todo_list',
+          'data': {
+            'delta': [
+              {'insert': 'Item 1'},
+            ],
+            'checked': false,
           },
-          {
-            'type': 'todo_list',
-            'data': {
-              'delta': [
-                {'insert': 'Item 1.2'},
-              ],
-              'checked': false,
+          'children': [
+            {
+              'type': 'todo_list',
+              'data': {
+                'delta': [
+                  {'insert': 'Item 1.1'},
+                ],
+                'checked': false,
+              },
             },
-          },
-        ],
-      });
-      expect(result.root.children[1].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
-        'type': 'todo_list',
-        'data': {
-          'delta': [
-            {'insert': 'Item 2'},
+            {
+              'type': 'todo_list',
+              'data': {
+                'delta': [
+                  {'insert': 'Item 1.2'},
+                ],
+                'checked': false,
+              },
+            },
           ],
-          'checked': false,
         },
-      });
+      );
+      expect(
+        result.root.children[1].toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
+        {
+          'type': 'todo_list',
+          'data': {
+            'delta': [
+              {'insert': 'Item 2'},
+            ],
+            'checked': false,
+          },
+        },
+      );
     });
 
     test('if no - [ ] or - [x]', () {
@@ -82,25 +103,13 @@ void main() async {
     });
 
     test('if no space after -[] or - []', () {
-      expect(
-        parser.convert('-[]Item1').root.children.isEmpty,
-        true,
-      );
-      expect(
-        parser.convert('- []Item1').root.children.isEmpty,
-        true,
-      );
+      expect(parser.convert('-[]Item1').root.children.isEmpty, true);
+      expect(parser.convert('- []Item1').root.children.isEmpty, true);
     });
 
     test('if no space after -[x] or - x]', () {
-      expect(
-        parser.convert('-[x]Item1').root.children.isEmpty,
-        true,
-      );
-      expect(
-        parser.convert('- [x]Item1').root.children.isEmpty,
-        true,
-      );
+      expect(parser.convert('-[x]Item1').root.children.isEmpty, true);
+      expect(parser.convert('- [x]Item1').root.children.isEmpty, true);
     });
   });
 }

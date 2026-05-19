@@ -338,9 +338,7 @@ class _AppFlowyRichTextState extends State<AppFlowyRichText>
         width = 2;
       }
 
-      return [
-        Rect.fromLTWH(position.dx, position.dy, width, height),
-      ];
+      return [Rect.fromLTWH(position.dx, position.dy, width, height)];
     }
 
     return rects;
@@ -438,12 +436,7 @@ class _AppFlowyRichTextState extends State<AppFlowyRichText>
   List<Widget> _buildRichTextOverlay(BuildContext context) {
     if (textKey.currentContext == null) return [];
 
-    return textSpanOverlayBuilder?.call(
-          context,
-          widget.node,
-          this,
-        ) ??
-        [];
+    return textSpanOverlayBuilder?.call(context, widget.node, this) ?? [];
   }
 
   void confirmContextEnabled() {
@@ -628,9 +621,7 @@ class _AppFlowyRichTextState extends State<AppFlowyRichText>
       offset += textInsert.length;
     }
 
-    return TextSpan(
-      children: textSpans,
-    );
+    return TextSpan(children: textSpans);
   }
 
   TextSelection? textSelectionFromEditorSelection(Selection? selection) {
@@ -676,10 +667,7 @@ class _AppFlowyRichTextState extends State<AppFlowyRichText>
           extentOffset: normalized.endIndex,
         );
       } else {
-        textSelection = TextSelection(
-          baseOffset: 0,
-          extentOffset: length,
-        );
+        textSelection = TextSelection(baseOffset: 0, extentOffset: length);
       }
     }
 

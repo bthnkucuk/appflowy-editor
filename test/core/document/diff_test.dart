@@ -16,7 +16,9 @@ void main() async {
       );
     }
 
-    Document blankDoc() => Document(root: Node(type: 'page', id: 'root'));
+    Document blankDoc() => Document(
+      root: Node(type: 'page', id: 'root'),
+    );
 
     Future<Document> apply(Document document, List<Operation> ops) async {
       final editorState = EditorState(document: document);
@@ -31,8 +33,10 @@ void main() async {
 
     test('text changes', () async {
       final id = Uuid().v4();
-      final documentA = blankDoc()..insert([0], [buildNodeWithId(id, 'Hello World')]);
-      final documentB = blankDoc()..insert([0], [buildNodeWithId(id, 'Hello AppFlowy!')]);
+      final documentA = blankDoc()
+        ..insert([0], [buildNodeWithId(id, 'Hello World')]);
+      final documentB = blankDoc()
+        ..insert([0], [buildNodeWithId(id, 'Hello AppFlowy!')]);
 
       final ops = diffDocuments(documentA, documentB);
       expect(ops.length, 1);
@@ -41,27 +45,22 @@ void main() async {
       expect((op as UpdateOperation).path, [0]);
 
       final expectation = jsonEncode(documentB.toJson());
-      expect(
-        jsonEncode((await apply(documentA, ops)).toJson()),
-        expectation,
-      );
+      expect(jsonEncode((await apply(documentA, ops)).toJson()), expectation);
     });
 
     test('insert', () async {
       final id1 = Uuid().v4();
       final id2 = Uuid().v4();
       final documentA = blankDoc()
+        ..insert([0], [buildNodeWithId(id1, 'Hello AppFlowy!')]);
+      final documentB = blankDoc()
         ..insert(
           [0],
-          [buildNodeWithId(id1, 'Hello AppFlowy!')],
+          [
+            buildNodeWithId(id1, 'Hello AppFlowy!'),
+            buildNodeWithId(id2, 'Hello World!'),
+          ],
         );
-      final documentB = blankDoc()
-        ..insert([
-          0,
-        ], [
-          buildNodeWithId(id1, 'Hello AppFlowy!'),
-          buildNodeWithId(id2, 'Hello World!'),
-        ]);
 
       final ops = diffDocuments(documentA, documentB);
       expect(ops.length, 1);
@@ -70,27 +69,22 @@ void main() async {
       expect((op as InsertOperation).path, [1]);
 
       final expectation = jsonEncode(documentB.toJson());
-      expect(
-        jsonEncode((await apply(documentA, ops)).toJson()),
-        expectation,
-      );
+      expect(jsonEncode((await apply(documentA, ops)).toJson()), expectation);
     });
 
     test('delete', () async {
       final id1 = Uuid().v4();
       final id2 = Uuid().v4();
       final documentA = blankDoc()
+        ..insert([0], [buildNodeWithId(id1, 'Hello AppFlowy!')]);
+      final documentB = blankDoc()
         ..insert(
           [0],
-          [buildNodeWithId(id1, 'Hello AppFlowy!')],
+          [
+            buildNodeWithId(id1, 'Hello AppFlowy!'),
+            buildNodeWithId(id2, 'Hello World!'),
+          ],
         );
-      final documentB = blankDoc()
-        ..insert([
-          0,
-        ], [
-          buildNodeWithId(id1, 'Hello AppFlowy!'),
-          buildNodeWithId(id2, 'Hello World!'),
-        ]);
 
       final ops = diffDocuments(documentB, documentA);
       expect(ops.length, 1);
@@ -99,10 +93,7 @@ void main() async {
       expect((op as DeleteOperation).path, [1]);
 
       final expectation = jsonEncode(documentA.toJson());
-      expect(
-        jsonEncode((await apply(documentB, ops)).toJson()),
-        expectation,
-      );
+      expect(jsonEncode((await apply(documentB, ops)).toJson()), expectation);
     });
 
     test('continuous insert ', () async {
@@ -112,36 +103,28 @@ void main() async {
       final id4 = Uuid().v4();
       final id5 = Uuid().v4();
       final documentA = blankDoc()
+        ..insert([0], [buildNodeWithId(id1, 'Hello AppFlowy!')]);
+      final documentB = blankDoc()
         ..insert(
           [0],
-          [buildNodeWithId(id1, 'Hello AppFlowy!')],
+          [
+            buildNodeWithId(id1, 'Hello AppFlowy!'),
+            buildNodeWithId(id2, '1'),
+            buildNodeWithId(id3, '2'),
+            buildNodeWithId(id4, '3'),
+            buildNodeWithId(id5, '4'),
+          ],
         );
-      final documentB = blankDoc()
-        ..insert([
-          0,
-        ], [
-          buildNodeWithId(id1, 'Hello AppFlowy!'),
-          buildNodeWithId(id2, '1'),
-          buildNodeWithId(id3, '2'),
-          buildNodeWithId(id4, '3'),
-          buildNodeWithId(id5, '4'),
-        ]);
 
       final ops = diffDocuments(documentA, documentB);
       expect(ops.length, 1);
       final op = ops.first;
       expect(op, isA<InsertOperation>());
       expect((op as InsertOperation).path, [1]);
-      expect(
-        op.nodes.map((e) => e.delta!.toPlainText()),
-        ['1', '2', '3', '4'],
-      );
+      expect(op.nodes.map((e) => e.delta!.toPlainText()), ['1', '2', '3', '4']);
 
       final expectation = jsonEncode(documentB.toJson());
-      expect(
-        jsonEncode((await apply(documentA, ops)).toJson()),
-        expectation,
-      );
+      expect(jsonEncode((await apply(documentA, ops)).toJson()), expectation);
     });
 
     test('continuous delete ', () async {
@@ -162,27 +145,17 @@ void main() async {
           ],
         );
       final documentB = blankDoc()
-        ..insert([
-          0,
-        ], [
-          buildNodeWithId(id1, 'Hello AppFlowy!'),
-        ]);
+        ..insert([0], [buildNodeWithId(id1, 'Hello AppFlowy!')]);
 
       final ops = diffDocuments(documentA, documentB);
       expect(ops.length, 1);
       final op = ops.first;
       expect(op, isA<DeleteOperation>());
       expect((op as DeleteOperation).path, [1]);
-      expect(
-        op.nodes.map((e) => e.delta!.toPlainText()),
-        ['1', '2', '3', '4'],
-      );
+      expect(op.nodes.map((e) => e.delta!.toPlainText()), ['1', '2', '3', '4']);
 
       final expectation = jsonEncode(documentB.toJson());
-      expect(
-        jsonEncode((await apply(documentA, ops)).toJson()),
-        expectation,
-      );
+      expect(jsonEncode((await apply(documentA, ops)).toJson()), expectation);
     });
   });
 }

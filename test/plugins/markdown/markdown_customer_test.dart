@@ -11,7 +11,13 @@ void main() async {
 ''';
       final result = markdownToDocument(markdown);
       expect(
-        result.nodeAtPath([0])!.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        result
+            .nodeAtPath([0])!
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'bulleted_list',
           'data': {
@@ -25,7 +31,13 @@ void main() async {
         },
       );
       expect(
-        result.nodeAtPath([1])!.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        result
+            .nodeAtPath([1])!
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'bulleted_list',
           'data': {
@@ -39,7 +51,13 @@ void main() async {
         },
       );
       expect(
-        result.nodeAtPath([2])!.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        result
+            .nodeAtPath([2])!
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'bulleted_list',
           'data': {
@@ -70,7 +88,13 @@ Here is the complete Dart file with the above steps:
 ''';
       final result = markdownToDocument(markdown);
       expect(
-        result.nodeAtPath([0])!.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        result
+            .nodeAtPath([0])!
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'numbered_list',
           'data': {
@@ -84,7 +108,13 @@ Here is the complete Dart file with the above steps:
         },
       );
       expect(
-        result.nodeAtPath([2])!.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        result
+            .nodeAtPath([2])!
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'numbered_list',
           'data': {
@@ -99,7 +129,13 @@ Here is the complete Dart file with the above steps:
         },
       );
       expect(
-        result.nodeAtPath([4])!.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        result
+            .nodeAtPath([4])!
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'numbered_list',
           'data': {

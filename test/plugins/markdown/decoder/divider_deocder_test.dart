@@ -4,9 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() async {
   group('ordered list decoder', () {
     final parser = DocumentMarkdownDecoder(
-      markdownElementParsers: [
-        const MarkdownDividerParserV2(),
-      ],
+      markdownElementParsers: [const MarkdownDividerParserV2()],
     );
 
     test('convert ---', () {
@@ -17,9 +15,7 @@ void main() async {
           includeDatabaseIndex: false,
           includeRank: false,
         ),
-        {
-          'type': 'divider',
-        },
+        {'type': 'divider'},
       );
     });
 

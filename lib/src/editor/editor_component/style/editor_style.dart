@@ -140,32 +140,33 @@ class EditorStyle extends Equatable {
     this.maxWidth,
     this.seperatorPadding,
     this.inBlockPadding,
-  })  : padding = padding ?? const EdgeInsets.symmetric(horizontal: 100),
-        cursorColor = cursorColor ?? const Color(0xFF00BCF0),
-        selectionColor =
-            selectionColor ?? const Color.fromARGB(53, 111, 201, 231),
-        highlightColor =
-            highlightColor ?? const Color.fromARGB(53, 209, 14, 154),
-        highlightAreaColor =
-            highlightAreaColor ?? const Color.fromARGB(53, 209, 14, 154),
-        defaultNodeBackgroundColor =
-            defaultNodeBackgroundColor ?? const Color(0xFFF5F5F5),
-        textStyleConfiguration = textStyleConfiguration ??
-            const TextStyleConfiguration(
-              text: TextStyle(fontSize: 16, color: Colors.black),
-            ),
-        textSpanDecorator =
-            textSpanDecorator ?? defaultTextSpanDecoratorForAttribute,
-        magnifierSize = Size.zero,
-        mobileDragHandleBallSize = Size.zero,
-        mobileDragHandleWidth = 0.0,
-        enableHapticFeedbackOnAndroid = false,
-        dragHandleColor = Colors.transparent,
-        mobileDragHandleTopExtend = null,
-        mobileDragHandleWidthExtend = null,
-        mobileDragHandleLeftExtend = null,
-        mobileDragHandleHeightExtend = null,
-        autoDismissCollapsedHandleDuration = const Duration(seconds: 0);
+  }) : padding = padding ?? const EdgeInsets.symmetric(horizontal: 100),
+       cursorColor = cursorColor ?? const Color(0xFF00BCF0),
+       selectionColor =
+           selectionColor ?? const Color.fromARGB(53, 111, 201, 231),
+       highlightColor =
+           highlightColor ?? const Color.fromARGB(53, 209, 14, 154),
+       highlightAreaColor =
+           highlightAreaColor ?? const Color.fromARGB(53, 209, 14, 154),
+       defaultNodeBackgroundColor =
+           defaultNodeBackgroundColor ?? const Color(0xFFF5F5F5),
+       textStyleConfiguration =
+           textStyleConfiguration ??
+           const TextStyleConfiguration(
+             text: TextStyle(fontSize: 16, color: Colors.black),
+           ),
+       textSpanDecorator =
+           textSpanDecorator ?? defaultTextSpanDecoratorForAttribute,
+       magnifierSize = Size.zero,
+       mobileDragHandleBallSize = Size.zero,
+       mobileDragHandleWidth = 0.0,
+       enableHapticFeedbackOnAndroid = false,
+       dragHandleColor = Colors.transparent,
+       mobileDragHandleTopExtend = null,
+       mobileDragHandleWidthExtend = null,
+       mobileDragHandleLeftExtend = null,
+       mobileDragHandleHeightExtend = null,
+       autoDismissCollapsedHandleDuration = const Duration(seconds: 0);
 
   const EditorStyle.mobile({
     EdgeInsets? padding,
@@ -193,23 +194,23 @@ class EditorStyle extends Equatable {
     this.autoDismissCollapsedHandleDuration = const Duration(seconds: 3),
     this.seperatorPadding,
     this.inBlockPadding,
-  })  : padding = padding ?? const EdgeInsets.symmetric(horizontal: 20),
-        cursorColor = cursorColor ?? const Color(0xFF00BCF0),
-        dragHandleColor = dragHandleColor ?? const Color(0xFF00BCF0),
-        selectionColor =
-            selectionColor ?? const Color.fromARGB(53, 111, 201, 231),
-        highlightColor =
-            highlightColor ?? const Color.fromARGB(53, 28, 164, 35),
-        highlightAreaColor =
-            highlightAreaColor ?? const Color.fromARGB(53, 28, 164, 35),
-        defaultNodeBackgroundColor =
-            defaultNodeBackgroundColor ?? const Color(0xFFF5F5F5),
-        textStyleConfiguration = textStyleConfiguration ??
-            const TextStyleConfiguration(
-              text: TextStyle(fontSize: 16, color: Colors.black),
-            ),
-        textSpanDecorator =
-            textSpanDecorator ?? mobileTextSpanDecoratorForAttribute;
+  }) : padding = padding ?? const EdgeInsets.symmetric(horizontal: 20),
+       cursorColor = cursorColor ?? const Color(0xFF00BCF0),
+       dragHandleColor = dragHandleColor ?? const Color(0xFF00BCF0),
+       selectionColor =
+           selectionColor ?? const Color.fromARGB(53, 111, 201, 231),
+       highlightColor = highlightColor ?? const Color.fromARGB(53, 28, 164, 35),
+       highlightAreaColor =
+           highlightAreaColor ?? const Color.fromARGB(53, 28, 164, 35),
+       defaultNodeBackgroundColor =
+           defaultNodeBackgroundColor ?? const Color(0xFFF5F5F5),
+       textStyleConfiguration =
+           textStyleConfiguration ??
+           const TextStyleConfiguration(
+             text: TextStyle(fontSize: 16, color: Colors.black),
+           ),
+       textSpanDecorator =
+           textSpanDecorator ?? mobileTextSpanDecoratorForAttribute;
 
   EditorStyle copyWith({
     EdgeInsets? padding,
@@ -271,7 +272,8 @@ class EditorStyle extends Equatable {
           mobileDragHandleLeftExtend ?? this.mobileDragHandleLeftExtend,
       mobileDragHandleHeightExtend:
           mobileDragHandleHeightExtend ?? this.mobileDragHandleHeightExtend,
-      autoDismissCollapsedHandleDuration: autoDismissCollapsedHandleDuration ??
+      autoDismissCollapsedHandleDuration:
+          autoDismissCollapsedHandleDuration ??
           this.autoDismissCollapsedHandleDuration,
       seperatorPadding: seperatorPadding ?? this.seperatorPadding,
       inBlockPadding: inBlockPadding ?? this.inBlockPadding,
@@ -280,29 +282,29 @@ class EditorStyle extends Equatable {
 
   @override
   List<Object?> get props => [
-        padding,
-        cursorColor,
-        dragHandleColor,
-        selectionColor,
-        highlightColor,
-        highlightAreaColor,
-        defaultNodeBackgroundColor,
-        textStyleConfiguration,
-        textSpanDecorator,
-        textSpanOverlayBuilder,
-        magnifierSize,
-        mobileDragHandleBallSize,
-        mobileDragHandleWidth,
-        enableHapticFeedbackOnAndroid,
-        cursorWidth,
-        textScaleFactor,
-        maxWidth,
-        mobileDragHandleTopExtend,
-        mobileDragHandleWidthExtend,
-        mobileDragHandleLeftExtend,
-        mobileDragHandleHeightExtend,
-        autoDismissCollapsedHandleDuration,
-        seperatorPadding,
-        inBlockPadding,
-      ];
+    padding,
+    cursorColor,
+    dragHandleColor,
+    selectionColor,
+    highlightColor,
+    highlightAreaColor,
+    defaultNodeBackgroundColor,
+    textStyleConfiguration,
+    textSpanDecorator,
+    textSpanOverlayBuilder,
+    magnifierSize,
+    mobileDragHandleBallSize,
+    mobileDragHandleWidth,
+    enableHapticFeedbackOnAndroid,
+    cursorWidth,
+    textScaleFactor,
+    maxWidth,
+    mobileDragHandleTopExtend,
+    mobileDragHandleWidthExtend,
+    mobileDragHandleLeftExtend,
+    mobileDragHandleHeightExtend,
+    autoDismissCollapsedHandleDuration,
+    seperatorPadding,
+    inBlockPadding,
+  ];
 }

@@ -1399,32 +1399,17 @@ class AppFlowyEditorLocalizations {
 
   /// `toggle H1`
   String get cmdToggleH1 {
-    return Intl.message(
-      'toggle H1',
-      name: 'cmdToggleH1',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('toggle H1', name: 'cmdToggleH1', desc: '', args: []);
   }
 
   /// `toggle H2`
   String get cmdToggleH2 {
-    return Intl.message(
-      'toggle H2',
-      name: 'cmdToggleH2',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('toggle H2', name: 'cmdToggleH2', desc: '', args: []);
   }
 
   /// `toggle H3`
   String get cmdToggleH3 {
-    return Intl.message(
-      'toggle H3',
-      name: 'cmdToggleH3',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('toggle H3', name: 'cmdToggleH3', desc: '', args: []);
   }
 
   /// `toggle body`

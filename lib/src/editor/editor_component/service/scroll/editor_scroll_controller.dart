@@ -62,8 +62,10 @@ class EditorScrollController {
   ///
   /// Example: with the viewport showing nodes 2..9 of a longer document,
   /// the value would be `(1, 8)` (0-indexed).
-  final ValueNotifier<(int, int)> visibleRangeNotifier =
-      ValueNotifier((-1, -1));
+  final ValueNotifier<(int, int)> visibleRangeNotifier = ValueNotifier((
+    -1,
+    -1,
+  ));
 
   void dispose() {
     scrollController.removeListener(_syncOffsetNotifier);
@@ -92,11 +94,7 @@ class EditorScrollController {
     final target = shrinkWrap
         ? offset.clamp(position.minScrollExtent, position.maxScrollExtent)
         : max(0.0, offset);
-    await scrollController.animateTo(
-      target,
-      duration: duration,
-      curve: curve,
-    );
+    await scrollController.animateTo(target, duration: duration, curve: curve);
   }
 
   void jumpTo({required double offset}) {
@@ -135,11 +133,7 @@ class EditorScrollController {
       position.minScrollExtent,
       position.maxScrollExtent,
     );
-    await scrollController.animateTo(
-      target,
-      duration: duration,
-      curve: curve,
-    );
+    await scrollController.animateTo(target, duration: duration, curve: curve);
   }
 
   /// Relative non-animated scroll, clamped to `maxScrollExtent` (legacy

@@ -32,11 +32,15 @@ void main() async {
 
       expect(tableNode.colsLen, 1);
       expect(
-        tableNode.getCell(0, 0).children.first.toJson(
-          includeId: false,
-          includeDatabaseIndex: false,
-          includeRank: false,
-        ),
+        tableNode
+            .getCell(0, 0)
+            .children
+            .first
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           "type": "paragraph",
           "data": {
@@ -70,11 +74,15 @@ void main() async {
 
       expect(tableNode.rowsLen, 1);
       expect(
-        tableNode.getCell(0, 0).children.first.toJson(
-          includeId: false,
-          includeDatabaseIndex: false,
-          includeRank: false,
-        ),
+        tableNode
+            .getCell(0, 0)
+            .children
+            .first
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           "type": "paragraph",
           "data": {
@@ -226,11 +234,15 @@ void main() async {
 
       expect(tableNode.colsLen, 3);
       expect(
-        tableNode.getCell(2, 1).children.first.toJson(
-          includeId: false,
-          includeDatabaseIndex: false,
-          includeRank: false,
-        ),
+        tableNode
+            .getCell(2, 1)
+            .children
+            .first
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           "type": "paragraph",
           "data": {"delta": []},
@@ -261,11 +273,15 @@ void main() async {
 
       expect(tableNode.rowsLen, 3);
       expect(
-        tableNode.getCell(0, 2).children.first.toJson(
-          includeId: false,
-          includeDatabaseIndex: false,
-          includeRank: false,
-        ),
+        tableNode
+            .getCell(0, 2)
+            .children
+            .first
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           "type": "paragraph",
           "data": {"delta": []},

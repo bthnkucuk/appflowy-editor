@@ -9,14 +9,13 @@ void main() async {
   });
 
   group('page_up_down_handler_test.dart', () {
-    testWidgets('Presses PageUp and pageDown key in large document',
-        (tester) async {
+    testWidgets('Presses PageUp and pageDown key in large document', (
+      tester,
+    ) async {
       const text = 'Welcome to Appflowy 😁';
       final editor = tester.editor..addParagraphs(1000, initialText: text);
       await editor.startTesting();
-      await editor.updateSelection(
-        Selection.single(path: [0], startOffset: 0),
-      );
+      await editor.updateSelection(Selection.single(path: [0], startOffset: 0));
 
       final scrollService = editor.editorState.service.scrollService!;
       final onePageHeight = scrollService.onePageHeight!;

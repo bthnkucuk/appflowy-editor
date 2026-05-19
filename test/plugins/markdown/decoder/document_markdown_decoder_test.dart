@@ -352,7 +352,14 @@ If you have questions or feedback, please submit an issue on Github or join the 
 
       final result = markdownToDocument(markdown);
       final data = jsonDecode(example);
-      expect(result.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), data);
+      expect(
+        result.toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
+        data,
+      );
     });
 
     test('test nested list', () async {
@@ -376,7 +383,14 @@ If you have questions or feedback, please submit an issue on Github or join the 
 ''';
       final result = markdownToDocument(markdown);
       final data = jsonDecode(example4);
-      expect(result.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), data);
+      expect(
+        result.toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
+        data,
+      );
     });
   });
 }

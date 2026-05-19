@@ -50,7 +50,7 @@ void main() {
                     {
                       'insert': 'b',
                       'data': {'bold': true},
-                    }
+                    },
                   ],
                 },
               },
@@ -70,7 +70,7 @@ void main() {
                     {
                       'insert': 'c',
                       'data': {'italic': true},
-                    }
+                    },
                   ],
                 },
               },
@@ -90,9 +90,9 @@ void main() {
                     {'insert': 'd'},
                   ],
                 },
-              }
+              },
             ],
-          }
+          },
         ],
       });
 
@@ -107,7 +107,15 @@ void main() {
       expect(tableNode.getRowHeight(1), tableNode.config.rowDefaultHeight);
 
       expect(
-        tableNode.getCell(0, 0).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        tableNode
+            .getCell(0, 0)
+            .children
+            .first
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'heading',
           'data': {
@@ -119,7 +127,15 @@ void main() {
         },
       );
       expect(
-        tableNode.getCell(1, 0).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        tableNode
+            .getCell(1, 0)
+            .children
+            .first
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'paragraph',
           'data': {
@@ -127,14 +143,22 @@ void main() {
               {
                 'insert': 'c',
                 'data': {'italic': true},
-              }
+              },
             ],
           },
         },
       );
 
       expect(
-        tableNode.getCell(1, 1).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        tableNode
+            .getCell(1, 1)
+            .children
+            .first
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'paragraph',
           'data': {
@@ -190,7 +214,7 @@ void main() {
                     {
                       'insert': 'c',
                       'data': {'italic': true},
-                    }
+                    },
                   ],
                 },
               },
@@ -210,9 +234,9 @@ void main() {
                     {'insert': 'd'},
                   ],
                 },
-              }
+              },
             ],
-          }
+          },
         ],
       };
 
@@ -242,7 +266,15 @@ void main() {
       expect(tableNode.getRowHeight(1), config.rowDefaultHeight);
 
       expect(
-        tableNode.getCell(0, 0).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        tableNode
+            .getCell(0, 0)
+            .children
+            .first
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'paragraph',
           'data': {
@@ -253,21 +285,35 @@ void main() {
         },
       );
       expect(
-        tableNode.getCell(1, 0).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        tableNode
+            .getCell(1, 0)
+            .children
+            .first
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'paragraph',
           'data': {
             'delta': [
-              {
-                'insert': '3',
-              }
+              {'insert': '3'},
             ],
           },
         },
       );
 
       expect(
-        tableNode.getCell(1, 1).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        tableNode
+            .getCell(1, 1)
+            .children
+            .first
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'paragraph',
           'data': {
@@ -285,13 +331,10 @@ void main() {
         colDefaultWidth: 20,
         rowDefaultHeight: 30,
       );
-      final tableNode = TableNode.fromList(
-        [
-          ['1', '2'],
-          ['3', '4'],
-        ],
-        config: config,
-      );
+      final tableNode = TableNode.fromList([
+        ['1', '2'],
+        ['3', '4'],
+      ], config: config);
 
       expect(tableNode.config.colMinimumWidth, config.colMinimumWidth);
       expect(tableNode.config.colDefaultWidth, config.colDefaultWidth);
@@ -302,14 +345,20 @@ void main() {
       expect(tableNode.getRowHeight(1), config.rowDefaultHeight);
 
       expect(
-        tableNode.getCell(1, 0).children.first.toJson(includeId: false, includeDatabaseIndex: false, includeRank: false),
+        tableNode
+            .getCell(1, 0)
+            .children
+            .first
+            .toJson(
+              includeId: false,
+              includeDatabaseIndex: false,
+              includeRank: false,
+            ),
         {
           'type': 'paragraph',
           'data': {
             'delta': [
-              {
-                'insert': '3',
-              }
+              {'insert': '3'},
             ],
           },
         },
@@ -317,15 +366,16 @@ void main() {
     });
 
     test(
-        'default constructor (from list of list of strings) - error when columns length mismatch',
-        () {
-      final listData = [
-        ['1', '2'],
-        ['3'],
-      ];
+      'default constructor (from list of list of strings) - error when columns length mismatch',
+      () {
+        final listData = [
+          ['1', '2'],
+          ['3'],
+        ];
 
-      expect(() => TableNode.fromList(listData), throwsAssertionError);
-    });
+        expect(() => TableNode.fromList(listData), throwsAssertionError);
+      },
+    );
 
     test('colsHeight', () {
       final tableNode = TableNode.fromList([

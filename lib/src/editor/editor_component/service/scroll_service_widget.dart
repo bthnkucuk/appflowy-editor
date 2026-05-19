@@ -23,8 +23,9 @@ class ScrollServiceWidget extends StatefulWidget {
 
 class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
     implements AppFlowyScrollService {
-  final _forwardKey =
-      GlobalKey(debugLabel: 'forward_to_platform_scroll_service');
+  final _forwardKey = GlobalKey(
+    debugLabel: 'forward_to_platform_scroll_service',
+  );
   late AppFlowyScrollService forward =
       _forwardKey.currentState as AppFlowyScrollService;
 
@@ -65,30 +66,21 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
     );
   }
 
-  Widget _buildDesktopScrollService(
-    BuildContext context,
-  ) {
-    return DesktopScrollService(
-      key: _forwardKey,
-      child: widget.child,
-    );
+  Widget _buildDesktopScrollService(BuildContext context) {
+    return DesktopScrollService(key: _forwardKey, child: widget.child);
   }
 
-  Widget _buildMobileScrollService(
-    BuildContext context,
-  ) {
-    return MobileScrollService(
-      key: _forwardKey,
-      child: widget.child,
-    );
+  Widget _buildMobileScrollService(BuildContext context) {
+    return MobileScrollService(key: _forwardKey, child: widget.child);
   }
 
   void _onSelectionChanged() {
     // should auto scroll after the cursor or selection updated.
     final selection = editorState.selection;
     if (selection == null ||
-        [SelectionUpdateReason.selectAll]
-            .contains(editorState.selectionUpdateReason)) {
+        [
+          SelectionUpdateReason.selectAll,
+        ].contains(editorState.selectionUpdateReason)) {
       return;
     }
 
@@ -124,7 +116,8 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
         case 'MobileSelectionDragMode.cursor':
           targetRect = selectionRects.last;
           if (lastSelection != null) {
-            final isMovingUp = selection.end.path < lastSelection!.end.path ||
+            final isMovingUp =
+                selection.end.path < lastSelection!.end.path ||
                 (selection.end.path.equals(lastSelection!.end.path) &&
                     selection.end.offset < lastSelection!.end.offset);
             direction = isMovingUp ? AxisDirection.up : AxisDirection.down;
@@ -207,8 +200,7 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
   void scrollTo(
     double dy, {
     Duration duration = const Duration(milliseconds: 150),
-  }) =>
-      forward.scrollTo(dy, duration: duration);
+  }) => forward.scrollTo(dy, duration: duration);
 
   @override
   void jumpTo(int index) => forward.jumpTo(index);

@@ -17,14 +17,21 @@ void main() async {
 3. Item 3
 ''');
       for (var i = 0; i < result.root.children.length; i++) {
-        expect(result.root.children[i].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
-          'type': 'numbered_list',
-          'data': {
-            'delta': [
-              {'insert': 'Item ${i + 1}'},
-            ],
+        expect(
+          result.root.children[i].toJson(
+            includeId: false,
+            includeDatabaseIndex: false,
+            includeRank: false,
+          ),
+          {
+            'type': 'numbered_list',
+            'data': {
+              'delta': [
+                {'insert': 'Item ${i + 1}'},
+              ],
+            },
           },
-        });
+        );
       }
     });
 
@@ -35,40 +42,54 @@ void main() async {
     2. Item 1.2
 2. Item 2
 ''');
-      expect(result.root.children[0].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
-        'type': 'numbered_list',
-        'data': {
-          'delta': [
-            {'insert': 'Item 1'},
+      expect(
+        result.root.children[0].toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
+        {
+          'type': 'numbered_list',
+          'data': {
+            'delta': [
+              {'insert': 'Item 1'},
+            ],
+          },
+          'children': [
+            {
+              'type': 'numbered_list',
+              'data': {
+                'delta': [
+                  {'insert': 'Item 1.1'},
+                ],
+              },
+            },
+            {
+              'type': 'numbered_list',
+              'data': {
+                'delta': [
+                  {'insert': 'Item 1.2'},
+                ],
+              },
+            },
           ],
         },
-        'children': [
-          {
-            'type': 'numbered_list',
-            'data': {
-              'delta': [
-                {'insert': 'Item 1.1'},
-              ],
-            },
+      );
+      expect(
+        result.root.children[1].toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
+        {
+          'type': 'numbered_list',
+          'data': {
+            'delta': [
+              {'insert': 'Item 2'},
+            ],
           },
-          {
-            'type': 'numbered_list',
-            'data': {
-              'delta': [
-                {'insert': 'Item 1.2'},
-              ],
-            },
-          },
-        ],
-      });
-      expect(result.root.children[1].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
-        'type': 'numbered_list',
-        'data': {
-          'delta': [
-            {'insert': 'Item 2'},
-          ],
         },
-      });
+      );
     });
 
     test('if no numbered', () {

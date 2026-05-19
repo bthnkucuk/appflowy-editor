@@ -12,11 +12,7 @@ class TableOfContent extends Equatable {
     required this.selection,
   });
 
-  TableOfContent copyWith({
-    String? text,
-    int? level,
-    Selection? selection,
-  }) {
+  TableOfContent copyWith({String? text, int? level, Selection? selection}) {
     return TableOfContent(
       text: text ?? this.text,
       level: level ?? this.level,

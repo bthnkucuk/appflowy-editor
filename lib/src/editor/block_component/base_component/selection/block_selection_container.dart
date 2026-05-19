@@ -103,9 +103,7 @@ class BlockSelectionContainer extends StatelessWidget {
             delegate: delegate,
             remoteSelections: remoteSelection!,
             supportTypes: supportTypes
-                .where(
-                  (element) => element != BlockSelectionType.cursor,
-                )
+                .where((element) => element != BlockSelectionType.cursor)
                 .toList(),
           ),
         // block selection or selection area

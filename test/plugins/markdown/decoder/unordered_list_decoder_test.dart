@@ -17,14 +17,21 @@ void main() async {
 - Item 3
 ''');
       for (var i = 0; i < result.root.children.length; i++) {
-        expect(result.root.children[i].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
-          'type': 'bulleted_list',
-          'data': {
-            'delta': [
-              {'insert': 'Item ${i + 1}'},
-            ],
+        expect(
+          result.root.children[i].toJson(
+            includeId: false,
+            includeDatabaseIndex: false,
+            includeRank: false,
+          ),
+          {
+            'type': 'bulleted_list',
+            'data': {
+              'delta': [
+                {'insert': 'Item ${i + 1}'},
+              ],
+            },
           },
-        });
+        );
       }
     });
 
@@ -35,40 +42,54 @@ void main() async {
     - Item 1.2
 - Item 2
 ''');
-      expect(result.root.children[0].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
-        'type': 'bulleted_list',
-        'data': {
-          'delta': [
-            {'insert': 'Item 1'},
+      expect(
+        result.root.children[0].toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
+        {
+          'type': 'bulleted_list',
+          'data': {
+            'delta': [
+              {'insert': 'Item 1'},
+            ],
+          },
+          'children': [
+            {
+              'type': 'bulleted_list',
+              'data': {
+                'delta': [
+                  {'insert': 'Item 1.1'},
+                ],
+              },
+            },
+            {
+              'type': 'bulleted_list',
+              'data': {
+                'delta': [
+                  {'insert': 'Item 1.2'},
+                ],
+              },
+            },
           ],
         },
-        'children': [
-          {
-            'type': 'bulleted_list',
-            'data': {
-              'delta': [
-                {'insert': 'Item 1.1'},
-              ],
-            },
+      );
+      expect(
+        result.root.children[1].toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
+        {
+          'type': 'bulleted_list',
+          'data': {
+            'delta': [
+              {'insert': 'Item 2'},
+            ],
           },
-          {
-            'type': 'bulleted_list',
-            'data': {
-              'delta': [
-                {'insert': 'Item 1.2'},
-              ],
-            },
-          },
-        ],
-      });
-      expect(result.root.children[1].toJson(includeId: false, includeDatabaseIndex: false, includeRank: false), {
-        'type': 'bulleted_list',
-        'data': {
-          'delta': [
-            {'insert': 'Item 2'},
-          ],
         },
-      });
+      );
     });
 
     test('if no - or *', () {

@@ -48,11 +48,7 @@ void main() async {
         'op': 'insert',
         'path': [0],
         'nodes': [
-          {
-            'id': 'n1',
-            'databaseIndex': -1.0,
-            'type': 'example',
-          }
+          {'id': 'n1', 'databaseIndex': -1.0, 'type': 'example'},
         ],
       });
       expect(InsertOperation.fromJson(json), op);
@@ -82,11 +78,7 @@ void main() async {
         'op': 'delete',
         'path': [0],
         'nodes': [
-          {
-            'id': 'n1',
-            'databaseIndex': -1.0,
-            'type': 'example',
-          }
+          {'id': 'n1', 'databaseIndex': -1.0, 'type': 'example'},
         ],
       });
       expect(DeleteOperation.fromJson(json), op);

@@ -251,10 +251,9 @@ class _MobileHighlightServiceWidgetState
     final panStartOffset = dy == null
         ? _panStartOffset!
         : _panStartOffset!.translate(0, _panStartScrollDy! - dy);
-    final end = getNodeInOffset(panEndOffset)
-        ?.selectable
-        ?.getSelectionInRange(panStartOffset, panEndOffset)
-        .end;
+    final end = getNodeInOffset(
+      panEndOffset,
+    )?.selectable?.getSelectionInRange(panStartOffset, panEndOffset).end;
 
     Selection? newSelection;
 
@@ -310,13 +309,15 @@ class _MobileHighlightServiceWidgetState
 
     currentSelectedNodes = nodes;
 
-    final backwardNodes =
-        selection.isBackward ? nodes : nodes.reversed.toList(growable: false);
+    final backwardNodes = selection.isBackward
+        ? nodes
+        : nodes.reversed.toList(growable: false);
     final normalizedSelection = selection.normalized;
     assert(normalizedSelection.isBackward);
 
-    AppFlowyEditorLog.selection
-        .debug('update selection areas, $normalizedSelection');
+    AppFlowyEditorLog.selection.debug(
+      'update selection areas, $normalizedSelection',
+    );
 
     for (var i = 0; i < backwardNodes.length; i++) {
       final node = backwardNodes[i];
@@ -381,6 +382,5 @@ class _MobileHighlightServiceWidgetState
   DropTargetRenderData? getDropTargetRenderData(
     Offset offset, {
     DragTargetNodeInterceptor? interceptor,
-  }) =>
-      null;
+  }) => null;
 }

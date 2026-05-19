@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+///TODO(bthnkucuk): This is a temporary solution to export the document... UI needs to be improved.
 /// Supported export targets for [AppFlowyEditorExportSheet].
 enum AppFlowyExportFormat {
   json('json', 'application/json'),
@@ -182,9 +183,10 @@ class _AppFlowyEditorExportSheetState extends State<AppFlowyEditorExportSheet> {
         final font = await widget.pdfFont?.call();
         final fontFallback =
             await widget.pdfFontFallback?.call() ?? const <pw.Font>[];
-        final pdf =
-            await PdfHTMLEncoder(font: font, fontFallback: fontFallback)
-                .convert(markdown);
+        final pdf = await PdfHTMLEncoder(
+          font: font,
+          fontFallback: fontFallback,
+        ).convert(markdown);
         // Stage on disk and drop the byte buffer immediately so the
         // returned XFile only retains a path, not the whole document.
         return _writeBytes(

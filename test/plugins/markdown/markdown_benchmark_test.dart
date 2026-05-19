@@ -26,12 +26,13 @@ void main() {
       return;
     }
 
-    final files = fixturesDir
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.toLowerCase().endsWith('.md'))
-        .toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
+    final files =
+        fixturesDir
+            .listSync()
+            .whereType<File>()
+            .where((f) => f.path.toLowerCase().endsWith('.md'))
+            .toList()
+          ..sort((a, b) => a.path.compareTo(b.path));
 
     if (files.isEmpty) {
       // ignore: avoid_print
@@ -40,8 +41,10 @@ void main() {
     }
 
     // ignore: avoid_print
-    print('\nmarkdownToDocument benchmark (warmup=$_warmupIters, '
-        'measure=$_measureIters)');
+    print(
+      '\nmarkdownToDocument benchmark (warmup=$_warmupIters, '
+      'measure=$_measureIters)',
+    );
     // ignore: avoid_print
     print('=' * 78);
     // ignore: avoid_print

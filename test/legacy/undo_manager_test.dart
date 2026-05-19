@@ -49,11 +49,7 @@ void main() async {
   test('Multi-step redo preserves redo stack', () {
     final editorState = EditorState(
       document: Document(
-        root: pageNode(
-          children: [
-            paragraphNode(text: ''),
-          ],
-        ),
+        root: pageNode(children: [paragraphNode(text: '')]),
       ),
     );
     editorState.disableSealTimer = true;
@@ -71,44 +67,29 @@ void main() async {
     }
 
     // Document should be "ABC"
-    expect(
-      editorState.document.nodeAtPath([0])!.delta!.toPlainText(),
-      'ABC',
-    );
+    expect(editorState.document.nodeAtPath([0])!.delta!.toPlainText(), 'ABC');
     expect(editorState.undoManager.undoStack.length, 3);
     expect(editorState.undoManager.redoStack.length, 0);
 
     // Undo 3 times → back to empty
     editorState.undoManager.undo();
-    expect(
-      editorState.document.nodeAtPath([0])!.delta!.toPlainText(),
-      'AB',
-    );
+    expect(editorState.document.nodeAtPath([0])!.delta!.toPlainText(), 'AB');
     expect(editorState.undoManager.undoStack.length, 2);
     expect(editorState.undoManager.redoStack.length, 1);
 
     editorState.undoManager.undo();
-    expect(
-      editorState.document.nodeAtPath([0])!.delta!.toPlainText(),
-      'A',
-    );
+    expect(editorState.document.nodeAtPath([0])!.delta!.toPlainText(), 'A');
     expect(editorState.undoManager.undoStack.length, 1);
     expect(editorState.undoManager.redoStack.length, 2);
 
     editorState.undoManager.undo();
-    expect(
-      editorState.document.nodeAtPath([0])!.delta!.toPlainText(),
-      '',
-    );
+    expect(editorState.document.nodeAtPath([0])!.delta!.toPlainText(), '');
     expect(editorState.undoManager.undoStack.length, 0);
     expect(editorState.undoManager.redoStack.length, 3);
 
     // Redo 3 times → should restore each step
     editorState.undoManager.redo();
-    expect(
-      editorState.document.nodeAtPath([0])!.delta!.toPlainText(),
-      'A',
-    );
+    expect(editorState.document.nodeAtPath([0])!.delta!.toPlainText(), 'A');
     expect(editorState.undoManager.undoStack.length, 1);
     expect(editorState.undoManager.redoStack.length, 2);
 
@@ -116,20 +97,14 @@ void main() async {
     editorState.undoManager.undoStack.last.seal();
 
     editorState.undoManager.redo();
-    expect(
-      editorState.document.nodeAtPath([0])!.delta!.toPlainText(),
-      'AB',
-    );
+    expect(editorState.document.nodeAtPath([0])!.delta!.toPlainText(), 'AB');
     expect(editorState.undoManager.undoStack.length, 2);
     expect(editorState.undoManager.redoStack.length, 1);
 
     editorState.undoManager.undoStack.last.seal();
 
     editorState.undoManager.redo();
-    expect(
-      editorState.document.nodeAtPath([0])!.delta!.toPlainText(),
-      'ABC',
-    );
+    expect(editorState.document.nodeAtPath([0])!.delta!.toPlainText(), 'ABC');
     expect(editorState.undoManager.undoStack.length, 3);
     expect(editorState.undoManager.redoStack.length, 0);
   });
@@ -137,11 +112,7 @@ void main() async {
   test('New edit after undo still clears redo stack', () {
     final editorState = EditorState(
       document: Document(
-        root: pageNode(
-          children: [
-            paragraphNode(text: ''),
-          ],
-        ),
+        root: pageNode(children: [paragraphNode(text: '')]),
       ),
     );
     editorState.disableSealTimer = true;
@@ -160,10 +131,7 @@ void main() async {
 
     // Undo once → "A", redo stack should have 1 item
     editorState.undoManager.undo();
-    expect(
-      editorState.document.nodeAtPath([0])!.delta!.toPlainText(),
-      'A',
-    );
+    expect(editorState.document.nodeAtPath([0])!.delta!.toPlainText(), 'A');
     expect(editorState.undoManager.redoStack.isNonEmpty, true);
 
     // Make a NEW edit (not redo) → redo stack should be cleared
@@ -177,11 +145,7 @@ void main() async {
   test('Undo after redo restores previous state', () {
     final editorState = EditorState(
       document: Document(
-        root: pageNode(
-          children: [
-            paragraphNode(text: ''),
-          ],
-        ),
+        root: pageNode(children: [paragraphNode(text: '')]),
       ),
     );
     editorState.disableSealTimer = true;
@@ -227,11 +191,7 @@ void main() async {
   test('Partial undo then redo', () {
     final editorState = EditorState(
       document: Document(
-        root: pageNode(
-          children: [
-            paragraphNode(text: ''),
-          ],
-        ),
+        root: pageNode(children: [paragraphNode(text: '')]),
       ),
     );
     editorState.disableSealTimer = true;
@@ -268,11 +228,7 @@ void main() async {
   test('Interleaved undo and redo', () {
     final editorState = EditorState(
       document: Document(
-        root: pageNode(
-          children: [
-            paragraphNode(text: ''),
-          ],
-        ),
+        root: pageNode(children: [paragraphNode(text: '')]),
       ),
     );
     editorState.disableSealTimer = true;
@@ -312,11 +268,7 @@ void main() async {
   test('New edit mid-redo clears remaining redo stack', () {
     final editorState = EditorState(
       document: Document(
-        root: pageNode(
-          children: [
-            paragraphNode(text: ''),
-          ],
-        ),
+        root: pageNode(children: [paragraphNode(text: '')]),
       ),
     );
     editorState.disableSealTimer = true;
@@ -361,11 +313,7 @@ void main() async {
   test('Selection is preserved during multi-step redo', () {
     final editorState = EditorState(
       document: Document(
-        root: pageNode(
-          children: [
-            paragraphNode(text: ''),
-          ],
-        ),
+        root: pageNode(children: [paragraphNode(text: '')]),
       ),
     );
     editorState.disableSealTimer = true;
@@ -407,22 +355,14 @@ void main() async {
   test('TransactionSource.none does not record to either stack', () {
     final editorState = EditorState(
       document: Document(
-        root: pageNode(
-          children: [
-            paragraphNode(text: ''),
-          ],
-        ),
+        root: pageNode(children: [paragraphNode(text: '')]),
       ),
     );
     editorState.disableSealTimer = true;
 
     // Apply with source: none
     final transaction = editorState.transaction;
-    transaction.insertText(
-      editorState.document.nodeAtPath([0])!,
-      0,
-      'A',
-    );
+    transaction.insertText(editorState.document.nodeAtPath([0])!, 0, 'A');
     editorState.apply(
       transaction,
       options: const ApplyOptions(
@@ -432,10 +372,7 @@ void main() async {
     );
 
     // Document is modified but neither stack is affected
-    expect(
-      editorState.document.nodeAtPath([0])!.delta!.toPlainText(),
-      'A',
-    );
+    expect(editorState.document.nodeAtPath([0])!.delta!.toPlainText(), 'A');
     expect(editorState.undoManager.undoStack.length, 0);
     expect(editorState.undoManager.redoStack.length, 0);
   });

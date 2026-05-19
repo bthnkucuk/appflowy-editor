@@ -136,7 +136,8 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
           final editorState = context.read<EditorState>();
           final dragMode =
               editorState.selectionExtraInfo?[selectionDragModeKey];
-          final shouldBlink = widget.delegate.shouldCursorBlink &&
+          final shouldBlink =
+              widget.delegate.shouldCursorBlink &&
               dragMode != MobileSelectionDragMode.cursor;
 
           final cursor = Cursor(
@@ -235,8 +236,9 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
             start: selectionWithouthPath.start.copyWith(path: widget.node.path),
             end: selectionWithouthPath.end.copyWith(path: widget.node.path),
           );
-          final currentSectionRects =
-              widget.delegate.getRectsInSelection(selectionWithPath);
+          final currentSectionRects = widget.delegate.getRectsInSelection(
+            selectionWithPath,
+          );
           prevSection = selectionWithouthPath;
           setState(() {
             sectionRects = currentSectionRects;
@@ -403,13 +405,13 @@ class _HighlightAreaPainter extends CustomPainter {
       // Köşe radiuslarını belirle
       final topLeftRadius =
           previousRow == null || firstBox.left < previousRow.first.left
-              ? 6.0
-              : 0.0;
+          ? 6.0
+          : 0.0;
 
       final topRightRadius =
           previousRow == null || lastBox.right > previousRow.last.right
-              ? 6.0
-              : 0.0;
+          ? 6.0
+          : 0.0;
 
       final bottomLeftRadius =
           nextRow == null || firstBox.left < nextRow.first.left ? 6.0 : 0.0;
@@ -429,8 +431,9 @@ class _HighlightAreaPainter extends CustomPainter {
       path.addRSuperellipse(
         RSuperellipse.fromRectAndCorners(
           rect,
-          topLeft:
-              topLeftRadius > 0 ? Radius.circular(topLeftRadius) : Radius.zero,
+          topLeft: topLeftRadius > 0
+              ? Radius.circular(topLeftRadius)
+              : Radius.zero,
           topRight: topRightRadius > 0
               ? Radius.circular(topRightRadius)
               : Radius.zero,

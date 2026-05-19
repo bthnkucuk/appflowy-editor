@@ -110,17 +110,14 @@ class UndoManager {
   EditorState? state;
 
   UndoManager([int stackSize = 20])
-      : undoStack = FixedSizeStack(stackSize),
-        redoStack = FixedSizeStack(stackSize);
+    : undoStack = FixedSizeStack(stackSize),
+      redoStack = FixedSizeStack(stackSize);
 
   /// Record a transaction into the appropriate stack based on [source].
   ///
   /// Returns the [HistoryItem] that was created or updated, or null
   /// if the source is [TransactionSource.none].
-  HistoryItem? record(
-    Transaction transaction,
-    TransactionSource source,
-  ) {
+  HistoryItem? record(Transaction transaction, TransactionSource source) {
     switch (source) {
       case TransactionSource.userEdit:
         return _recordUserEdit(transaction);

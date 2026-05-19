@@ -59,10 +59,7 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
         }
       }
 
-      nodes = parser.transform(
-        mdNode,
-        markdownElementParsers,
-      );
+      nodes = parser.transform(mdNode, markdownElementParsers);
 
       if (nodes.isNotEmpty) {
         break;
