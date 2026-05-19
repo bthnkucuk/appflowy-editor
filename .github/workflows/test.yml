@@ -5,11 +5,14 @@ on:
     branches:
       - "main"
       - "stable"
+      - "feat/**"
 
   pull_request:
     branches:
       - "main"
       - "stable"
+
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
