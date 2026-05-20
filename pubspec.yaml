@@ -39,11 +39,6 @@ dependencies:
   uuid: ^4.5.3
 
 dev_dependencies:
-  awesome_lints:
-    git:
-      url: https://github.com/LucasXu0/awesome_lints.git
-      ref: main
-  custom_lint: ^0.8.1
   flutter_lints: ^6.0.0
   flutter_localizations:
     sdk: flutter

@@ -53,10 +53,6 @@ jobs:
         run: dart format --set-exit-if-changed .
         continue-on-error: true
 
-      - name: Custom lint
-        run: dart run custom_lint
-        continue-on-error: true
-
       - name: Run tests
         run: flutter test --coverage
 
