@@ -51,6 +51,8 @@ class _MobileEditorState extends State<MobileEditor> {
     return MobileToolbarV2(
       toolbarHeight: 48.0,
       toolbarItems: [
+        textDecorationMobileToolbarItem,
+        headingMobileToolbarItem,
         textDecorationMobileToolbarItemV2,
         buildTextAndBackgroundColorMobileToolbarItem(),
         blocksMobileToolbarItem,

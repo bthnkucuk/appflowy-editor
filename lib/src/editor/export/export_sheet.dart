@@ -15,7 +15,6 @@ enum AppFlowyExportFormat {
   pdf('pdf', 'application/pdf');
 
   const AppFlowyExportFormat(this.fileExtension, this.mimeType);
-
   final String fileExtension;
   final String mimeType;
 }
