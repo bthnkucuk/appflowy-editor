@@ -60,8 +60,8 @@ void main() {
     );
 
     testWidgets(
-      'CURRENT BUG: selectionNotifier notifies on every identical set '
-      '(regression gate for H2.1)',
+      'H2.1: identical selection sets short-circuit '
+      '(no notify cascade across N blocks)',
       (tester) async {
         final editor = await setupEditor(tester, paragraphCount: 200);
         final editorState = editor.editorState;
@@ -82,23 +82,23 @@ void main() {
         await tester.pump();
 
         debugPrint('\n${'=' * 60}');
-        debugPrint('CURRENT BUG — identical-selection notify count');
+        debugPrint('H2.1 LOCK — identical-selection notify count');
         debugPrint('=' * 60);
         debugPrint('Document: 200 paragraphs');
         debugPrint('Action: set IDENTICAL selection 10 times');
         debugPrint('selectionNotifier listener calls: $listenerCallCount');
-        debugPrint('Expected today (always-notify): 10');
         debugPrint('Expected after H2.1: 0');
         debugPrint('${'=' * 60}\n');
 
-        // Documents the always-notify behavior. After H2.1 fix, flip this
-        // expectation to `equals(0)` (or `lessThan(2)`) to lock the fix in.
+        // Locks in the H2.1 fix: EditorState.selection setter short-circuits
+        // when the new value equals the current one, preventing the
+        // PropertyValueNotifier always-notify cascade.
         expect(
           listenerCallCount,
-          10,
+          0,
           reason:
-              'PropertyValueNotifier currently always notifies, even on '
-              'identical values. After H2.1, expect this to drop to 0/1.',
+              'After H2.1, identical selection assignments must not '
+              'trigger selectionNotifier listeners.',
         );
 
         editorState.selectionNotifier.removeListener(counter);

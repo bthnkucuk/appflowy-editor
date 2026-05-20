@@ -189,6 +189,10 @@ class EditorState {
     // reset slice flag
     sliceUpcomingAttributes = true;
 
+    // H2.1: short-circuit notify on identical selection to avoid the
+    // PropertyValueNotifier always-notify cascade across N block widgets.
+    if (selectionNotifier.value == value) return;
+
     selectionNotifier.value = value;
   }
 
