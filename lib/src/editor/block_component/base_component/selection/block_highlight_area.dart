@@ -68,21 +68,48 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
 
   Rect? prevBlockRect;
 
+  // H2.2: drives _updateSelectionIfNeeded on selection-change instead of
+  // self-rescheduling every frame. Pending flag coalesces multiple notifies
+  // within one frame into a single post-frame update.
+  bool _updatePending = false;
+
   @override
   void initState() {
     super.initState();
 
+    widget.listenable.addListener(_scheduleUpdate);
+    widget.listenable.addListener(_clearCursorRect);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateSelectionIfNeeded();
     });
-    widget.listenable.addListener(_clearCursorRect);
+  }
+
+  @override
+  void didUpdateWidget(covariant BlockHighlightArea oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.listenable != widget.listenable) {
+      oldWidget.listenable.removeListener(_scheduleUpdate);
+      oldWidget.listenable.removeListener(_clearCursorRect);
+      widget.listenable.addListener(_scheduleUpdate);
+      widget.listenable.addListener(_clearCursorRect);
+    }
   }
 
   @override
   void dispose() {
+    widget.listenable.removeListener(_scheduleUpdate);
     widget.listenable.removeListener(_clearCursorRect);
 
     super.dispose();
+  }
+
+  void _scheduleUpdate() {
+    if (!mounted || _updatePending) return;
+    _updatePending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updatePending = false;
+      if (mounted) _updateSelectionIfNeeded();
+    });
   }
 
   @override
@@ -264,9 +291,6 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
       });
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _updateSelectionIfNeeded();
-    });
   }
 
   void _clearCursorRect() {
