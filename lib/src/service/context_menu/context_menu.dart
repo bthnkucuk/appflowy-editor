@@ -11,10 +11,10 @@ typedef ContextMenuWidgetBuilder =
 
 class ContextMenuItem {
   ContextMenuItem({
-    required String Function() getName,
+    required this._getName,
     required this.onPressed,
     this.isApplicable,
-  }) : _getName = getName;
+  });
 
   final String Function() _getName;
   final void Function(EditorState editorState) onPressed;

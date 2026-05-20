@@ -40,13 +40,12 @@ final class Node extends ChangeNotifier
     String? id,
     String? initialRank,
     this.parent,
-    Attributes attributes = const {},
+    this._attributes = const {},
     Iterable<Node> children = const [],
   }) : _children = RankedLinkedList<Node>()
          ..addAll(
            children.map((e) => e..unlink()),
-         ), // unlink the given children to avoid the error of "node has already a parent"
-       _attributes = attributes,
+         ),
        id = id ?? Uuid().v4() {
     if (initialRank != null) {
       super.rank = initialRank;

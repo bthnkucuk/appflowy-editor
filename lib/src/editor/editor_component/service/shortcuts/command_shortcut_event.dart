@@ -11,11 +11,11 @@ class CommandShortcutEvent {
     required this.key,
     required this.command,
     required this.handler,
-    required String Function()? getDescription,
+    required this._getDescription,
     String? windowsCommand,
     String? macOSCommand,
     String? linuxCommand,
-  }) : _getDescription = getDescription {
+  }) {
     updateCommand(
       command: command,
       windowsCommand: windowsCommand,

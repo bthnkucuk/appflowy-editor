@@ -34,7 +34,7 @@ Node todoListNode({
       TodoListBlockKeys.checked: checked,
       TodoListBlockKeys.delta: (delta ?? (Delta()..insert(text ?? '')))
           .toJson(),
-      if (attributes != null) ...attributes,
+      ...?attributes,
       TodoListBlockKeys.textDirection: ?textDirection,
     },
     children: children ?? [],

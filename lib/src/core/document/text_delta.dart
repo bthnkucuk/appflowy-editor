@@ -100,7 +100,7 @@ sealed class TextOperation {
 }
 
 class TextInsert extends TextOperation {
-  TextInsert(this.text, {Attributes? attributes}) : _attributes = attributes;
+  TextInsert(this.text, {this._attributes});
 
   String text;
   final Attributes? _attributes;
@@ -138,7 +138,7 @@ class TextInsert extends TextOperation {
 }
 
 class TextRetain extends TextOperation {
-  TextRetain(this.length, {Attributes? attributes}) : _attributes = attributes;
+  TextRetain(this.length, {this._attributes});
 
   @override
   int length;

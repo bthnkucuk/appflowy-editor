@@ -27,7 +27,7 @@ Node bulletedListNode({
     attributes: {
       BulletedListBlockKeys.delta: (delta ?? (Delta()..insert(text ?? '')))
           .toJson(),
-      if (attributes != null) ...attributes,
+      ...?attributes,
       BulletedListBlockKeys.textDirection: ?textDirection,
     },
     children: children ?? [],
