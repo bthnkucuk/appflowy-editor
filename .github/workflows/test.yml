@@ -18,10 +18,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# 3 jobs are configured.
-# The first one runs tests on desktop OSs.
-# The second runs tests on iOS simulator.
-# The third runs tests on Android emulator.
 jobs:
   desktop:
     strategy:
@@ -62,3 +58,37 @@ jobs:
           verbose: true
           os: ${{ matrix.os }}
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  example_build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: apk
+            build_command: flutter build apk --debug
+          - os: macos-latest
+            target: ios
+            build_command: flutter build ios --no-codesign --debug
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version: "3.44.0"
+          cache: true
+
+      - name: Install package deps
+        run: flutter pub get
+
+      - name: Install example deps
+        working-directory: example
+        run: flutter pub get
+
+      - name: Build ${{ matrix.target }}
+        working-directory: example
+        run: ${{ matrix.build_command }}

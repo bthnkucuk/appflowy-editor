@@ -94,8 +94,8 @@ Hedef: yalancı sinyalleri kapat, ilk izlenimi düzelt, ölçüm altyapısını 
 
 - [x] **H1.1** CI'da `continue-on-error: true` flag'lerini düşür (analyze/format/custom_lint) — `.github/workflows/test.yml:50,54,58,65` — Etki: Yüksek / Çaba: XS (codecov upload'unda flag korundu — upload hatası gate değil)
 - [x] **H1.2** `README.md:146` sonrasını sil; gerçek "Getting Started" + "Examples" bölümü yaz — Etki: Yüksek / Çaba: XS (minimum müdahale: mevcut Getting Started/Customizing/Migration satırları korundu, sadece 520 satırlık markdown-it fixture silindi)
-- [ ] **H1.3** `CONTRIBUTING.md` ve `.github/PULL_REQUEST_TEMPLATE.md` yaz — Etki: Orta / Çaba: XS
-- [ ] **H1.4** `example/` uygulamasını CI'da `flutter build apk --debug` + `flutter build ios --no-codesign` ile derle — Etki: Orta / Çaba: S
+- [x] **H1.3** `CONTRIBUTING.md` ve `.github/PULL_REQUEST_TEMPLATE.md` yaz — Etki: Orta / Çaba: XS
+- [x] **H1.4** `example/` uygulamasını CI'da `flutter build apk --debug` + `flutter build ios --no-codesign` ile derle — Etki: Orta / Çaba: S
 - [x] ~~**H1.5** `awesome_lints`'i `ref: <commit-sha>`'ya pinle~~ → Tamamen kaldırıldı (awesome_lints + custom_lint pubspec'ten, custom_lint adımı CI'dan, custom_lint bloğu analysis_options'tan)
 - [ ] **H1.10** `very_good_analysis`'e aşamalı geçiş (denendi: 6589 issue + 100+ error patlıyor, strict-casts/inference/raw-types yüzünden). Plan:
   1. `dart fix --apply` ile auto-fix (prefer_single_quotes ~1582, prefer_final_locals ~149, omit_local_variable_types ~327)
@@ -105,6 +105,7 @@ Hedef: yalancı sinyalleri kapat, ilk izlenimi düzelt, ölçüm altyapısını 
   5. `public_member_api_docs` aç (dokümantasyon sprint'i, 2079 yer)
   6. flutter_lints'i kaldırıp very_good_analysis'i tek `include` olarak koy
 - [ ] **H1.6** iOS/Android emulator CI job'larını geri ekle (yorum satırı duruyor) — Etki: Yüksek / Çaba: M / Risk: Orta (flaky)
+  - **Defer (2026-05-25)**: Historical commented-out job'lar emulator'ı gerçekten kullanmıyordu; sadece `flutter test test/mobile` koşuyorlardı. Bu zaten yeni `desktop` matrix'inde (ubuntu+macos) tam test suite ile koşuyor. Gerçek emulator gate için `integration_test/` setup'ı gerekiyor — şu an yok. H4 backlog'unda "integration_test stub" eklenince anlamlı, ondan önce sadece redundant CI minutes.
 - [ ] **H1.7** `test/legacy/`'i `new/` ile birleştir ya da sil — Etki: Düşük / Çaba: S
 - [x] **H1.8** **Selection-cascade benchmark testi**: 200 paragraph dokümanda bir selection set'inin kaç `notifyListeners` + `build` tetiklediğini sayan widget testi (H2'nin regresyon kapısı, ölçüm) — Etki: Yüksek / Çaba: S → `5f667148`
 - [ ] **H1.9** 31 branch'ten eski release/feature dallarını arşivle (tag bırak, sil)
@@ -168,6 +169,7 @@ Hedef: auto-memory'deki "yavaşla-hızlan" pattern'ini *ölçerek* kapat.
 
 İhtiyaç ortaya çıktıkça çek.
 
+- [ ] **Integration test stub** (kilit açıcı, H1.6'yı anlamlı kılar): `integration_test/editor_mount_test.dart` — `AppFlowyEditor` mount edip basic interaction yapan tek senaryo. Bu varolunca `reactivecircus/android-emulator-runner` ve iOS simulator job'ları gerçek bir gate olur.
 - [ ] Markdown encode: column/columns desteği
 - [ ] Markdown decode: code block desteği
 - [ ] Quill Delta decoder (README'nin sözünü tut)
