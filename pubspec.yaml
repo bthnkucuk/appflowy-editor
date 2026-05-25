@@ -45,6 +45,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   intl_utils: "^2.8.2"
+  leak_tracker_flutter_testing: ^3.0.10
   network_image_mock: "^2.1.1"
   path_provider: "^2.0.5"
   pubspec_dependency_sorter: "^1.0.5"

@@ -441,6 +441,10 @@ class EditorState {
     document.dispose();
     selectionNotifier.dispose();
     highlightNotifier.dispose();
+    editableNotifier.dispose();
+    tapNotifier.dispose();
+    remoteSelections.dispose();
+    toggledStyleNotifier.dispose();
     _subscription?.cancel();
     _onScrollViewScrolledListeners.clear();
   }

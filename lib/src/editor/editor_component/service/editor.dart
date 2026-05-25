@@ -249,6 +249,13 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
   late EditorScrollController editorScrollController;
 
+  // Hoisted out of build() so we own a single instance and can dispose it.
+  // Overlay only honors initialEntries once; pre-hoist rebuilds were
+  // allocating fresh entries on every build and orphaning them.
+  late final OverlayEntry _rootOverlayEntry = OverlayEntry(
+    builder: (context) => services ?? const SizedBox.shrink(),
+  );
+
   @override
   void initState() {
     super.initState();
@@ -275,6 +282,11 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
     if (widget.editorScrollController == null) {
       editorScrollController.dispose();
     }
+
+    // Order matters: remove() detaches from the Overlay; dispose() then
+    // releases the listener notifier. dispose() asserts _overlay == null.
+    _rootOverlayEntry.remove();
+    _rootOverlayEntry.dispose();
 
     super.dispose();
   }
@@ -310,11 +322,7 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
       child: FocusScope(
         child: Overlay(
           clipBehavior: Clip.none,
-          initialEntries: [
-            OverlayEntry(
-              builder: (context) => services ?? const SizedBox.shrink(),
-            ),
-          ],
+          initialEntries: [_rootOverlayEntry],
         ),
       ),
     );
