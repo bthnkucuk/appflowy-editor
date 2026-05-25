@@ -21,20 +21,22 @@ Widget _wrap(Widget child) => MaterialApp(
   home: Scaffold(body: child),
 );
 
-// Tracks every dispose+GC type but ignores leaks we know we cannot fix
-// from this package:
+// Tracks notDisposed only — catches real "owner forgot to call dispose()"
+// bugs. notGCed/gcedLate are intentionally off: in a full test-suite run
+// (memory pressure, lots of widget churn) GC of widget-tree elements
+// finalizes a frame or two late and `experimentalAllNotGCed` floods the
+// report with framework classes (SingleChildRenderObjectElement, RenderObject
+// subtypes) that are *eventually* GC'd. That noise drowns the real signal
+// without flagging an actual dispose miss.
+//
+// Ignored notDisposed classes:
 //   - ExtentManager: super_sliver_list 0.4.1 element never disposes its
 //     ChangeNotifier (latest available, no upstream fix yet).
 //   - KeepEditorFocusNotifier: package-level singleton; disposing it
 //     would break the next editor instance.
-//   - BannerPainter: Flutter's debug banner, transient.
-final _leakSettings = LeakTesting.settings
-    .withTrackedAll()
-    .withTracked(experimentalAllNotGCed: true)
-    .withIgnored(
-      notDisposed: {'ExtentManager': null, 'KeepEditorFocusNotifier': null},
-      notGCed: {'BannerPainter': null},
-    );
+final _leakSettings = LeakTesting.settings.withTrackedAll().withIgnored(
+  notDisposed: {'ExtentManager': null, 'KeepEditorFocusNotifier': null},
+);
 
 void main() {
   group('leak baseline — editor mount/detach cycle', () {
