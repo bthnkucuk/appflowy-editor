@@ -31,7 +31,9 @@ void main() {
       (tester) async {
         final editorState = EditorState.blank(withInitialText: true);
 
-        await tester.pumpWidget(_wrap(AppFlowyEditor(editorState: editorState)));
+        await tester.pumpWidget(
+          _wrap(AppFlowyEditor(editorState: editorState)),
+        );
         await tester.pump();
 
         // Detach widget tree.
@@ -52,16 +54,14 @@ void main() {
       (tester) async {
         final editorState = EditorState(
           document: Document.blank()
-            ..insert(
-              [0],
-              List.generate(
-                20,
-                (i) => paragraphNode(text: 'Paragraph $i'),
-              ),
-            ),
+            ..insert([
+              0,
+            ], List.generate(20, (i) => paragraphNode(text: 'Paragraph $i'))),
         );
 
-        await tester.pumpWidget(_wrap(AppFlowyEditor(editorState: editorState)));
+        await tester.pumpWidget(
+          _wrap(AppFlowyEditor(editorState: editorState)),
+        );
         await tester.pump();
 
         await tester.pumpWidget(_wrap(const SizedBox.shrink()));
@@ -87,16 +87,14 @@ void main() {
               ),
             ),
         );
-        final scrollController = EditorScrollController(editorState: editorState);
+        final scrollController = EditorScrollController(
+          editorState: editorState,
+        );
 
         await tester.pumpWidget(
           _wrap(
             FloatingToolbar(
-              items: [
-                paragraphItem,
-                ...headingItems,
-                ...markdownFormatItems,
-              ],
+              items: [paragraphItem, ...headingItems, ...markdownFormatItems],
               editorState: editorState,
               editorScrollController: scrollController,
               textDirection: TextDirection.ltr,
@@ -151,7 +149,9 @@ void main() {
               ),
             ),
         );
-        final scrollController = EditorScrollController(editorState: editorState);
+        final scrollController = EditorScrollController(
+          editorState: editorState,
+        );
 
         await tester.pumpWidget(
           _wrap(
@@ -194,13 +194,9 @@ void main() {
       (tester) async {
         final editorState = EditorState(
           document: Document.blank()
-            ..insert(
-              [0],
-              List.generate(
-                10,
-                (i) => paragraphNode(text: 'Paragraph $i'),
-              ),
-            ),
+            ..insert([
+              0,
+            ], List.generate(10, (i) => paragraphNode(text: 'Paragraph $i'))),
         );
 
         await tester.pumpWidget(
@@ -208,10 +204,7 @@ void main() {
             Column(
               children: [
                 Expanded(child: AppFlowyEditor(editorState: editorState)),
-                MobileToolbar(
-                  editorState: editorState,
-                  toolbarItems: const [],
-                ),
+                MobileToolbar(editorState: editorState, toolbarItems: const []),
               ],
             ),
           ),
