@@ -217,10 +217,9 @@ class _UploadImageMenuState extends State<UploadImageMenu> {
         ),
         suffixIcon: IconButton(
           padding: const EdgeInsets.all(4.0),
-          icon: EditorSvg(
-            name: 'clear',
-            width: 24,
-            height: 24,
+          icon: ToolbarIcon(
+            afMobileIcons: ToolbarIcons.clear,
+            size: 24,
             color: widget.uploadButtonTextColor,
           ),
           onPressed: _textEditingController.clear,
@@ -353,10 +352,9 @@ class _UploadImageMenuState extends State<UploadImageMenu> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        EditorSvg(
-                          name: 'upload_image',
-                          width: 32,
-                          height: 32,
+                        ToolbarIcon(
+                          afMobileIcons: ToolbarIcons.upload,
+                          size: 32,
                           color: widget.uploadIconColor,
                         ),
                         const SizedBox(height: 8.0),

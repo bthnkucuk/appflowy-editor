@@ -61,17 +61,17 @@ class _LinkMenuState extends State<LinkMenu> {
           const SizedBox(height: 16.0),
           if (widget.linkText != null) ...[
             _buildIconButton(
-              iconName: 'link',
+              icon: ToolbarIcons.link,
               text: AppFlowyEditorL10n.current.openLink,
               onPressed: widget.onOpenLink,
             ),
             _buildIconButton(
-              iconName: 'copy',
+              icon: ToolbarIcons.copy,
               text: AppFlowyEditorL10n.current.copyLink,
               onPressed: widget.onCopyLink,
             ),
             _buildIconButton(
-              iconName: 'delete',
+              icon: ToolbarIcons.delete,
               text: AppFlowyEditorL10n.current.removeLink,
               onPressed: widget.onRemoveLink,
             ),
@@ -102,7 +102,10 @@ class _LinkMenuState extends State<LinkMenu> {
           isDense: true,
           suffixIcon: IconButton(
             padding: const EdgeInsets.all(4.0),
-            icon: const EditorSvg(name: 'clear', width: 24, height: 24),
+            icon: const ToolbarIcon(
+              afMobileIcons: ToolbarIcons.clear,
+              size: 24,
+            ),
             onPressed: _textEditingController.clear,
             splashRadius: 5,
           ),
@@ -122,15 +125,16 @@ class _LinkMenuState extends State<LinkMenu> {
   }
 
   Widget _buildIconButton({
-    required String iconName,
+    required ToolbarIcons icon,
     required String text,
     required VoidCallback onPressed,
   }) {
     return SizedBox(
       height: 36,
       child: TextButton.icon(
-        icon: EditorSvg(
-          name: iconName,
+        icon: ToolbarIcon(
+          afMobileIcons: icon,
+          size: 20,
           color: Theme.of(context).textTheme.labelLarge?.color,
         ),
         label: Row(

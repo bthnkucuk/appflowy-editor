@@ -249,7 +249,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.text,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'text',
+      name: ToolbarIcons.text,
       isSelected: isSelected,
       style: style,
     ),
@@ -261,7 +261,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.heading1,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'h1',
+      name: ToolbarIcons.h1,
       isSelected: isSelected,
       style: style,
     ),
@@ -273,7 +273,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.heading2,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'h2',
+      name: ToolbarIcons.h2,
       isSelected: isSelected,
       style: style,
     ),
@@ -285,7 +285,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.heading3,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'h3',
+      name: ToolbarIcons.h3,
       isSelected: isSelected,
       style: style,
     ),
@@ -297,7 +297,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.image,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'image',
+      name: ToolbarIcons.selectionMenuImage,
       isSelected: isSelected,
       style: style,
     ),
@@ -310,7 +310,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.bulletedList,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'bulleted_list',
+      name: ToolbarIcons.bulletedList,
       isSelected: isSelected,
       style: style,
     ),
@@ -322,7 +322,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.numberedList,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'number',
+      name: ToolbarIcons.numberedList,
       isSelected: isSelected,
       style: style,
     ),
@@ -334,7 +334,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.checkbox,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'checkbox',
+      name: ToolbarIcons.checkbox,
       isSelected: isSelected,
       style: style,
     ),
@@ -346,7 +346,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.quote,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'quote',
+      name: ToolbarIcons.quote,
       isSelected: isSelected,
       style: style,
     ),
@@ -363,7 +363,7 @@ final List<SelectionMenuItem> singleColumnVisibleMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.text,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'text',
+      name: ToolbarIcons.text,
       isSelected: isSelected,
       style: style,
     ),
@@ -375,7 +375,7 @@ final List<SelectionMenuItem> singleColumnVisibleMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.heading1,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'h1',
+      name: ToolbarIcons.h1,
       isSelected: isSelected,
       style: style,
     ),
@@ -387,7 +387,7 @@ final List<SelectionMenuItem> singleColumnVisibleMenuItems = [
   SelectionMenuItem(
     getName: () => AppFlowyEditorL10n.current.heading2,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'h2',
+      name: ToolbarIcons.h2,
       isSelected: isSelected,
       style: style,
     ),

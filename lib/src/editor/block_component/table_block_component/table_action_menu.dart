@@ -199,7 +199,7 @@ void _showColorMenu(
           dismissOverlay();
         },
         resetText: AppFlowyEditorL10n.current.clearHighlightColor,
-        resetIconName: 'clear_highlight_color',
+        resetIcon: ToolbarIcons.clearHighlightColor,
       );
     },
   ).build();

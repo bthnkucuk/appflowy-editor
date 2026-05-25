@@ -25,7 +25,12 @@ class _AlignmentToolbarItem extends ToolbarItem {
                );
 
                final child = SVGIconItemWidget(
-                 iconName: 'toolbar/$name',
+                 icon: switch (name) {
+                   'left' => ToolbarIcons.alignLeft,
+                   'center' => ToolbarIcons.alignCenter,
+                   'right' => ToolbarIcons.alignRight,
+                   _ => ToolbarIcons.alignLeft,
+                 },
                  isHighlight: isHighlight,
                  highlightColor: highlightColor,
                  iconColor: iconColor,

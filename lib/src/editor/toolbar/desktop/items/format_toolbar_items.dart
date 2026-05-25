@@ -27,7 +27,14 @@ class _FormatToolbarItem extends ToolbarItem {
               );
 
               final child = SVGIconItemWidget(
-                iconName: 'toolbar/$name',
+                icon: switch (name) {
+                  'bold' => ToolbarIcons.bold,
+                  'italic' => ToolbarIcons.italic,
+                  'underline' => ToolbarIcons.underline,
+                  'strikethrough' => ToolbarIcons.strikethrough,
+                  'code' => ToolbarIcons.code,
+                  _ => ToolbarIcons.bold,
+                },
                 isHighlight: isHighlight,
                 highlightColor: highlightColor,
                 iconColor: iconColor,

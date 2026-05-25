@@ -291,10 +291,9 @@ class _TodoListIcon extends StatelessWidget {
               textScaleFactor,
           child: Padding(
             padding: const EdgeInsets.only(right: 4.0),
-            child: EditorSvg(
-              width: 22,
-              height: 22,
-              name: checked ? 'check' : 'uncheck',
+            child: ToolbarIcon(
+              size: 22,
+              afMobileIcons: checked ? ToolbarIcons.check : ToolbarIcons.uncheck,
             ),
           ),
         ),

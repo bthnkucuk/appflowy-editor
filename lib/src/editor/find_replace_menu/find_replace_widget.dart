@@ -304,10 +304,9 @@ class _FindMenuState extends State<FindMenu> {
               });
               _searchPattern();
             },
-            icon: EditorSvg(
-              name: 'regex',
-              width: 20,
-              height: 20,
+            icon: ToolbarIcon(
+              afMobileIcons: ToolbarIcons.regex,
+              size: 20,
               color: widget.searchService.regex ? Colors.black : Colors.grey,
             ),
             tooltip: AppFlowyEditorL10n.current.regex,
@@ -323,10 +322,9 @@ class _FindMenuState extends State<FindMenu> {
               });
               _searchPattern();
             },
-            icon: EditorSvg(
-              name: 'case_sensitive',
-              width: 20,
-              height: 20,
+            icon: ToolbarIcon(
+              afMobileIcons: ToolbarIcons.caseSensitive,
+              size: 20,
               color: widget.searchService.caseSensitive
                   ? Colors.black
                   : Colors.grey,

@@ -20,7 +20,6 @@ export 'src/history/undo_manager.dart' show TransactionSource;
 // extension
 export 'src/extensions/extensions.dart';
 export 'src/infra/clipboard.dart';
-export 'src/infra/flowy_svg.dart';
 export 'src/infra/log.dart';
 export 'src/infra/mobile/mobile.dart';
 export 'src/l10n/l10n.dart';

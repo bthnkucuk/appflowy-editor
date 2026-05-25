@@ -54,7 +54,7 @@ void main() async {
         await gesture.moveTo(tester.getCenter(find.byType(Image)));
         await tester.pumpAndSettle();
 
-        expect(find.byType(EditorSvg), findsNothing);
+        expect(find.byType(ToolbarIcon), findsNothing);
 
         await editor.dispose();
       });

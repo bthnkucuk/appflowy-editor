@@ -22,7 +22,12 @@ class _HeadingToolbarItem extends ToolbarItem {
                   node.type == 'heading' && node.attributes['level'] == level;
               final delta = (node.delta ?? Delta()).toJson();
               final child = SVGIconItemWidget(
-                iconName: 'toolbar/h$level',
+                icon: switch (level) {
+                  1 => ToolbarIcons.h1,
+                  2 => ToolbarIcons.h2,
+                  3 => ToolbarIcons.h3,
+                  _ => ToolbarIcons.h1,
+                },
                 isHighlight: isHighlight,
                 highlightColor: highlightColor,
                 iconColor: iconColor,

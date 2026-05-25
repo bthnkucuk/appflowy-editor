@@ -52,7 +52,8 @@ class ToolbarItem {
       id: 'divider',
       type: -1,
       group: -1,
-      iconBuilder: (_) => const EditorSvg(name: 'toolbar/divider'),
+      iconBuilder: (_) =>
+          const ToolbarIcon(afMobileIcons: ToolbarIcons.divider, size: 20),
       validator: (editorState) => true,
       handler: (editorState, context) {},
       highlightCallback: (editorState) => false,

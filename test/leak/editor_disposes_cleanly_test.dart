@@ -34,8 +34,16 @@ Widget _wrap(Widget child) => MaterialApp(
 //     ChangeNotifier (latest available, no upstream fix yet).
 //   - KeepEditorFocusNotifier: package-level singleton; disposing it
 //     would break the next editor instance.
+//   - TextPainter: iconifyx_core's `_IconifyPainter` constructs TextPainters
+//     inside `CustomPainter` and never disposes them on replacement /
+//     tear-down (upstream issue). Surfaces here because toolbar items now
+//     render via `IconifyIcon`.
 final _leakSettings = LeakTesting.settings.withTrackedAll().withIgnored(
-  notDisposed: {'ExtentManager': null, 'KeepEditorFocusNotifier': null},
+  notDisposed: {
+    'ExtentManager': null,
+    'KeepEditorFocusNotifier': null,
+    'TextPainter': null,
+  },
 );
 
 void main() {

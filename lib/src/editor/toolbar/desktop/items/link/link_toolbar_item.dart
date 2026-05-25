@@ -22,7 +22,7 @@ final linkItem = ToolbarItem(
     });
 
     final child = SVGIconItemWidget(
-      iconName: 'toolbar/link',
+      icon: ToolbarIcons.link,
       isHighlight: isHref,
       highlightColor: highlightColor,
       iconColor: iconColor,

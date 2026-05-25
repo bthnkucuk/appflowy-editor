@@ -12,7 +12,7 @@ class SelectionMenuIconWidget extends StatelessWidget {
     assert((name == null && icon != null) || ((name != null && icon == null)));
   }
 
-  final String? name;
+  final ToolbarIcons? name;
   final IconData? icon;
   final bool isSelected;
   final SelectionMenuStyle style;
@@ -28,10 +28,9 @@ class SelectionMenuIconWidget extends StatelessWidget {
             : style.selectionMenuItemIconColor,
       );
     } else if (name != null) {
-      return EditorSvg(
-        name: 'selection_menu/$name',
-        width: 18.0,
-        height: 18.0,
+      return ToolbarIcon(
+        afMobileIcons: name!,
+        size: 18.0,
         color: isSelected
             ? style.selectionMenuItemSelectedIconColor
             : style.selectionMenuItemIconColor,

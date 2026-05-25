@@ -25,7 +25,7 @@ ToolbarItem buildHighlightColorItem({List<ColorOption>? colorOptions}) {
       });
 
       final child = SVGIconItemWidget(
-        iconName: 'toolbar/highlight_color',
+        icon: ToolbarIcons.highlightColor,
         isHighlight: isHighlight,
         highlightColor: highlightColor,
         iconColor: iconColor,

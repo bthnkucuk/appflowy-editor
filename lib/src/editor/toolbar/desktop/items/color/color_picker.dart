@@ -11,7 +11,7 @@ class ColorPicker extends StatefulWidget {
     required this.colorOptions,
     this.resetText,
     this.customColorHex,
-    this.resetIconName,
+    this.resetIcon,
     this.showClearButton = false,
   });
 
@@ -20,7 +20,7 @@ class ColorPicker extends StatefulWidget {
   final String? customColorHex;
   final void Function(String? color, bool isCustomColor) onSubmittedColorHex;
   final String? resetText;
-  final String? resetIconName;
+  final ToolbarIcons? resetIcon;
   final bool showClearButton;
 
   final List<ColorOption> colorOptions;
@@ -62,10 +62,10 @@ class _ColorPickerState extends State<ColorPicker> {
         const SizedBox(height: 6),
         widget.showClearButton &&
                 widget.resetText != null &&
-                widget.resetIconName != null
+                widget.resetIcon != null
             ? ResetColorButton(
                 resetText: widget.resetText!,
-                resetIconName: widget.resetIconName!,
+                resetIcon: widget.resetIcon!,
                 onPressed: (color) =>
                     widget.onSubmittedColorHex.call(color, false),
               )
@@ -123,7 +123,11 @@ class _ColorPickerState extends State<ColorPicker> {
               ),
             ),
             // checkbox
-            if (isChecked) const EditorSvg(name: 'checkmark'),
+            if (isChecked)
+              const ToolbarIcon(
+                afMobileIcons: ToolbarIcons.checkmark,
+                size: 20,
+              ),
           ],
         ),
       ),
@@ -149,13 +153,13 @@ class ResetColorButton extends StatelessWidget {
   const ResetColorButton({
     super.key,
     required this.resetText,
-    required this.resetIconName,
+    required this.resetIcon,
     required this.onPressed,
   });
 
   final Function(String? color) onPressed;
   final String resetText;
-  final String resetIconName;
+  final ToolbarIcons resetIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -164,10 +168,9 @@ class ResetColorButton extends StatelessWidget {
       height: 32,
       child: TextButton.icon(
         onPressed: () => onPressed(null),
-        icon: EditorSvg(
-          name: resetIconName,
-          width: 13,
-          height: 13,
+        icon: ToolbarIcon(
+          afMobileIcons: resetIcon,
+          size: 13,
           color: Theme.of(context).iconTheme.color,
         ),
         label: Text(

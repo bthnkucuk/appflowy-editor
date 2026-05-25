@@ -36,7 +36,12 @@ class _TextDirectionToolbarItem extends ToolbarItem {
                  (n) => n.attributes[blockComponentTextDirection] == name,
                );
                final child = SVGIconItemWidget(
-                 iconName: 'toolbar/$iconName',
+                 icon: switch (iconName) {
+                   'text_direction_auto' => ToolbarIcons.textDirectionAuto,
+                   'text_direction_ltr' => ToolbarIcons.textDirectionLtr,
+                   'text_direction_rtl' => ToolbarIcons.textDirectionRtl,
+                   _ => ToolbarIcons.textDirectionAuto,
+                 },
                  isHighlight: isHighlight,
                  highlightColor: highlightColor,
                  iconColor: iconColor,
