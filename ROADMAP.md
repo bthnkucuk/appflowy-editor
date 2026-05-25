@@ -93,7 +93,7 @@
 Hedef: yalancı sinyalleri kapat, ilk izlenimi düzelt, ölçüm altyapısını kur.
 
 - [x] **H1.1** CI'da `continue-on-error: true` flag'lerini düşür (analyze/format/custom_lint) — `.github/workflows/test.yml:50,54,58,65` — Etki: Yüksek / Çaba: XS (codecov upload'unda flag korundu — upload hatası gate değil)
-- [ ] **H1.2** `README.md:146` sonrasını sil; gerçek "Getting Started" + "Examples" bölümü yaz — Etki: Yüksek / Çaba: XS
+- [x] **H1.2** `README.md:146` sonrasını sil; gerçek "Getting Started" + "Examples" bölümü yaz — Etki: Yüksek / Çaba: XS (minimum müdahale: mevcut Getting Started/Customizing/Migration satırları korundu, sadece 520 satırlık markdown-it fixture silindi)
 - [ ] **H1.3** `CONTRIBUTING.md` ve `.github/PULL_REQUEST_TEMPLATE.md` yaz — Etki: Orta / Çaba: XS
 - [ ] **H1.4** `example/` uygulamasını CI'da `flutter build apk --debug` + `flutter build ios --no-codesign` ile derle — Etki: Orta / Çaba: S
 - [x] ~~**H1.5** `awesome_lints`'i `ref: <commit-sha>`'ya pinle~~ → Tamamen kaldırıldı (awesome_lints + custom_lint pubspec'ten, custom_lint adımı CI'dan, custom_lint bloğu analysis_options'tan)
