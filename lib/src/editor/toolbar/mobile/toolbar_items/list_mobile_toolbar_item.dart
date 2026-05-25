@@ -2,8 +2,8 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 
 final listMobileToolbarItem = MobileToolbarItem.withMenu(
-  itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.list,
+  itemIconBuilder: (context, _, _) => ToolbarIcon(
+    afMobileIcons: ToolbarIcons.list,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   itemMenuBuilder: (_, editorState, _) {
@@ -29,12 +29,12 @@ class _ListMenu extends StatefulWidget {
 class _ListMenuState extends State<_ListMenu> {
   final lists = [
     ListUnit(
-      icon: AFMobileIcons.bulletedList,
+      icon: ToolbarIcons.bulletedList,
       label: AppFlowyEditorL10n.current.bulletedList,
       name: 'bulleted_list',
     ),
     ListUnit(
-      icon: AFMobileIcons.numberedList,
+      icon: ToolbarIcons.numberedList,
       label: AppFlowyEditorL10n.current.numberedList,
       name: 'numbered_list',
     ),
@@ -50,7 +50,7 @@ class _ListMenuState extends State<_ListMenu> {
       final isSelected = node.type == currentList.name;
 
       return MobileToolbarItemMenuBtn(
-        icon: AFMobileIcon(
+        icon: ToolbarIcon(
           afMobileIcons: currentList.icon,
           color: MobileToolbarTheme.of(context).iconColor,
         ),
@@ -86,7 +86,7 @@ class _ListMenuState extends State<_ListMenu> {
 }
 
 class ListUnit {
-  final AFMobileIcons icon;
+  final ToolbarIcons icon;
   final String label;
   final String name;
 

@@ -6,8 +6,8 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// row in a [StupidSimpleSheetRoute] instead of the inline keyboard-height
 /// menu used by MobileToolbarV2.
 final headingMobileToolbarItemSheet = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.heading,
+  itemIconBuilder: (context, _, _) => ToolbarIcon(
+    afMobileIcons: ToolbarIcons.heading,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {
@@ -52,7 +52,7 @@ final headingMobileToolbarItemSheet = MobileToolbarItem.action(
 );
 
 class HeadingUnit {
-  final AFMobileIcons icon;
+  final ToolbarIcons icon;
   final String label;
   final int level;
 
@@ -103,17 +103,17 @@ class _SheetHeadingMenuState extends State<_SheetHeadingMenu> {
 
   final _headings = [
     HeadingUnit(
-      icon: AFMobileIcons.h1,
+      icon: ToolbarIcons.h1,
       label: AppFlowyEditorL10n.current.mobileHeading1,
       level: 1,
     ),
     HeadingUnit(
-      icon: AFMobileIcons.h2,
+      icon: ToolbarIcons.h2,
       label: AppFlowyEditorL10n.current.mobileHeading2,
       level: 2,
     ),
     HeadingUnit(
-      icon: AFMobileIcons.h3,
+      icon: ToolbarIcons.h3,
       label: AppFlowyEditorL10n.current.mobileHeading3,
       level: 3,
     ),
@@ -136,7 +136,7 @@ class _SheetHeadingMenuState extends State<_SheetHeadingMenu> {
           width: (size.width - 4 * style.buttonSpacing) / 3,
         ),
         child: MobileToolbarItemMenuBtn(
-          icon: AFMobileIcon(
+          icon: ToolbarIcon(
             afMobileIcons: currentHeading.icon,
             size: 20,
             color: MobileToolbarTheme.of(context).iconColor,

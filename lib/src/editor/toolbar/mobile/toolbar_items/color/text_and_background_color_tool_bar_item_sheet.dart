@@ -11,8 +11,8 @@ MobileToolbarItem buildTextAndBackgroundColorMobileToolbarItemSheet({
   List<ColorOption>? backgroundColorOptions,
 }) {
   return MobileToolbarItem.action(
-    itemIconBuilder: (context, _, _) => AFMobileIcon(
-      afMobileIcons: AFMobileIcons.color,
+    itemIconBuilder: (context, _, _) => ToolbarIcon(
+      afMobileIcons: ToolbarIcons.color,
       color: MobileToolbarTheme.of(context).iconColor,
     ),
     actionHandler: (context, editorState) {

@@ -7,8 +7,8 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// [StupidSimpleSheetRoute] instead of the inline keyboard-height menu used
 /// by MobileToolbarV2.
 final textDecorationMobileToolbarItemV2Sheet = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.textDecorationBold,
+  itemIconBuilder: (context, _, _) => ToolbarIcon(
+    afMobileIcons: ToolbarIcons.textDecorationBold,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {
@@ -99,29 +99,29 @@ class _SheetTextDecorationV2MenuState
   final _textDecorations = [
     // BIUS
     TextDecorationUnit(
-      icon: AFMobileIcons.bold,
+      icon: ToolbarIcons.bold,
       label: AppFlowyEditorL10n.current.bold,
       name: AppFlowyRichTextKeys.bold,
     ),
     TextDecorationUnit(
-      icon: AFMobileIcons.italic,
+      icon: ToolbarIcons.italic,
       label: AppFlowyEditorL10n.current.italic,
       name: AppFlowyRichTextKeys.italic,
     ),
     TextDecorationUnit(
-      icon: AFMobileIcons.underline,
+      icon: ToolbarIcons.underline,
       label: AppFlowyEditorL10n.current.underline,
       name: AppFlowyRichTextKeys.underline,
     ),
     TextDecorationUnit(
-      icon: AFMobileIcons.strikethrough,
+      icon: ToolbarIcons.strikethrough,
       label: AppFlowyEditorL10n.current.strikethrough,
       name: AppFlowyRichTextKeys.strikethrough,
     ),
 
     // Code
     TextDecorationUnit(
-      icon: AFMobileIcons.code,
+      icon: ToolbarIcons.code,
       label: AppFlowyEditorL10n.current.embedCode,
       name: AppFlowyRichTextKeys.code,
     ),
@@ -147,7 +147,7 @@ class _SheetTextDecorationV2MenuState
       }
 
       return MobileToolbarItemMenuBtn(
-        icon: AFMobileIcon(
+        icon: ToolbarIcon(
           afMobileIcons: currentDecoration.icon,
           color: MobileToolbarTheme.of(context).iconColor,
         ),

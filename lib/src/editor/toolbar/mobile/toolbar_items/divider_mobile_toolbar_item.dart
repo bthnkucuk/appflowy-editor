@@ -1,8 +1,8 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 
 final dividerMobileToolbarItem = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.divider,
+  itemIconBuilder: (context, _, _) => ToolbarIcon(
+    afMobileIcons: ToolbarIcons.divider,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (_, editorState) {

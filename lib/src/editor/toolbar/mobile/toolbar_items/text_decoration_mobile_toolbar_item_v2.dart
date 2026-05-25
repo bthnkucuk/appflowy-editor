@@ -1,7 +1,7 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 
 class TextDecorationUnit {
-  final AFMobileIcons icon;
+  final ToolbarIcons icon;
   final String label;
   final String name;
 

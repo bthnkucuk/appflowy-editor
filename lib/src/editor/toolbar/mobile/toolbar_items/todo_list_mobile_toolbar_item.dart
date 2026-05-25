@@ -1,8 +1,8 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 
 final todoListMobileToolbarItem = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.checkbox,
+  itemIconBuilder: (context, _, _) => ToolbarIcon(
+    afMobileIcons: ToolbarIcons.checkbox,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) async {

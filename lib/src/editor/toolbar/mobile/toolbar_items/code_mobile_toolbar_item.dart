@@ -1,8 +1,8 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 
 final codeMobileToolbarItem = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.code,
+  itemIconBuilder: (context, _, _) => ToolbarIcon(
+    afMobileIcons: ToolbarIcons.code,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (_, editorState) =>

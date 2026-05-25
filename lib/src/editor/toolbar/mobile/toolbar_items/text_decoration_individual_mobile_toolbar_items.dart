@@ -1,11 +1,11 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 
 MobileToolbarItem _buildToggleItem({
-  required AFMobileIcons icon,
+  required ToolbarIcons icon,
   required String attributeName,
 }) {
   return MobileToolbarItem.action(
-    itemIconBuilder: (context, _, _) => AFMobileIcon(
+    itemIconBuilder: (context, _, _) => ToolbarIcon(
       afMobileIcons: icon,
       color: MobileToolbarTheme.of(context).iconColor,
     ),
@@ -15,25 +15,23 @@ MobileToolbarItem _buildToggleItem({
       editorState.toggleAttribute(
         attributeName,
         selection: selection,
-        selectionExtraInfo: {
-          selectionExtraInfoDoNotAttachTextService: true,
-        },
+        selectionExtraInfo: {selectionExtraInfoDoNotAttachTextService: true},
       );
     },
   );
 }
 
 final boldMobileToolbarItem = _buildToggleItem(
-  icon: AFMobileIcons.bold,
+  icon: ToolbarIcons.bold,
   attributeName: AppFlowyRichTextKeys.bold,
 );
 
 final italicMobileToolbarItem = _buildToggleItem(
-  icon: AFMobileIcons.italic,
+  icon: ToolbarIcons.italic,
   attributeName: AppFlowyRichTextKeys.italic,
 );
 
 final underlineMobileToolbarItem = _buildToggleItem(
-  icon: AFMobileIcons.underline,
+  icon: ToolbarIcons.underline,
   attributeName: AppFlowyRichTextKeys.underline,
 );

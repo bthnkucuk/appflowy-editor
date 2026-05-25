@@ -6,8 +6,8 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// todo/quote grid in a [StupidSimpleSheetRoute] instead of the inline
 /// keyboard-height menu used by MobileToolbarV2.
 final blocksMobileToolbarItemSheet = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.list,
+  itemIconBuilder: (context, _, _) => ToolbarIcon(
+    afMobileIcons: ToolbarIcons.list,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {
@@ -95,40 +95,40 @@ class _SheetBlocksMenuState extends State<_SheetBlocksMenu> {
 
   final _lists = [
     _SheetListUnit(
-      icon: AFMobileIcons.h1,
+      icon: ToolbarIcons.h1,
       label: AppFlowyEditorL10n.current.mobileHeading1,
       name: HeadingBlockKeys.type,
       level: 1,
     ),
     _SheetListUnit(
-      icon: AFMobileIcons.h2,
+      icon: ToolbarIcons.h2,
       label: AppFlowyEditorL10n.current.mobileHeading2,
       name: HeadingBlockKeys.type,
       level: 2,
     ),
     _SheetListUnit(
-      icon: AFMobileIcons.h3,
+      icon: ToolbarIcons.h3,
       label: AppFlowyEditorL10n.current.mobileHeading3,
       name: HeadingBlockKeys.type,
       level: 3,
     ),
     _SheetListUnit(
-      icon: AFMobileIcons.bulletedList,
+      icon: ToolbarIcons.bulletedList,
       label: AppFlowyEditorL10n.current.bulletedList,
       name: BulletedListBlockKeys.type,
     ),
     _SheetListUnit(
-      icon: AFMobileIcons.numberedList,
+      icon: ToolbarIcons.numberedList,
       label: AppFlowyEditorL10n.current.numberedList,
       name: NumberedListBlockKeys.type,
     ),
     _SheetListUnit(
-      icon: AFMobileIcons.checkbox,
+      icon: ToolbarIcons.checkbox,
       label: AppFlowyEditorL10n.current.checkbox,
       name: TodoListBlockKeys.type,
     ),
     _SheetListUnit(
-      icon: AFMobileIcons.quote,
+      icon: ToolbarIcons.quote,
       label: AppFlowyEditorL10n.current.quote,
       name: QuoteBlockKeys.type,
     ),
@@ -148,7 +148,7 @@ class _SheetBlocksMenuState extends State<_SheetBlocksMenu> {
               node.attributes[HeadingBlockKeys.level] == list.level);
 
       return MobileToolbarItemMenuBtn(
-        icon: AFMobileIcon(
+        icon: ToolbarIcon(
           afMobileIcons: list.icon,
           color: MobileToolbarTheme.of(context).iconColor,
         ),
@@ -192,7 +192,7 @@ class _SheetBlocksMenuState extends State<_SheetBlocksMenu> {
 }
 
 class _SheetListUnit {
-  final AFMobileIcons icon;
+  final ToolbarIcons icon;
   final String label;
   final String name;
   final int? level;

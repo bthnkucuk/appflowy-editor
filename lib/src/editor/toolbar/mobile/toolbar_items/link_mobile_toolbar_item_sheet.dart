@@ -7,8 +7,8 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// by MobileToolbarV2. Unlike the other sheet variants, this one keeps the
 /// soft keyboard open — the TextField inside [MobileLinkMenu] needs it.
 final linkMobileToolbarItemSheet = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.link,
+  itemIconBuilder: (context, _, _) => ToolbarIcon(
+    afMobileIcons: ToolbarIcons.link,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {

@@ -6,8 +6,8 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// bold/italic/underline/strikethrough grid in a [StupidSimpleSheetRoute]
 /// instead of the inline keyboard-height menu used by MobileToolbarV2.
 final textDecorationMobileToolbarItemSheet = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.textDecorationBold,
+  itemIconBuilder: (context, _, _) => ToolbarIcon(
+    afMobileIcons: ToolbarIcons.textDecorationBold,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {
@@ -107,22 +107,22 @@ class _SheetTextDecorationMenuState extends State<_SheetTextDecorationMenu> {
 
   final _textDecorations = [
     TextDecorationUnit(
-      icon: AFMobileIcons.bold,
+      icon: ToolbarIcons.bold,
       label: AppFlowyEditorL10n.current.bold,
       name: AppFlowyRichTextKeys.bold,
     ),
     TextDecorationUnit(
-      icon: AFMobileIcons.italic,
+      icon: ToolbarIcons.italic,
       label: AppFlowyEditorL10n.current.italic,
       name: AppFlowyRichTextKeys.italic,
     ),
     TextDecorationUnit(
-      icon: AFMobileIcons.underline,
+      icon: ToolbarIcons.underline,
       label: AppFlowyEditorL10n.current.underline,
       name: AppFlowyRichTextKeys.underline,
     ),
     TextDecorationUnit(
-      icon: AFMobileIcons.strikethrough,
+      icon: ToolbarIcons.strikethrough,
       label: AppFlowyEditorL10n.current.strikethrough,
       name: AppFlowyRichTextKeys.strikethrough,
     ),
@@ -148,7 +148,7 @@ class _SheetTextDecorationMenuState extends State<_SheetTextDecorationMenu> {
       }
 
       return MobileToolbarItemMenuBtn(
-        icon: AFMobileIcon(
+        icon: ToolbarIcon(
           afMobileIcons: decoration.icon,
           color: MobileToolbarTheme.of(context).iconColor,
         ),
