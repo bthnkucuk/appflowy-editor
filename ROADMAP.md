@@ -92,7 +92,7 @@
 
 Hedef: yalancı sinyalleri kapat, ilk izlenimi düzelt, ölçüm altyapısını kur.
 
-- [ ] **H1.1** CI'da `continue-on-error: true` flag'lerini düşür (analyze/format/custom_lint) — `.github/workflows/test.yml:50,54,58,65` — Etki: Yüksek / Çaba: XS
+- [x] **H1.1** CI'da `continue-on-error: true` flag'lerini düşür (analyze/format/custom_lint) — `.github/workflows/test.yml:50,54,58,65` — Etki: Yüksek / Çaba: XS (codecov upload'unda flag korundu — upload hatası gate değil)
 - [ ] **H1.2** `README.md:146` sonrasını sil; gerçek "Getting Started" + "Examples" bölümü yaz — Etki: Yüksek / Çaba: XS
 - [ ] **H1.3** `CONTRIBUTING.md` ve `.github/PULL_REQUEST_TEMPLATE.md` yaz — Etki: Orta / Çaba: XS
 - [ ] **H1.4** `example/` uygulamasını CI'da `flutter build apk --debug` + `flutter build ios --no-codesign` ile derle — Etki: Orta / Çaba: S
@@ -106,7 +106,7 @@ Hedef: yalancı sinyalleri kapat, ilk izlenimi düzelt, ölçüm altyapısını 
   6. flutter_lints'i kaldırıp very_good_analysis'i tek `include` olarak koy
 - [ ] **H1.6** iOS/Android emulator CI job'larını geri ekle (yorum satırı duruyor) — Etki: Yüksek / Çaba: M / Risk: Orta (flaky)
 - [ ] **H1.7** `test/legacy/`'i `new/` ile birleştir ya da sil — Etki: Düşük / Çaba: S
-- [ ] **H1.8** **Selection-cascade benchmark testi**: 200 paragraph dokümanda bir selection set'inin kaç `notifyListeners` + `build` tetiklediğini sayan widget testi (H2'nin regresyon kapısı, ölçüm) — Etki: Yüksek / Çaba: S
+- [x] **H1.8** **Selection-cascade benchmark testi**: 200 paragraph dokümanda bir selection set'inin kaç `notifyListeners` + `build` tetiklediğini sayan widget testi (H2'nin regresyon kapısı, ölçüm) — Etki: Yüksek / Çaba: S → `5f667148`
 - [ ] **H1.9** 31 branch'ten eski release/feature dallarını arşivle (tag bırak, sil)
 
 ### Horizon 2 — Selection stutter kök neden (2–6 hafta)
@@ -114,8 +114,8 @@ Hedef: yalancı sinyalleri kapat, ilk izlenimi düzelt, ölçüm altyapısını 
 Hedef: auto-memory'deki "yavaşla-hızlan" pattern'ini *ölçerek* kapat.
 
 - [ ] **H2.0** Profil al — Android profile build, 200+ paragraph doc, `flutter run --profile --trace-skia` + DevTools Timeline. PostFrameCallback yoğunluğu + ValueListenableBuilder rebuild sayısı (baseline)
-- [ ] **H2.1** `PropertyValueNotifier`'ı opt-in `alwaysNotify`'a çevir; `selectionNotifier` için eşitlik kontrolü ekle — `lib/src/property_notifier.dart` — Etki: Yüksek / Çaba: S / Risk: Orta (bazı listener'lar layout-dirty broadcast'ine bel bağlamış olabilir)
-- [ ] **H2.2** `BlockSelectionArea._updateSelectionIfNeeded` self-reschedule chain'ini kır; layout-dirty sinyaline bağla — `block_selection_area.dart:230-232` + `block_highlight_area.dart:267-269` — Etki: Yüksek / Çaba: M
+- [x] **H2.1** `PropertyValueNotifier`'ı opt-in `alwaysNotify`'a çevir; `selectionNotifier` için eşitlik kontrolü ekle — `lib/src/property_notifier.dart` — Etki: Yüksek / Çaba: S / Risk: Orta (bazı listener'lar layout-dirty broadcast'ine bel bağlamış olabilir) → `dc84c0bb`
+- [x] **H2.2** `BlockSelectionArea._updateSelectionIfNeeded` self-reschedule chain'ini kır; layout-dirty sinyaline bağla — `block_selection_area.dart:230-232` + `block_highlight_area.dart:267-269` — Etki: Yüksek / Çaba: M → `cae7d87b`
 - [ ] **H2.3** `mobile_selection_service._updateSelectionDuringDrag` içindeki nested post-frame'leri tek frame'e indir — Çaba: S
 - [ ] **H2.4** iOS Magnifier'ı `BackdropFilter`'sız variant ile A/B test et; ölçüm darboğazsa default'u değiştir — Çaba: S
 - [ ] **H2.5** `_AndroidDragHandle.onPanUpdate`'teki `HapticFeedback.selectionClick` yalnız selection karakter değiştiğinde tetiklensin — `mobile_basic_handle.dart:344` — Çaba: XS
@@ -180,6 +180,12 @@ Hedef: auto-memory'deki "yavaşla-hızlan" pattern'ini *ölçerek* kapat.
 - [ ] Out-of-the-box drag handle (BlockNote tarzı)
 - [ ] `editorTest` helper public — unit test boilerplate azalt
 - [ ] `editor.dart` ve `block_component.dart` dartdoc yaz
+- [ ] **Slang / slang_flutter ile lokalizasyon migration** (next major `7.0.0` ile, H3.4 birlikte). Mevcut: `flutter_intl` + `intl_utils`, 22 ARB dosyası, 23 kullanım, düz string mapping (parametre/plural yok). Slang kazanımı: compile-time type safety + nested keys (`t.toolbar.bold`). Riskler:
+  - Library package için optimize değil (LocaleSettings/TranslationProvider app-odaklı)
+  - `AppFlowyEditorLocalizations.current.X` breaking — downstream consumer'lar etkilenir
+  - `dart run slang migrate arb` ile ARB→JSON dönüşüm var (22× döngü)
+  - Sadece major bump'ta (H3.4 ile birlikte) anlamlı; standalone yapılırsa migration maliyeti yüksek
+  - **Daha ucuz alternatif**: flutter_intl'i tut + üstüne `lib/src/l10n/keys.dart` typed wrapper yaz — migration yok, API breaking yok
 
 ---
 

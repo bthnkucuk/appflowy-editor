@@ -253,7 +253,6 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
         prevCursorRect = null;
       });
     }
-
   }
 
   void _clearCursorRect() {

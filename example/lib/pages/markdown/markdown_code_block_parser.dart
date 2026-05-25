@@ -30,6 +30,7 @@ class MarkdownCodeBlockParserV2 extends CustomMarkdownParser {
       return [];
     }
 
+    // TODO(roadmap-H4): finish code-block decoder; until then `language` is parsed but unused. File is excluded in example/analysis_options.yaml.
     String? language;
     if (code.attributes.containsKey('class')) {
       final classes = code.attributes['class']!.split(' ');

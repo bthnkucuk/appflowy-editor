@@ -26,85 +26,79 @@ void main() {
       return editor;
     }
 
-    testWidgets(
-      'baseline: a unique selection set fires selectionNotifier once '
-      '(200 paragraphs)',
-      (tester) async {
-        final editor = await setupEditor(tester, paragraphCount: 200);
-        final editorState = editor.editorState;
+    testWidgets('baseline: a unique selection set fires selectionNotifier once '
+        '(200 paragraphs)', (tester) async {
+      final editor = await setupEditor(tester, paragraphCount: 200);
+      final editorState = editor.editorState;
 
-        var listenerCallCount = 0;
-        void counter() => listenerCallCount++;
-        editorState.selectionNotifier.addListener(counter);
+      var listenerCallCount = 0;
+      void counter() => listenerCallCount++;
+      editorState.selectionNotifier.addListener(counter);
 
-        editorState.selection = Selection.single(path: [50], startOffset: 0);
-        await tester.pump();
+      editorState.selection = Selection.single(path: [50], startOffset: 0);
+      await tester.pump();
 
-        debugPrint('\n${'=' * 60}');
-        debugPrint('BASELINE — unique-selection notify count');
-        debugPrint('=' * 60);
-        debugPrint('Document: 200 paragraphs');
-        debugPrint('Action: set selection ONCE on path [50]');
-        debugPrint('selectionNotifier listener calls: $listenerCallCount');
-        debugPrint('${'=' * 60}\n');
+      debugPrint('\n${'=' * 60}');
+      debugPrint('BASELINE — unique-selection notify count');
+      debugPrint('=' * 60);
+      debugPrint('Document: 200 paragraphs');
+      debugPrint('Action: set selection ONCE on path [50]');
+      debugPrint('selectionNotifier listener calls: $listenerCallCount');
+      debugPrint('${'=' * 60}\n');
 
-        expect(
-          listenerCallCount,
-          1,
-          reason: 'A single unique selection set should fire listener once.',
-        );
+      expect(
+        listenerCallCount,
+        1,
+        reason: 'A single unique selection set should fire listener once.',
+      );
 
-        editorState.selectionNotifier.removeListener(counter);
-        await editor.dispose();
-      },
-    );
+      editorState.selectionNotifier.removeListener(counter);
+      await editor.dispose();
+    });
 
-    testWidgets(
-      'H2.1: identical selection sets short-circuit '
-      '(no notify cascade across N blocks)',
-      (tester) async {
-        final editor = await setupEditor(tester, paragraphCount: 200);
-        final editorState = editor.editorState;
+    testWidgets('H2.1: identical selection sets short-circuit '
+        '(no notify cascade across N blocks)', (tester) async {
+      final editor = await setupEditor(tester, paragraphCount: 200);
+      final editorState = editor.editorState;
 
-        // Establish an initial selection so the first identical set has
-        // a non-null prior value to compare against.
-        editorState.selection = Selection.single(path: [50], startOffset: 0);
-        await tester.pump();
+      // Establish an initial selection so the first identical set has
+      // a non-null prior value to compare against.
+      editorState.selection = Selection.single(path: [50], startOffset: 0);
+      await tester.pump();
 
-        var listenerCallCount = 0;
-        void counter() => listenerCallCount++;
-        editorState.selectionNotifier.addListener(counter);
+      var listenerCallCount = 0;
+      void counter() => listenerCallCount++;
+      editorState.selectionNotifier.addListener(counter);
 
-        final identical = Selection.single(path: [50], startOffset: 0);
-        for (var i = 0; i < 10; i++) {
-          editorState.selection = identical;
-        }
-        await tester.pump();
+      final identical = Selection.single(path: [50], startOffset: 0);
+      for (var i = 0; i < 10; i++) {
+        editorState.selection = identical;
+      }
+      await tester.pump();
 
-        debugPrint('\n${'=' * 60}');
-        debugPrint('H2.1 LOCK — identical-selection notify count');
-        debugPrint('=' * 60);
-        debugPrint('Document: 200 paragraphs');
-        debugPrint('Action: set IDENTICAL selection 10 times');
-        debugPrint('selectionNotifier listener calls: $listenerCallCount');
-        debugPrint('Expected after H2.1: 0');
-        debugPrint('${'=' * 60}\n');
+      debugPrint('\n${'=' * 60}');
+      debugPrint('H2.1 LOCK — identical-selection notify count');
+      debugPrint('=' * 60);
+      debugPrint('Document: 200 paragraphs');
+      debugPrint('Action: set IDENTICAL selection 10 times');
+      debugPrint('selectionNotifier listener calls: $listenerCallCount');
+      debugPrint('Expected after H2.1: 0');
+      debugPrint('${'=' * 60}\n');
 
-        // Locks in the H2.1 fix: EditorState.selection setter short-circuits
-        // when the new value equals the current one, preventing the
-        // PropertyValueNotifier always-notify cascade.
-        expect(
-          listenerCallCount,
-          0,
-          reason:
-              'After H2.1, identical selection assignments must not '
-              'trigger selectionNotifier listeners.',
-        );
+      // Locks in the H2.1 fix: EditorState.selection setter short-circuits
+      // when the new value equals the current one, preventing the
+      // PropertyValueNotifier always-notify cascade.
+      expect(
+        listenerCallCount,
+        0,
+        reason:
+            'After H2.1, identical selection assignments must not '
+            'trigger selectionNotifier listeners.',
+      );
 
-        editorState.selectionNotifier.removeListener(counter);
-        await editor.dispose();
-      },
-    );
+      editorState.selectionNotifier.removeListener(counter);
+      await editor.dispose();
+    });
 
     testWidgets(
       'frame settling: pump count to stabilize after a single selection set '

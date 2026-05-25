@@ -43,9 +43,7 @@ final class Node extends ChangeNotifier
     this._attributes = const {},
     Iterable<Node> children = const [],
   }) : _children = RankedLinkedList<Node>()
-         ..addAll(
-           children.map((e) => e..unlink()),
-         ),
+         ..addAll(children.map((e) => e..unlink())),
        id = id ?? Uuid().v4() {
     if (initialRank != null) {
       super.rank = initialRank;
