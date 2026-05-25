@@ -7,6 +7,12 @@ import 'package:flutter/material.dart';
 
 const String selectionExtraInfoDisableMobileToolbarKey = 'disableMobileToolbar';
 
+/// To update the state of the mobile toolbar widget.
+abstract class MobileToolbarWidgetService {
+  /// close item menu and enable keyboard
+  void closeItemMenu();
+}
+
 class MobileToolbarV2 extends StatefulWidget {
   const MobileToolbarV2({
     super.key,
