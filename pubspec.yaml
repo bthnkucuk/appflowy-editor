@@ -33,6 +33,10 @@ dependencies:
   provider: "^6.1.5+1"
   string_validator: "^1.2.0"
   stupid_simple_sheet: ^0.9.1+1
+  iconifyx_ph:
+    git:
+      url: https://github.com/bthnkucuk/iconifyx
+      path: packages/iconifyx_ph
   universal_html: 2.3.0
   universal_platform: ^1.1.0
   url_launcher: "^6.3.2"

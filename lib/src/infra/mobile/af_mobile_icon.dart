@@ -1,30 +1,49 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:iconifyx_ph/iconifyx_ph.dart';
 
 enum AFMobileIcons {
-  textDecoration('toolbar_icons/text_decoration'),
-  bold('toolbar_icons/bold'),
-  italic('toolbar_icons/italic'),
-  underline('toolbar_icons/underline'),
-  strikethrough('toolbar_icons/strikethrough'),
-  code('toolbar_icons/code'),
-  color('toolbar_icons/color'),
-  link('toolbar_icons/link'),
-  heading('toolbar_icons/heading'),
-  h1('toolbar_icons/h1'),
-  h2('toolbar_icons/h2'),
-  h3('toolbar_icons/h3'),
-  list('toolbar_icons/list'),
-  bulletedList('toolbar_icons/bulleted_list'),
-  numberedList('toolbar_icons/numbered_list'),
-  checkbox('toolbar_icons/checkbox'),
-  quote('toolbar_icons/quote'),
-  divider('toolbar_icons/divider'),
-  close('toolbar_icons/close');
-
-  final String iconPath;
-  const AFMobileIcons(this.iconPath);
+  textDecorationBold,
+  bold,
+  italic,
+  underline,
+  strikethrough,
+  code,
+  color,
+  link,
+  heading,
+  h1,
+  h2,
+  h3,
+  list,
+  bulletedList,
+  numberedList,
+  checkbox,
+  quote,
+  divider,
+  close,
 }
+
+const Map<AFMobileIcons, IconifyIconData> _phMap = {
+  AFMobileIcons.textDecorationBold: PhIcons.textAa,
+  AFMobileIcons.bold: PhIcons.textB,
+  AFMobileIcons.italic: PhIcons.textItalicBold,
+  AFMobileIcons.underline: PhIcons.textUnderline,
+  AFMobileIcons.strikethrough: PhIcons.textStrikethrough,
+  AFMobileIcons.code: PhIcons.code,
+  AFMobileIcons.color: PhIcons.palette,
+  AFMobileIcons.link: PhIcons.link,
+  AFMobileIcons.heading: PhIcons.textH,
+  AFMobileIcons.h1: PhIcons.textHOne,
+  AFMobileIcons.h2: PhIcons.textHTwo,
+  AFMobileIcons.h3: PhIcons.textHThree,
+  AFMobileIcons.list: PhIcons.list,
+  AFMobileIcons.bulletedList: PhIcons.listBullets,
+  AFMobileIcons.numberedList: PhIcons.listNumbers,
+  AFMobileIcons.checkbox: PhIcons.checkSquare,
+  AFMobileIcons.quote: PhIcons.quotes,
+  AFMobileIcons.divider: PhIcons.minus,
+  AFMobileIcons.close: PhIcons.x,
+};
 
 /// {@tool snippet}
 /// All the icons are from AFMobileIcons enum.
@@ -51,15 +70,6 @@ class AFMobileIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SvgPicture.asset(
-      'assets/mobile/${afMobileIcons.iconPath}.svg',
-      colorFilter: color != null
-          ? ColorFilter.mode(color!, BlendMode.srcIn)
-          : null,
-      fit: BoxFit.fill,
-      height: size,
-      width: size,
-      package: 'appflowy_editor',
-    );
+    return IconifyIcon(_phMap[afMobileIcons]!, size: size, color: color);
   }
 }

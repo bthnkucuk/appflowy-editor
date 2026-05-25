@@ -7,7 +7,7 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// instead of the inline keyboard-height menu used by MobileToolbarV2.
 final textDecorationMobileToolbarItemSheet = MobileToolbarItem.action(
   itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.textDecoration,
+    afMobileIcons: AFMobileIcons.textDecorationBold,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {

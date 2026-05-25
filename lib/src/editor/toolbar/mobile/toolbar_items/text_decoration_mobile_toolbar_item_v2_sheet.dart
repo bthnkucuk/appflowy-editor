@@ -8,7 +8,7 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// by MobileToolbarV2.
 final textDecorationMobileToolbarItemV2Sheet = MobileToolbarItem.action(
   itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.textDecoration,
+    afMobileIcons: AFMobileIcons.textDecorationBold,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {
