@@ -21,13 +21,26 @@ Widget _wrap(Widget child) => MaterialApp(
   home: Scaffold(body: child),
 );
 
+// Tracks every dispose+GC type but ignores leaks we know we cannot fix
+// from this package:
+//   - ExtentManager: super_sliver_list 0.4.1 element never disposes its
+//     ChangeNotifier (latest available, no upstream fix yet).
+//   - KeepEditorFocusNotifier: package-level singleton; disposing it
+//     would break the next editor instance.
+//   - BannerPainter: Flutter's debug banner, transient.
+final _leakSettings = LeakTesting.settings
+    .withTrackedAll()
+    .withTracked(experimentalAllNotGCed: true)
+    .withIgnored(
+      notDisposed: {'ExtentManager': null, 'KeepEditorFocusNotifier': null},
+      notGCed: {'BannerPainter': null},
+    );
+
 void main() {
   group('leak baseline — editor mount/detach cycle', () {
     testWidgets(
       'blank editor disposes cleanly',
-      experimentalLeakTesting: LeakTesting.settings
-          .withTrackedAll()
-          .withTracked(experimentalAllNotGCed: true),
+      experimentalLeakTesting: _leakSettings,
       (tester) async {
         final editorState = EditorState.blank(withInitialText: true);
 
@@ -48,9 +61,7 @@ void main() {
 
     testWidgets(
       'editor with 20 paragraphs disposes cleanly',
-      experimentalLeakTesting: LeakTesting.settings
-          .withTrackedAll()
-          .withTracked(experimentalAllNotGCed: true),
+      experimentalLeakTesting: _leakSettings,
       (tester) async {
         final editorState = EditorState(
           document: Document.blank()
@@ -73,9 +84,7 @@ void main() {
 
     testWidgets(
       'editor with floating toolbar disposes cleanly',
-      experimentalLeakTesting: LeakTesting.settings
-          .withTrackedAll()
-          .withTracked(experimentalAllNotGCed: true),
+      experimentalLeakTesting: _leakSettings,
       (tester) async {
         final editorState = EditorState(
           document: Document.blank()
@@ -135,9 +144,7 @@ void main() {
 
     testWidgets(
       'editor with mobile floating toolbar disposes cleanly',
-      experimentalLeakTesting: LeakTesting.settings
-          .withTrackedAll()
-          .withTracked(experimentalAllNotGCed: true),
+      experimentalLeakTesting: _leakSettings,
       (tester) async {
         final editorState = EditorState(
           document: Document.blank()
@@ -188,9 +195,7 @@ void main() {
 
     testWidgets(
       'editor with mobile toolbar (always-mounted bar) disposes cleanly',
-      experimentalLeakTesting: LeakTesting.settings
-          .withTrackedAll()
-          .withTracked(experimentalAllNotGCed: true),
+      experimentalLeakTesting: _leakSettings,
       (tester) async {
         final editorState = EditorState(
           document: Document.blank()
