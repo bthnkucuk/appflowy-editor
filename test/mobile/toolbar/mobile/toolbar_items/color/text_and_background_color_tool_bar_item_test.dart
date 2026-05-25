@@ -28,6 +28,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap color toolbar item
     await tester.tap(find.byType(IconButton).first);

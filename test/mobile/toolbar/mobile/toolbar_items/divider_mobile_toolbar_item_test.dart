@@ -28,6 +28,7 @@ void main() {
             ),
           ),
         );
+        await tester.pumpAndSettle();
 
         // Tap divider toolbar item
         final dividerBtn = find.byType(IconButton).first;
@@ -60,6 +61,7 @@ void main() {
             ),
           ),
         );
+        await tester.pumpAndSettle();
 
         // Tap divider toolbar item
         final dividerBtn = find.byType(IconButton).first;

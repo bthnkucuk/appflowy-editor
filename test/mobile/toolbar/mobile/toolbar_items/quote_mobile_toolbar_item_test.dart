@@ -25,6 +25,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap quote toolbar item
     final quoteBtn = find.byType(IconButton).first;

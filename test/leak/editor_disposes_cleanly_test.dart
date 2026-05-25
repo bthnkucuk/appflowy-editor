@@ -206,11 +206,10 @@ void main() {
 
         await tester.pumpWidget(
           _wrap(
-            Column(
-              children: [
-                Expanded(child: AppFlowyEditor(editorState: editorState)),
-                MobileToolbar(editorState: editorState, toolbarItems: const []),
-              ],
+            MobileToolbarV2(
+              editorState: editorState,
+              toolbarItems: const [],
+              child: AppFlowyEditor(editorState: editorState),
             ),
           ),
         );

@@ -1,5 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/ime/text_input_service.dart';
+import 'package:appflowy_editor/src/editor/toolbar/mobile/utils/keyboard_height_observer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -109,16 +110,13 @@ class TestableEditor {
           quoteMobileToolbarItem,
           codeMobileToolbarItem,
         ];
-        editor = Column(
-          children: [
-            Expanded(
-              child: AppFlowyEditor(
-                editorStyle: const EditorStyle.mobile(),
-                editorState: editorState,
-              ),
-            ),
-            MobileToolbar(editorState: editorState, toolbarItems: items),
-          ],
+        editor = MobileToolbarV2(
+          editorState: editorState,
+          toolbarItems: items,
+          child: AppFlowyEditor(
+            editorStyle: const EditorStyle.mobile(),
+            editorState: editorState,
+          ),
         );
       } else {
         editor = FloatingToolbar(
@@ -148,6 +146,17 @@ class TestableEditor {
       ),
     );
     await tester.pump();
+
+    if (withFloatingToolbar && inMobile) {
+      // MobileToolbarV2 inserts its toolbar via OverlayEntry in a
+      // postFrameCallback; the inner listener that drives `cachedKeyboardHeight`
+      // only registers after that overlay child mounts. Pump frames until the
+      // toolbar overlay is up, then notify a non-zero keyboard height so the
+      // item menus get a usable height (otherwise menu taps miss the target).
+      await tester.pumpAndSettle();
+      KeyboardHeightObserver.instance.notify(300);
+      await tester.pumpAndSettle();
+    }
 
     return this;
   }
@@ -208,6 +217,13 @@ class TestableEditor {
       reason: SelectionUpdateReason.uiEvent,
     );
     await tester.pumpAndSettle();
+    // If a mobile toolbar overlay is mounted, its inner _MobileToolbar only
+    // registers its keyboard-height listener once a non-null selection mounts
+    // it. Re-notify here so the menu has a usable height for taps.
+    if (selection != null) {
+      KeyboardHeightObserver.instance.notify(300);
+      await tester.pumpAndSettle();
+    }
   }
 
   Node? nodeAtPath(Path path) {

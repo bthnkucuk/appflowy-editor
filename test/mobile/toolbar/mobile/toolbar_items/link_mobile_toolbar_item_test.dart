@@ -31,6 +31,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap link toolbar item
     await tester.tap(find.byType(IconButton).first);

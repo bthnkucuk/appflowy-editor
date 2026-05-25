@@ -26,6 +26,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap heading toolbar item
     await tester.tap(find.byType(IconButton).first);

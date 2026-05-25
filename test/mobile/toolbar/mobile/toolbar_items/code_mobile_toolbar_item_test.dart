@@ -25,6 +25,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap code toolbar item
     final codeBtn = find.byType(IconButton).first;

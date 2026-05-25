@@ -26,6 +26,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap text decoration toolbar item
     await tester.tap(find.byType(IconButton).first);

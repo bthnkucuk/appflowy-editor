@@ -25,6 +25,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap todoList toolbar item
     final todoListBtn = find.byType(IconButton).first;

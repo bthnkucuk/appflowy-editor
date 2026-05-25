@@ -68,7 +68,7 @@ class AppFlowyEditorLog {
   /// For example, uses the logger when processing scroll events.
   static AppFlowyEditorLog scroll = AppFlowyEditorLog._(name: 'scroll');
 
-  /// For logging message related to [FloatingToolbar] or [MobileToolbar].
+  /// For logging message related to [FloatingToolbar] or [MobileToolbarV2].
   ///
   /// For example, uses the logger when processing toolbar events.
   static AppFlowyEditorLog toolbar = AppFlowyEditorLog._(name: 'toolbar');
