@@ -24,7 +24,7 @@ void main() {
       Material(
         child: MobileAppWithToolbarWidget(
           editorState: editor.editorState,
-          toolbarItems: [buildTextAndBackgroundColorMobileToolbarItem()],
+          toolbarItems: [buildTextAndBackgroundColorMobileToolbarItemSheet()],
         ),
       ),
     );

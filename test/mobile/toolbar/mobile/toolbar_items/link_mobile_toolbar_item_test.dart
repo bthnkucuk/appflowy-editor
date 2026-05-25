@@ -27,7 +27,7 @@ void main() {
       Material(
         child: MobileAppWithToolbarWidget(
           editorState: editor.editorState,
-          toolbarItems: [linkMobileToolbarItem],
+          toolbarItems: [linkMobileToolbarItemSheet],
         ),
       ),
     );

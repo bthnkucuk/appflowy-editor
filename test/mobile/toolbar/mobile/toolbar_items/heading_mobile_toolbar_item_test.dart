@@ -22,7 +22,7 @@ void main() {
       Material(
         child: MobileAppWithToolbarWidget(
           editorState: editor.editorState,
-          toolbarItems: [headingMobileToolbarItem],
+          toolbarItems: [headingMobileToolbarItemSheet],
         ),
       ),
     );
