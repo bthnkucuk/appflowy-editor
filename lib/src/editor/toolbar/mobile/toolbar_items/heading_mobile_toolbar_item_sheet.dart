@@ -51,6 +51,14 @@ final headingMobileToolbarItemSheet = MobileToolbarItem.action(
   },
 );
 
+class HeadingUnit {
+  final AFMobileIcons icon;
+  final String label;
+  final int level;
+
+  HeadingUnit({required this.icon, required this.label, required this.level});
+}
+
 class _SheetHeadingMenu extends StatefulWidget {
   const _SheetHeadingMenu(this.editorState, this.selection);
 

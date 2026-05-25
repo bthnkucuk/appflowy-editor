@@ -75,6 +75,11 @@ class _EditorState extends State<Editor> {
 
   @override
   Widget build(BuildContext context) {
+    // When the mobile keyboard is up, MobileToolbarV2 sits just above it.
+    // Push the word-counter above the toolbar so it doesn't get overlapped.
+    final keyboardOpen = MediaQuery.viewPaddingOf(context).bottom > 0;
+    final counterBottomOffset =
+        keyboardOpen && UniversalPlatform.isMobile ? 56.0 : 0.0;
     return Stack(
       children: [
         ColoredBox(
@@ -124,35 +129,37 @@ class _EditorState extends State<Editor> {
             },
           ),
         ),
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(8),
-                bottomLeft: UniversalPlatform.isMobile
-                    ? const Radius.circular(8)
-                    : Radius.zero,
-              ),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'Word Count: $wordCount  |  Character Count: $charCount',
-                  style: const TextStyle(fontSize: 11),
-                ),
-                if (!(editorState?.selection?.isCollapsed ?? true))
-                  Text(
-                    '(In-selection) Word Count: $selectedWordCount  |  Character Count: $selectedCharCount',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-              ],
-            ),
-          ),
-        ),
+        //TODO: Add word counter back in.
+        //NOTE: This is the word counter that is shown on the bottom of the editor.
+        // Positioned(
+        //   bottom: counterBottomOffset,
+        //   right: 0,
+        //   child: Container(
+        //     padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
+        //     decoration: BoxDecoration(
+        //       color: Colors.black.withValues(alpha: 0.1),
+        //       borderRadius: BorderRadius.only(
+        //         topLeft: const Radius.circular(8),
+        //         bottomLeft: UniversalPlatform.isMobile
+        //             ? const Radius.circular(8)
+        //             : Radius.zero,
+        //       ),
+        //     ),
+        //     child: Column(
+        //       children: [
+        //         Text(
+        //           'Word Count: $wordCount  |  Character Count: $charCount',
+        //           style: const TextStyle(fontSize: 11),
+        //         ),
+        //         if (!(editorState?.selection?.isCollapsed ?? true))
+        //           Text(
+        //             '(In-selection) Word Count: $selectedWordCount  |  Character Count: $selectedCharCount',
+        //             style: const TextStyle(fontSize: 11),
+        //           ),
+        //       ],
+        //     ),
+        //   ),
+        // ),
       ],
     );
   }

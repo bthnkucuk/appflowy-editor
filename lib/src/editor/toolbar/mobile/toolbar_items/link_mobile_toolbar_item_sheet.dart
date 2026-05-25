@@ -115,11 +115,13 @@ class _SheetLinkMenuHostState extends State<_SheetLinkMenuHost> {
         onSubmitted: (value) async {
           final navigator = Navigator.of(context);
           if (value.isNotEmpty) {
-            await widget.editorState.formatDelta(widget.selection, {
-              AppFlowyRichTextKeys.href: value,
-            }, selectionExtraInfo: {
-              selectionExtraInfoDoNotAttachTextService: true,
-            });
+            await widget.editorState.formatDelta(
+              widget.selection,
+              {AppFlowyRichTextKeys.href: value},
+              selectionExtraInfo: {
+                selectionExtraInfoDoNotAttachTextService: true,
+              },
+            );
           }
           if (mounted) navigator.pop();
         },

@@ -1,38 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 
-final linkMobileToolbarItem = MobileToolbarItem.withMenu(
-  itemIconBuilder: (context, _, _) => AFMobileIcon(
-    afMobileIcons: AFMobileIcons.link,
-    color: MobileToolbarTheme.of(context).iconColor,
-  ),
-  itemMenuBuilder: (_, editorState, itemMenuService) {
-    final selection = editorState.selection;
-    if (selection == null) {
-      return const SizedBox.shrink();
-    }
-    final String? linkText = editorState.getDeltaAttributeValueInSelection(
-      AppFlowyRichTextKeys.href,
-      selection,
-    );
-
-    return MobileLinkMenu(
-      editorState: editorState,
-      linkText: linkText,
-      onSubmitted: (value) async {
-        if (value.isNotEmpty) {
-          await editorState.formatDelta(selection, {
-            AppFlowyRichTextKeys.href: value,
-          });
-        }
-        itemMenuService.closeItemMenu();
-        editorState.service.keyboardService?.closeKeyboard();
-      },
-      onCancel: () => itemMenuService.closeItemMenu(),
-    );
-  },
-);
-
 class MobileLinkMenu extends StatefulWidget {
   const MobileLinkMenu({
     super.key,
