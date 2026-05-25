@@ -6,12 +6,6 @@ import 'package:flutter/material.dart';
 
 const selectionExtraInfoDisableFloatingToolbar = 'disableFloatingToolbar';
 
-class MobileFloatingToolbarItem {
-  const MobileFloatingToolbarItem({required this.builder});
-
-  final WidgetBuilder builder;
-}
-
 /// A mobile floating toolbar that displays at the top of the editor when the selection is not collapsed.
 ///   and will be hidden when the selection is collapsed.
 ///

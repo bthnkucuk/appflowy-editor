@@ -1,1 +1,1 @@
-export 'toolbar_icons.dart';
+export 'editor_icons.dart';
