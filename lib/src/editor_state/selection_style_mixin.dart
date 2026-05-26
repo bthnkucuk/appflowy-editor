@@ -107,32 +107,32 @@ mixin _SelectionStyleMixin {
   /// Use [SelectionExtraInfo.from] to read typed values.
   Map? selectionExtraInfo;
 
-  /// Public update entry — awaits the post-frame callback for
-  /// `uiEvent` updates so callers can chain against the layout pass.
-  Future<void> updateSelectionWithReason(
+  /// Public update entry.
+  ///
+  /// H2.3.c (2026-05-26): previously returned `Future<void>` resolved on
+  /// the next post-frame, but every one of the ~33 callsites in the
+  /// editor fired-and-forgot the result — including the mobile drag
+  /// path, which fires this ~60 times per second. The Completer +
+  /// `addPostFrameCallback` allocation per call was pure waste. Return
+  /// type is now `void`; callers that genuinely need to wait for the
+  /// layout pass can schedule their own `WidgetsBinding.instance.
+  /// addPostFrameCallback`.
+  void updateSelectionWithReason(
     Selection? selection, {
     SelectionUpdateReason reason = SelectionUpdateReason.transaction,
     Map? extraInfo,
     SelectionType? customSelectionType,
-  }) async {
-    final completer = Completer<void>();
-
+  }) {
     if (reason == SelectionUpdateReason.uiEvent) {
       _selectionType = customSelectionType ?? SelectionType.inline;
-      WidgetsBinding.instance.addPostFrameCallback(
-        (timeStamp) => completer.complete(),
-      );
     } else if (customSelectionType != null) {
       _selectionType = customSelectionType;
     }
 
-    // broadcast to other users here
     selectionExtraInfo = extraInfo;
     _selectionUpdateReason = reason;
 
     this.selection = selection;
-
-    return completer.future;
   }
 
   void updateHighlight(Selection? highlight) {
