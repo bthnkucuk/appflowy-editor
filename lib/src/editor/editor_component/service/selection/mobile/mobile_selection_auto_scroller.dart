@@ -42,6 +42,12 @@ class MobileSelectionAutoScroller {
       return;
     }
 
+    debugPrint(
+      '[SELECTION] autoScroll.onScroll dragMode=${pan.dragMode} '
+      'lastPanOffset=${pan.lastPanOffset.value} '
+      'scrollDy=${editorState.service.scrollService?.dy}',
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!isMounted() ||
           pan.dragMode == MobileSelectionDragMode.none ||
@@ -58,6 +64,10 @@ class MobileSelectionAutoScroller {
   }
 
   void _updateSelectionDuringDrag(Offset panEndOffset) {
+    debugPrint(
+      '[SELECTION] autoScroll._updateSelectionDuringDrag panEnd=$panEndOffset '
+      'dragMode=${pan.dragMode}',
+    );
     if (pan.panStartOffset == null || pan.panStartSelection == null) {
       return;
     }

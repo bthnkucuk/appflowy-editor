@@ -176,40 +176,50 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
           if (_forwardKey.currentContext == null) {
             return;
           }
-          // Post-keyboard visibility check for non-drag (programmatic / tap)
-          // selections. By the time this delayed callback runs the keyboard
-          // is up and the viewport has its final size — if the selection
-          // rect is fully visible now, we shouldn't auto-scroll. The old
-          // logic always fired `startAutoScroll` with a 220×220 rect, which
-          // on a keyboard-shrunk viewport clipped the bottom edge zone and
-          // pulled the content up even when the selection was already
-          // visible.
-          if (direction == null) {
-            final scrollBox =
-                _forwardKey.currentContext!.findRenderObject() as RenderBox?;
-            // Re-fetch rects — viewport may have moved during the keyboard
-            // open animation.
-            final freshRects = editorState.selectionRects();
-            if (scrollBox != null && freshRects.isNotEmpty) {
-              final viewportTop = scrollBox.localToGlobal(Offset.zero).dy;
-              final viewportBottom = viewportTop + scrollBox.size.height;
-              final freshTarget = freshRects.last;
-              if (freshTarget.top >= viewportTop &&
-                  freshTarget.bottom <= viewportBottom) {
-                // ignore: avoid_print
-                print(
-                  '[SCROLL-DBG]   post-kb: rect $freshTarget inside viewport '
-                  '[$viewportTop, $viewportBottom] — skipping scroll',
-                );
-                return;
-              }
+
+          // Universal viewport guard. If the target rect is fully visible
+          // inside the viewport, no auto-scroll is needed regardless of
+          // dragMode. This prevents the feedback loop where every small
+          // selection change during a drag (handle drag, long-press cursor
+          // drag) calls startAutoScroll → viewport scrolls → onScroll
+          // listener fires → another selection commit → another scroll, ad
+          // infinitum. Manifests as the editor scrolling fast vertically
+          // when the user drags a handle horizontally, or when the handle
+          // is held still.
+          //
+          // We pick the same handle anchor scroll_service_widget already
+          // uses for `targetRect` above: first for left handle, last
+          // otherwise (right handle / cursor / default).
+          final scrollBox =
+              _forwardKey.currentContext!.findRenderObject() as RenderBox?;
+          final freshRects = editorState.selectionRects();
+          if (scrollBox != null && freshRects.isNotEmpty) {
+            final viewportTop = scrollBox.localToGlobal(Offset.zero).dy;
+            final viewportBottom = viewportTop + scrollBox.size.height;
+            final isLeftHandle =
+                dragMode?.toString() ==
+                'MobileSelectionDragMode.leftSelectionHandle';
+            final freshTarget = isLeftHandle
+                ? freshRects.first
+                : freshRects.last;
+            if (freshTarget.top >= viewportTop &&
+                freshTarget.bottom <= viewportBottom) {
               // ignore: avoid_print
               print(
-                '[SCROLL-DBG]   post-kb: rect $freshTarget OUTSIDE viewport '
-                '[$viewportTop, $viewportBottom] — scrolling',
+                '[SCROLL-DBG]   viewport-guard: rect $freshTarget inside '
+                '[$viewportTop, $viewportBottom] — skipping scroll '
+                '(dragMode=$dragMode)',
               );
+              return;
             }
+            // ignore: avoid_print
+            print(
+              '[SCROLL-DBG]   viewport-guard: rect $freshTarget OUTSIDE '
+              '[$viewportTop, $viewportBottom] — scrolling '
+              '(dragMode=$dragMode)',
+            );
           }
+
           // ignore: avoid_print
           print(
             '[SCROLL-DBG]   → startAutoScroll fired '

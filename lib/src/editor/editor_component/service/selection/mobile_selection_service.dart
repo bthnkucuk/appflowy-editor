@@ -27,12 +27,16 @@ enum MobileSelectionDragMode {
   cursor,
 }
 
-enum MobileSelectionHandlerType { leftHandle, rightHandle, cursorHandle }
-
 // the value type is MobileSelectionDragMode
 const String selectionDragModeKey = 'selection_drag_mode';
 bool disableIOSSelectWordEdgeOnTap = false;
-bool disableMagnifier = false;
+
+/// Mobil long-press / cursor drag sırasında gösterilen magnifier'ı
+/// kapatır. Varsayılan `true` — magnifier görsel gürültü yarattığı için
+/// ve ileride node-level drag handle gesture'larına yer açmak için
+/// kapalı geliyor. Tüketici uygulama `disableMagnifier = false` diyerek
+/// açık geri alabilir.
+bool disableMagnifier = true;
 
 class MobileSelectionServiceWidget extends StatefulWidget {
   const MobileSelectionServiceWidget({
@@ -85,8 +89,6 @@ class _MobileSelectionServiceWidgetState
 
   late final MobileSelectionAutoScroller _autoScroller;
   late final MobileGestureStrategy _gestureStrategy;
-
-  bool updateSelectionByTapUp = false;
 
   late EditorState editorState = Provider.of<EditorState>(
     context,
@@ -196,7 +198,10 @@ class _MobileSelectionServiceWidgetState
       return;
     }
 
-    _clearSelection();
+    debugPrint(
+      '[SELECTION] facade.updateSelection -> $selection dragMode=${_pan.dragMode}',
+    );
+    selectionRects.clear();
 
     if (selection != null) {
       if (!selection.isCollapsed) {
@@ -224,15 +229,11 @@ class _MobileSelectionServiceWidgetState
     currentSelectedNodes = [];
     currentSelection.value = null;
 
-    _clearSelection();
+    selectionRects.clear();
   }
 
   @override
   void clearCursor() {
-    _clearSelection();
-  }
-
-  void _clearSelection() {
     selectionRects.clear();
   }
 
@@ -292,7 +293,6 @@ class _MobileSelectionServiceWidgetState
         AppFlowyEditorLog.selection.debug('update cursor area, $selection');
         WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
           selectionRects.clear();
-          _clearSelection();
           _updateSelectionAreas(selection);
         });
       }
@@ -304,6 +304,11 @@ class _MobileSelectionServiceWidgetState
     DragStartDetails details,
     MobileSelectionDragMode mode,
   ) {
+    debugPrint(
+      '[SELECTION] handle.onPanStart mode=$mode '
+      'globalPos=${details.globalPosition} '
+      'scrollDy=${editorState.service.scrollService?.dy}',
+    );
     _pan.panStartOffset = details.globalPosition.translate(-3.0, 0);
     _pan.panStartScrollDy = editorState.service.scrollService?.dy;
 
@@ -331,6 +336,12 @@ class _MobileSelectionServiceWidgetState
     }
 
     final panEndOffset = details.globalPosition;
+    debugPrint(
+      '[SELECTION] handle.onPanUpdate mode=$mode '
+      'panEnd=$panEndOffset '
+      'delta=${details.delta} '
+      'currentScrollDy=${editorState.service.scrollService?.dy}',
+    );
 
     final dy = editorState.service.scrollService?.dy;
     final panStartOffset = dy == null
@@ -368,6 +379,7 @@ class _MobileSelectionServiceWidgetState
 
   @override
   void onPanEnd(DragEndDetails details, MobileSelectionDragMode mode) {
+    debugPrint('[SELECTION] handle.onPanEnd mode=$mode');
     _pan.clearPan();
     _pan.dragMode = MobileSelectionDragMode.none;
 

@@ -18,12 +18,14 @@ class AndroidGestureStrategy extends MobileGestureStrategy {
   @override
   void onTapUp(TapUpDetails details) {
     final offset = details.globalPosition;
+    debugPrint('[SELECTION] android.onTapUp offset=$offset');
 
     clearSelection();
 
     // make a collapsed selection at offset
     final position = getPositionInOffset(offset);
     if (position == null) {
+      debugPrint('[SELECTION]   tapUp: no position at offset');
       return;
     }
 
@@ -38,15 +40,20 @@ class AndroidGestureStrategy extends MobileGestureStrategy {
   @override
   void onLongPressStart(LongPressStartDetails details) {
     final offset = details.globalPosition;
+    debugPrint('[SELECTION] android.onLongPressStart offset=$offset');
     pan.panStartOffset = offset;
     pan.panStartScrollDy = editorState.service.scrollService?.dy;
     final node = getNodeInOffset(offset);
     // select word boundary closest to offset
     final selection = node?.selectable?.getWordBoundaryInOffset(offset);
     if (selection == null) {
+      debugPrint('[SELECTION]   longPressStart: no word boundary, clearing');
       clearSelection();
       return;
     }
+    debugPrint(
+      '[SELECTION]   longPressStart: wordBoundary=$selection -> dragMode=cursor',
+    );
 
     if (editorState.editorStyle.enableHapticFeedbackOnAndroid) {
       HapticFeedback.mediumImpact();
@@ -77,6 +84,7 @@ class AndroidGestureStrategy extends MobileGestureStrategy {
     }
 
     final offset = details.globalPosition;
+    debugPrint('[SELECTION] android.onLongPressMoveUpdate offset=$offset');
     pan.lastPanOffset.value = offset;
 
     final wordBoundary = getNodeInOffset(
@@ -121,6 +129,7 @@ class AndroidGestureStrategy extends MobileGestureStrategy {
 
   @override
   void onLongPressEnd(LongPressEndDetails details) {
+    debugPrint('[SELECTION] android.onLongPressEnd');
     pan.clearPan();
     pan.dragMode = MobileSelectionDragMode.none;
 
@@ -169,6 +178,7 @@ class AndroidGestureStrategy extends MobileGestureStrategy {
 
   @override
   void onPanEnd(DragEndDetails details) {
+    debugPrint('[SELECTION] android.onPanEnd');
     pan.clearPan();
     pan.dragMode = MobileSelectionDragMode.none;
     pan.isPanStartHorizontal = null;
