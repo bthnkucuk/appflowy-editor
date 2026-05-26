@@ -17,6 +17,7 @@ export 'editor_state/types.dart';
 // library-level privacy with EditorState — the mixin types themselves
 // are library-private (`_` prefix) and the implementation details
 // (`_recordRedoOrUndo`, `_disposeXxx`) stay invisible to downstream.
+part 'editor_state/document_query_mixin.dart';
 part 'editor_state/editor_chrome.dart';
 part 'editor_state/editor_service.dart';
 part 'editor_state/history_mixin.dart';
@@ -55,6 +56,7 @@ abstract class _EditorStateBase
         _HistoryMixin,
         _SelectionStyleMixin,
         _ScrollCoordinatorMixin,
+        _DocumentQueryMixin,
         _TransactionPipelineMixin,
         _TableOfContentsMixin {}
 
@@ -227,97 +229,8 @@ class EditorState extends _EditorStateBase {
   ///
   /// if selection is backward, return nodes in order
   /// if selection is forward, return nodes in reverse order
-  ///
-  /// Satisfies [_ScrollCoordinatorMixin.getNodesInSelection] abstract.
-  @override
-  List<Node> getNodesInSelection(Selection selection) {
-    // Normalize the selection.
-    final normalized = selection.normalized;
-
-    // Get the start and end nodes.
-    final startNode = document.nodeAtPath(normalized.start.path);
-    final endNode = document.nodeAtPath(normalized.end.path);
-
-    // If we have both nodes, we can find the nodes in the selection.
-    if (startNode != null && endNode != null) {
-      final nodes = NodeIterator(
-        document: document,
-        startNode: startNode,
-        endNode: endNode,
-      ).toList();
-
-      return selection.isForward ? nodes.reversed.toList() : nodes;
-    }
-
-    // If we don't have both nodes, we can't find the nodes in the selection.
-    return [];
-  }
-
-  List<Node> getSelectedNodes({Selection? selection, bool withCopy = true}) {
-    List<Node> res = [];
-    selection ??= this.selection;
-    if (selection == null) {
-      return res;
-    }
-    final nodes = getNodesInSelection(selection);
-    for (final node in nodes) {
-      if (res.any((element) => element.isParentOf(node))) {
-        continue;
-      }
-      res.add(node);
-    }
-
-    if (withCopy) {
-      res = res.map((e) => e.copyWith()).toList();
-    }
-
-    if (res.isNotEmpty) {
-      var delta = res.first.delta;
-      if (delta != null) {
-        res.first.updateAttributes({
-          ...res.first.attributes,
-          blockComponentDelta: delta
-              .slice(
-                selection.startIndex,
-                selection.isSingle ? selection.endIndex : delta.length,
-              )
-              .toJson(),
-        });
-      }
-
-      var node = res.last;
-      while (node.children.isNotEmpty) {
-        node = node.children.last;
-      }
-      delta = node.delta;
-      if (delta != null && !selection.isSingle) {
-        if (node.parent != null) {
-          node.insertBefore(
-            node.copyWith(
-              attributes: {
-                ...node.attributes,
-                blockComponentDelta: delta
-                    .slice(0, selection.endIndex)
-                    .toJson(),
-              },
-            ),
-          );
-          node.unlink();
-        } else {
-          node.updateAttributes({
-            ...node.attributes,
-            blockComponentDelta: delta.slice(0, selection.endIndex).toJson(),
-          });
-        }
-      }
-    }
-
-    return res;
-  }
-
-  Node? getNodeAtPath(Path path) {
-    return document.nodeAtPath(path);
-  }
+  // getNodesInSelection, getSelectedNodes, getNodeAtPath live in
+  // [_DocumentQueryMixin].
 
   // selectionRects, highlightRects, scrollToHighlight,
   // enableAutoScrollHighlight, disableAutoScrollHighlight,
