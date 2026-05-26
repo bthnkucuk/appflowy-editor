@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/pan_drag_state.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_magnifier.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/shared.dart';
 import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
@@ -72,7 +73,6 @@ class _MobileSelectionServiceWidgetState
   List<Node> currentSelectedNodes = [];
 
   final List<SelectionGestureInterceptor> _interceptors = [];
-  final ValueNotifier<Offset?> _lastPanOffset = ValueNotifier(null);
 
   // the selection from editorState will be updated directly, but the cursor
   // or selection area depends on the layout of the text, so we need to update
@@ -80,13 +80,7 @@ class _MobileSelectionServiceWidgetState
   final PropertyValueNotifier<Selection?> selectionNotifierAfterLayout =
       PropertyValueNotifier<Selection?>(null);
 
-  /// Pan
-  Offset? _panStartOffset;
-  double? _panStartScrollDy;
-  Selection? _panStartSelection;
-  bool? _isPanStartHorizontal;
-
-  MobileSelectionDragMode dragMode = MobileSelectionDragMode.none;
+  final PanDragState _pan = PanDragState();
 
   bool updateSelectionByTapUp = false;
 
@@ -111,7 +105,7 @@ class _MobileSelectionServiceWidgetState
   @override
   void dispose() {
     clearSelection();
-    _lastPanOffset.dispose();
+    _pan.dispose();
     currentSelection.dispose();
     WidgetsBinding.instance.removeObserver(this);
     selectionNotifierAfterLayout.dispose();
@@ -166,7 +160,7 @@ class _MobileSelectionServiceWidgetState
 
   Widget _buildMagnifier() {
     return ValueListenableBuilder(
-      valueListenable: _lastPanOffset,
+      valueListenable: _pan.lastPanOffset,
       builder: (_, offset, _) {
         if (offset == null || disableMagnifier) {
           return const SizedBox.shrink();
@@ -202,7 +196,7 @@ class _MobileSelectionServiceWidgetState
             [
               MobileSelectionDragMode.leftSelectionHandle,
               MobileSelectionDragMode.rightSelectionHandle,
-            ].contains(dragMode)) {
+            ].contains(_pan.dragMode)) {
           isCollapsedHandleVisible = false;
 
           return const SizedBox.shrink();
@@ -274,7 +268,7 @@ class _MobileSelectionServiceWidgetState
             [
               MobileSelectionDragMode.none,
               MobileSelectionDragMode.cursor,
-            ].contains(dragMode)) {
+            ].contains(_pan.dragMode)) {
           return const SizedBox.shrink();
         }
 
@@ -283,7 +277,7 @@ class _MobileSelectionServiceWidgetState
             [
               MobileSelectionDragMode.leftSelectionHandle,
               MobileSelectionDragMode.rightSelectionHandle,
-            ].contains(dragMode);
+            ].contains(_pan.dragMode);
 
         selection = selection.normalized;
 
@@ -371,9 +365,9 @@ class _MobileSelectionServiceWidgetState
       reason: SelectionUpdateReason.uiEvent,
       customSelectionType: SelectionType.inline,
       extraInfo: {
-        selectionDragModeKey: dragMode,
+        selectionDragModeKey: _pan.dragMode,
         selectionExtraInfoDoNotAttachTextService:
-            dragMode == MobileSelectionDragMode.cursor,
+            _pan.dragMode == MobileSelectionDragMode.cursor,
       },
     );
   }
@@ -386,13 +380,6 @@ class _MobileSelectionServiceWidgetState
     _clearSelection();
   }
 
-  void _clearPanVariables() {
-    _panStartOffset = null;
-    _panStartSelection = null;
-    _panStartScrollDy = null;
-    _lastPanOffset.value = null;
-  }
-
   @override
   void clearCursor() {
     _clearSelection();
@@ -403,23 +390,23 @@ class _MobileSelectionServiceWidgetState
   }
 
   void _handleAutoScrollWhileDragging() {
-    if (!mounted || dragMode == MobileSelectionDragMode.none) {
+    if (!mounted || _pan.dragMode == MobileSelectionDragMode.none) {
       return;
     }
-    if (_panStartOffset == null ||
-        _panStartSelection == null ||
-        _lastPanOffset.value == null) {
+    if (_pan.panStartOffset == null ||
+        _pan.panStartSelection == null ||
+        _pan.lastPanOffset.value == null) {
       return;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted ||
-          dragMode == MobileSelectionDragMode.none ||
-          _panStartOffset == null ||
-          _panStartSelection == null) {
+          _pan.dragMode == MobileSelectionDragMode.none ||
+          _pan.panStartOffset == null ||
+          _pan.panStartSelection == null) {
         return;
       }
-      final offset = _lastPanOffset.value;
+      final offset = _pan.lastPanOffset.value;
       if (offset == null) {
         return;
       }
@@ -428,16 +415,16 @@ class _MobileSelectionServiceWidgetState
   }
 
   void _updateSelectionDuringDrag(Offset panEndOffset) {
-    if (_panStartOffset == null || _panStartSelection == null) {
+    if (_pan.panStartOffset == null || _pan.panStartSelection == null) {
       return;
     }
 
     final double? dy = editorState.service.scrollService?.dy;
     final Offset panStartOffset;
-    if (dy == null || _panStartScrollDy == null) {
-      panStartOffset = _panStartOffset!;
+    if (dy == null || _pan.panStartScrollDy == null) {
+      panStartOffset = _pan.panStartOffset!;
     } else {
-      panStartOffset = _panStartOffset!.translate(0, _panStartScrollDy! - dy);
+      panStartOffset = _pan.panStartOffset!.translate(0, _pan.panStartScrollDy! - dy);
     }
 
     final selectionInRange = getNodeInOffset(
@@ -449,17 +436,17 @@ class _MobileSelectionServiceWidgetState
     }
 
     late final Selection newSelection;
-    switch (dragMode) {
+    switch (_pan.dragMode) {
       case MobileSelectionDragMode.leftSelectionHandle:
         newSelection = Selection(
-          start: _panStartSelection!.normalized.end,
+          start: _pan.panStartSelection!.normalized.end,
           end: end,
         ).normalized;
         break;
 
       case MobileSelectionDragMode.rightSelectionHandle:
         newSelection = Selection(
-          start: _panStartSelection!.normalized.start,
+          start: _pan.panStartSelection!.normalized.start,
           end: end,
         ).normalized;
         break;
@@ -543,13 +530,13 @@ class _MobileSelectionServiceWidgetState
     DragStartDetails details,
     MobileSelectionDragMode mode,
   ) {
-    _panStartOffset = details.globalPosition.translate(-3.0, 0);
-    _panStartScrollDy = editorState.service.scrollService?.dy;
+    _pan.panStartOffset = details.globalPosition.translate(-3.0, 0);
+    _pan.panStartScrollDy = editorState.service.scrollService?.dy;
 
     final selection = editorState.selection;
-    _panStartSelection = selection;
+    _pan.panStartSelection = selection;
 
-    dragMode = mode;
+    _pan.dragMode = mode;
 
     return selection;
   }
@@ -559,13 +546,13 @@ class _MobileSelectionServiceWidgetState
     DragUpdateDetails details,
     MobileSelectionDragMode mode,
   ) {
-    if (_panStartOffset == null || _panStartScrollDy == null) {
+    if (_pan.panStartOffset == null || _pan.panStartScrollDy == null) {
       return null;
     }
 
     // only support selection mode now.
     if (editorState.selection == null ||
-        dragMode == MobileSelectionDragMode.none) {
+        _pan.dragMode == MobileSelectionDragMode.none) {
       return null;
     }
 
@@ -573,8 +560,8 @@ class _MobileSelectionServiceWidgetState
 
     final dy = editorState.service.scrollService?.dy;
     final panStartOffset = dy == null
-        ? _panStartOffset!
-        : _panStartOffset!.translate(0, _panStartScrollDy! - dy);
+        ? _pan.panStartOffset!
+        : _pan.panStartOffset!.translate(0, _pan.panStartScrollDy! - dy);
     final end = getNodeInOffset(
       panEndOffset,
     )?.selectable?.getSelectionInRange(panStartOffset, panEndOffset).end;
@@ -582,20 +569,20 @@ class _MobileSelectionServiceWidgetState
     Selection? newSelection;
 
     if (end != null) {
-      if (dragMode == MobileSelectionDragMode.leftSelectionHandle) {
+      if (_pan.dragMode == MobileSelectionDragMode.leftSelectionHandle) {
         newSelection = Selection(
-          start: _panStartSelection!.normalized.end,
+          start: _pan.panStartSelection!.normalized.end,
           end: end,
         ).normalized;
-      } else if (dragMode == MobileSelectionDragMode.rightSelectionHandle) {
+      } else if (_pan.dragMode == MobileSelectionDragMode.rightSelectionHandle) {
         newSelection = Selection(
-          start: _panStartSelection!.normalized.start,
+          start: _pan.panStartSelection!.normalized.start,
           end: end,
         ).normalized;
-      } else if (dragMode == MobileSelectionDragMode.cursor) {
+      } else if (_pan.dragMode == MobileSelectionDragMode.cursor) {
         newSelection = Selection.collapsed(end);
       }
-      _lastPanOffset.value = panEndOffset;
+      _pan.lastPanOffset.value = panEndOffset;
     }
 
     if (newSelection != null) {
@@ -607,8 +594,8 @@ class _MobileSelectionServiceWidgetState
 
   @override
   void onPanEnd(DragEndDetails details, MobileSelectionDragMode mode) {
-    _clearPanVariables();
-    dragMode = MobileSelectionDragMode.none;
+    _pan.clearPan();
+    _pan.dragMode = MobileSelectionDragMode.none;
 
     editorState.updateSelectionWithReason(
       editorState.selection,
@@ -685,9 +672,9 @@ class _MobileSelectionServiceWidgetState
 
   void _onLongPressStartIOS(LongPressStartDetails details) {
     final offset = details.globalPosition;
-    _panStartOffset = offset;
-    _panStartScrollDy = editorState.service.scrollService?.dy;
-    dragMode = MobileSelectionDragMode.cursor;
+    _pan.panStartOffset = offset;
+    _pan.panStartScrollDy = editorState.service.scrollService?.dy;
+    _pan.dragMode = MobileSelectionDragMode.cursor;
 
     // make a collapsed selection at offset with magnifier
     final position = getPositionInOffset(offset);
@@ -696,12 +683,12 @@ class _MobileSelectionServiceWidgetState
     }
 
     final selection = Selection.collapsed(position);
-    _lastPanOffset.value = offset;
+    _pan.lastPanOffset.value = offset;
     updateSelection(selection);
   }
 
   void _onLongPressUpdateIOS(LongPressMoveUpdateDetails details) {
-    if (_panStartOffset == null || _panStartScrollDy == null) {
+    if (_pan.panStartOffset == null || _pan.panStartScrollDy == null) {
       return;
     }
 
@@ -713,13 +700,13 @@ class _MobileSelectionServiceWidgetState
     }
 
     final selection = Selection.collapsed(position);
-    _lastPanOffset.value = offset;
+    _pan.lastPanOffset.value = offset;
     updateSelection(selection);
   }
 
   void _onLongPressEndIOS(LongPressEndDetails details) {
-    _clearPanVariables();
-    dragMode = MobileSelectionDragMode.none;
+    _pan.clearPan();
+    _pan.dragMode = MobileSelectionDragMode.none;
 
     editorState.updateSelectionWithReason(
       editorState.selection,
@@ -750,8 +737,8 @@ class _MobileSelectionServiceWidgetState
 
   void _onLongPressStartAndroid(LongPressStartDetails details) {
     final offset = details.globalPosition;
-    _panStartOffset = offset;
-    _panStartScrollDy = editorState.service.scrollService?.dy;
+    _pan.panStartOffset = offset;
+    _pan.panStartScrollDy = editorState.service.scrollService?.dy;
     final node = getNodeInOffset(offset);
     // select word boundary closest to offset
     final selection = node?.selectable?.getWordBoundaryInOffset(offset);
@@ -765,31 +752,31 @@ class _MobileSelectionServiceWidgetState
       HapticFeedback.mediumImpact();
     }
 
-    dragMode = MobileSelectionDragMode.cursor;
-    _panStartSelection = selection;
-    _lastPanOffset.value = offset;
+    _pan.dragMode = MobileSelectionDragMode.cursor;
+    _pan.panStartSelection = selection;
+    _pan.lastPanOffset.value = offset;
 
     editorState.updateSelectionWithReason(
       selection,
       reason: SelectionUpdateReason.uiEvent,
       extraInfo: {
-        selectionDragModeKey: dragMode,
+        selectionDragModeKey: _pan.dragMode,
         selectionExtraInfoDisableFloatingToolbar: true,
       },
     );
   }
 
   void _onLongPressUpdateAndroid(LongPressMoveUpdateDetails details) {
-    if (_panStartOffset == null || _panStartScrollDy == null) {
+    if (_pan.panStartOffset == null || _pan.panStartScrollDy == null) {
       return;
     }
     if (editorState.selection == null ||
-        dragMode == MobileSelectionDragMode.none) {
+        _pan.dragMode == MobileSelectionDragMode.none) {
       return;
     }
 
     final offset = details.globalPosition;
-    _lastPanOffset.value = offset;
+    _pan.lastPanOffset.value = offset;
 
     final wordBoundary = getNodeInOffset(
       offset,
@@ -797,24 +784,24 @@ class _MobileSelectionServiceWidgetState
 
     Selection? newSelection;
 
-    // extend selection from _panStartSelection to word boundary closest to offset
+    // extend selection from _pan.panStartSelection to word boundary closest to offset
     if (wordBoundary != null) {
-      if (wordBoundary.end.path > _panStartSelection!.end.path ||
-          wordBoundary.end.path.equals(_panStartSelection!.end.path) &&
-              wordBoundary.end.offset > _panStartSelection!.end.offset) {
+      if (wordBoundary.end.path > _pan.panStartSelection!.end.path ||
+          wordBoundary.end.path.equals(_pan.panStartSelection!.end.path) &&
+              wordBoundary.end.offset > _pan.panStartSelection!.end.offset) {
         newSelection = Selection(
-          start: _panStartSelection!.start,
+          start: _pan.panStartSelection!.start,
           end: wordBoundary.end,
         ).normalized;
-      } else if (wordBoundary.start.path < _panStartSelection!.start.path ||
-          wordBoundary.start.path.equals(_panStartSelection!.start.path) &&
-              wordBoundary.start.offset < _panStartSelection!.start.offset) {
+      } else if (wordBoundary.start.path < _pan.panStartSelection!.start.path ||
+          wordBoundary.start.path.equals(_pan.panStartSelection!.start.path) &&
+              wordBoundary.start.offset < _pan.panStartSelection!.start.offset) {
         newSelection = Selection(
-          start: _panStartSelection!.end,
+          start: _pan.panStartSelection!.end,
           end: wordBoundary.start,
         ).normalized;
       } else {
-        newSelection = _panStartSelection;
+        newSelection = _pan.panStartSelection;
       }
     }
 
@@ -823,7 +810,7 @@ class _MobileSelectionServiceWidgetState
         newSelection,
         reason: SelectionUpdateReason.uiEvent,
         extraInfo: {
-          selectionDragModeKey: dragMode,
+          selectionDragModeKey: _pan.dragMode,
           selectionExtraInfoDisableFloatingToolbar: true,
         },
       );
@@ -831,8 +818,8 @@ class _MobileSelectionServiceWidgetState
   }
 
   void _onLongPressEndAndroid(LongPressEndDetails details) {
-    _clearPanVariables();
-    dragMode = MobileSelectionDragMode.none;
+    _pan.clearPan();
+    _pan.dragMode = MobileSelectionDragMode.none;
 
     editorState.updateSelectionWithReason(
       editorState.selection,
@@ -843,28 +830,28 @@ class _MobileSelectionServiceWidgetState
 
   void _onPanUpdateAndroid(DragUpdateDetails details) {
     // if current pan gesture is not initially horizontal, return
-    if (_isPanStartHorizontal == false) {
+    if (_pan.isPanStartHorizontal == false) {
       return;
     }
     // first call to onPanUpdate to determine if current pan gesture is horizontal
     // if not, disable future calls in the guard clause above
     if (details.delta.dx.abs() < details.delta.dy.abs() &&
-        (_panStartOffset == null || _panStartScrollDy == null)) {
-      _isPanStartHorizontal = false;
+        (_pan.panStartOffset == null || _pan.panStartScrollDy == null)) {
+      _pan.isPanStartHorizontal = false;
 
       return;
     }
     // first successful call to onPanUpdate, initialize pan variables
     final offset = details.globalPosition;
-    if (_panStartOffset == null || _panStartScrollDy == null) {
-      _panStartOffset = offset;
-      _panStartScrollDy = editorState.service.scrollService?.dy;
-      dragMode = MobileSelectionDragMode.cursor;
+    if (_pan.panStartOffset == null || _pan.panStartScrollDy == null) {
+      _pan.panStartOffset = offset;
+      _pan.panStartScrollDy = editorState.service.scrollService?.dy;
+      _pan.dragMode = MobileSelectionDragMode.cursor;
     }
 
     final position = getPositionInOffset(offset);
 
-    _lastPanOffset.value = offset;
+    _pan.lastPanOffset.value = offset;
     if (position == null) {
       return;
     }
@@ -878,9 +865,9 @@ class _MobileSelectionServiceWidgetState
   }
 
   void _onPanEndAndroid(DragEndDetails details) {
-    _clearPanVariables();
-    dragMode = MobileSelectionDragMode.none;
-    _isPanStartHorizontal = null;
+    _pan.clearPan();
+    _pan.dragMode = MobileSelectionDragMode.none;
+    _pan.isPanStartHorizontal = null;
 
     editorState.updateSelectionWithReason(
       editorState.selection,
