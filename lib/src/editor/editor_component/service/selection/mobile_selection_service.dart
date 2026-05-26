@@ -20,15 +20,9 @@ import 'package:provider/provider.dart';
 StreamController<int> appFlowyEditorOnTapSelectionArea =
     StreamController<int>.broadcast();
 
-enum MobileSelectionDragMode {
-  none,
-  leftSelectionHandle,
-  rightSelectionHandle,
-  cursor,
-}
-
-// the value type is MobileSelectionDragMode
-const String selectionDragModeKey = 'selection_drag_mode';
+// MobileSelectionDragMode and selectionDragModeKey moved to
+// lib/src/editor_state/selection_drag_mode.dart so the editor_state
+// layer can compare against them directly. Re-exported via the barrel.
 bool disableIOSSelectWordEdgeOnTap = false;
 
 /// Mobil long-press / cursor drag sırasında gösterilen magnifier'ı

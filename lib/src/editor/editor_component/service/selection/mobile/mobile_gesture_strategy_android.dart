@@ -1,7 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/mobile_gesture_strategy.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart'
-    show MobileSelectionDragMode, selectionDragModeKey;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

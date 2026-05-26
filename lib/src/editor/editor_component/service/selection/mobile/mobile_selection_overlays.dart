@@ -4,7 +4,7 @@ import 'package:appflowy_editor/src/core/location/selection.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/pan_drag_state.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_magnifier.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart'
-    show MobileSelectionDragMode, disableMagnifier;
+    show disableMagnifier;
 import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
 import 'package:appflowy_editor/src/editor/util/property_notifier.dart';
 import 'package:appflowy_editor/src/editor_state.dart';

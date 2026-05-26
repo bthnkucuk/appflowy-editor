@@ -4,6 +4,7 @@
 library;
 
 import 'package:appflowy_editor/src/core/transform/transaction.dart';
+import 'package:appflowy_editor/src/editor_state/selection_drag_mode.dart';
 import 'package:appflowy_editor/src/history/undo_manager.dart';
 
 /// The record broadcast by `EditorState.transactionStream`. Pattern-matched
@@ -21,6 +22,51 @@ typedef EditorTransactionValue = (
 /// text service when selection is changed.
 const selectionExtraInfoDoNotAttachTextService =
     'selectionExtraInfoDoNotAttachTextService';
+
+/// Typed view over the untyped `selectionExtraInfo` map that
+/// `EditorState.updateSelectionWithReason` carries alongside a selection
+/// change. Wire-compatible — the underlying value remains a
+/// `Map<String, Object?>` so `Transaction.selectionExtraInfo`
+/// serialization keeps working — but reads at consumer sites no longer
+/// have to stringify enums or guess at key spellings.
+///
+/// Construct via [SelectionExtraInfo.from] when you have a possibly-null
+/// map handed to you by the editor; use [asMap] when you need to pass
+/// it back into APIs that still expect the raw map shape.
+extension type SelectionExtraInfo._(Map<String, Object?> _map) {
+  /// Wrap an existing map; `null` becomes an empty wrapper so callers
+  /// don't have to null-check before reading typed accessors.
+  factory SelectionExtraInfo.from(Map<String, Object?>? map) =>
+      SelectionExtraInfo._(map ?? const <String, Object?>{});
+
+  /// Empty info, useful as a default sentinel.
+  factory SelectionExtraInfo.empty() =>
+      SelectionExtraInfo._(const <String, Object?>{});
+
+  /// The raw map for callers that still talk in untyped extraInfo (e.g.
+  /// `Transaction.selectionExtraInfo` serialization).
+  Map<String, Object?> get asMap => _map;
+
+  /// Resolved drag mode for the current selection update. Returns
+  /// [MobileSelectionDragMode.none] when the key is absent or holds a
+  /// type other than the enum.
+  MobileSelectionDragMode get dragMode {
+    final value = _map[selectionDragModeKey];
+    return value is MobileSelectionDragMode
+        ? value
+        : MobileSelectionDragMode.none;
+  }
+
+  /// Whether a drag (handle / long-press cursor) is currently in
+  /// progress. Equivalent to `dragMode != none` — exposed as its own
+  /// getter because it is what most consumers actually care about.
+  bool get isDraggingSelection => dragMode != MobileSelectionDragMode.none;
+
+  /// True when the selection update should NOT attach the text service
+  /// (used to suppress IME re-attachment during transient updates).
+  bool get doNotAttachTextService =>
+      _map[selectionExtraInfoDoNotAttachTextService] == true;
+}
 
 final class ApplyOptions {
   const ApplyOptions({

@@ -104,8 +104,9 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
 
       Rect targetRect;
       AxisDirection? direction;
-      final dynamic dragMode =
-          editorState.selectionExtraInfo?['selection_drag_mode'];
+      final dragMode = SelectionExtraInfo.from(
+        editorState.selectionExtraInfo?.cast<String, Object?>(),
+      ).dragMode;
 
       // For desktop: if auto-scroller is already scrolling (from drag-to-select),
       // don't override it here. The desktop_selection_service handles drag scrolling.
@@ -114,18 +115,18 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
         return;
       }
 
-      switch (dragMode?.toString()) {
-        case 'MobileSelectionDragMode.leftSelectionHandle':
+      switch (dragMode) {
+        case MobileSelectionDragMode.leftSelectionHandle:
           targetRect = selectionRects.first;
           direction = AxisDirection.up;
           break;
 
-        case 'MobileSelectionDragMode.rightSelectionHandle':
+        case MobileSelectionDragMode.rightSelectionHandle:
           targetRect = selectionRects.last;
           direction = AxisDirection.down;
           break;
 
-        case 'MobileSelectionDragMode.cursor':
+        case MobileSelectionDragMode.cursor:
           targetRect = selectionRects.last;
           if (lastSelection != null) {
             final isMovingUp =
@@ -136,7 +137,8 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
           }
           break;
 
-        default:
+        case MobileSelectionDragMode.none:
+          // Non-drag selection updates (programmatic, taps, etc.).
           targetRect = selectionRects.last;
 
           // sometimes moving up in a long single node may be not working
@@ -197,8 +199,7 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
             final viewportTop = scrollBox.localToGlobal(Offset.zero).dy;
             final viewportBottom = viewportTop + scrollBox.size.height;
             final isLeftHandle =
-                dragMode?.toString() ==
-                'MobileSelectionDragMode.leftSelectionHandle';
+                dragMode == MobileSelectionDragMode.leftSelectionHandle;
             final freshTarget = isLeftHandle
                 ? freshRects.first
                 : freshRects.last;

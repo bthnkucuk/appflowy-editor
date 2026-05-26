@@ -1,8 +1,7 @@
 import 'dart:ui';
 
 import 'package:appflowy_editor/src/core/location/selection.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart'
-    show MobileSelectionDragMode;
+import 'package:appflowy_editor/src/editor_state/selection_drag_mode.dart';
 import 'package:flutter/foundation.dart';
 
 /// Mutable state shared across the mobile selection service, gesture

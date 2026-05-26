@@ -1,5 +1,4 @@
 import 'package:appflowy_editor/appflowy_editor.dart' hide Path;
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart';
 import 'package:appflowy_editor/src/render/selection/cursor.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';

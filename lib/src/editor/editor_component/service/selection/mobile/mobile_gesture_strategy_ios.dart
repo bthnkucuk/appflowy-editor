@@ -1,10 +1,7 @@
 import 'package:appflowy_editor/src/core/location/selection.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/mobile_gesture_strategy.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart'
-    show
-        MobileSelectionDragMode,
-        appFlowyEditorOnTapSelectionArea,
-        disableIOSSelectWordEdgeOnTap;
+    show appFlowyEditorOnTapSelectionArea, disableIOSSelectWordEdgeOnTap;
 import 'package:appflowy_editor/src/editor_state.dart';
 import 'package:appflowy_editor/src/extensions/node_extensions.dart';
 import 'package:flutter/material.dart';

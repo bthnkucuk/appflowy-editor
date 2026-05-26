@@ -8,9 +8,8 @@ import 'package:appflowy_editor/src/history/undo_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+export 'editor_state/selection_drag_mode.dart';
 export 'editor_state/types.dart';
-
-const _selectionDragModeKey = 'selection_drag_mode';
 
 /// The state of the editor.
 ///
@@ -697,11 +696,13 @@ class EditorState {
         onScrollViewScrolled: () {
           _notifyScrollViewScrolledListeners();
           if (!isDesktopOrWeb) {
-            final dynamic dragMode = selectionExtraInfo?[_selectionDragModeKey];
-            final bool isDraggingSelection =
-                dragMode != null &&
-                dragMode.toString() != 'MobileSelectionDragMode.none';
-            if (!isDraggingSelection) {
+            // The field is the untyped `Map?` we publish to the rest of
+            // the editor; cast at the boundary so the typed accessor can
+            // do its work.
+            final info = SelectionExtraInfo.from(
+              selectionExtraInfo?.cast<String, Object?>(),
+            );
+            if (!info.isDraggingSelection) {
               return;
             }
             WidgetsBinding.instance.addPostFrameCallback((_) {
