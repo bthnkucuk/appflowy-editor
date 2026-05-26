@@ -185,26 +185,6 @@ class UndoManager {
     return undoItem;
   }
 
-  @Deprecated('Use record() with TransactionSource instead')
-  HistoryItem getUndoHistoryItem() {
-    if (undoStack.isEmpty) {
-      final item = HistoryItem();
-      undoStack.push(item);
-
-      return item;
-    }
-    final last = undoStack.last;
-    if (last.sealed) {
-      redoStack.clear();
-      final item = HistoryItem();
-      undoStack.push(item);
-
-      return item;
-    }
-
-    return last;
-  }
-
   void undo() {
     AppFlowyEditorLog.editor.debug('undo');
     final s = state;
