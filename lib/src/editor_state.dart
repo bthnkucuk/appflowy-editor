@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:collection/collection.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/scroll/auto_scroller.dart';
 import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
 import 'package:appflowy_editor/src/history/undo_manager.dart';
@@ -62,11 +62,14 @@ class EditorState extends _EditorStateBase {
   }) {
     _initHistory(maxHistoryItemSize);
     undoManager.state = this;
+    _initDirtyTracking();
   }
 
   EditorState.blank({bool withInitialText = true})
     : this(document: Document.blank(withInitialText: withInitialText));
 
+  // Satisfies [_TransactionPipelineMixin.document] abstract getter.
+  @override
   final Document document;
 
   // the minimum duration for saving the history item.

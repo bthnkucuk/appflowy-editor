@@ -63,6 +63,18 @@ class _HomePageState extends State<HomePage> {
   late Future<String> _jsonString;
   late Editor _editor;
 
+  /// Surfaces the live [EditorState] to the app bar so it can render
+  /// an `isDirty` indicator. `null` until the editor calls
+  /// `onEditorStateChange` for the first time.
+  final ValueNotifier<EditorState?> _editorStateNotifier =
+      ValueNotifier<EditorState?>(null);
+
+  @override
+  void dispose() {
+    _editorStateNotifier.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +87,7 @@ class _HomePageState extends State<HomePage> {
           jsonString: _jsonString,
           onEditorStateChange: (editorState) {
             _editorState = editorState;
+            _publishEditorState(editorState);
           },
         );
   }
@@ -87,6 +100,7 @@ class _HomePageState extends State<HomePage> {
       jsonString: _jsonString,
       onEditorStateChange: (editorState) {
         _editorState = editorState;
+        _publishEditorState(editorState);
         _jsonString = Future.value(
           jsonEncode(_editorState.document.toJson()),
         );
@@ -94,6 +108,19 @@ class _HomePageState extends State<HomePage> {
     );
 
     _widgetBuilder = (context) => _editor;
+  }
+
+  /// `onEditorStateChange` fires from inside the editor's build phase
+  /// (FutureBuilder → Editor build), so writing to a ValueNotifier
+  /// synchronously would call `setState` mid-build on any listening
+  /// ValueListenableBuilder. Defer the write to the next frame.
+  void _publishEditorState(EditorState editorState) {
+    if (_editorStateNotifier.value == editorState) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_editorStateNotifier.value == editorState) return;
+      _editorStateNotifier.value = editorState;
+    });
   }
 
   @override
@@ -108,6 +135,13 @@ class _HomePageState extends State<HomePage> {
         surfaceTintColor: Colors.transparent,
         title: const Text('AppFlowy Editor'),
         actions: [
+          ValueListenableBuilder<EditorState?>(
+            valueListenable: _editorStateNotifier,
+            builder: (context, editorState, _) {
+              if (editorState == null) return const SizedBox.shrink();
+              return _DirtyIndicator(editorState: editorState);
+            },
+          ),
           if (UniversalPlatform.isMobile)
             IconButton(
               tooltip: 'Export & share',
@@ -553,4 +587,47 @@ String generateRandomString(int len) {
   return String.fromCharCodes(
     List.generate(len, (index) => r.nextInt(33) + 89),
   );
+}
+
+/// AppBar action that shows whether the document has unsaved changes
+/// and lets the user mark it clean. Wired to
+/// [EditorState.isDirtyNotifier], which the editor maintains via an
+/// operation-incremental content hash (see
+/// `_TransactionPipelineMixin._applyHashDelta`).
+class _DirtyIndicator extends StatelessWidget {
+  const _DirtyIndicator({required this.editorState});
+
+  final EditorState editorState;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: editorState.isDirtyNotifier,
+      builder: (context, isDirty, _) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isDirty)
+              const Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: Text(
+                  '• Unsaved',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            IconButton(
+              tooltip: isDirty ? 'Mark as saved' : 'Saved',
+              icon: Icon(
+                isDirty ? Icons.save_outlined : Icons.check_circle_outline,
+              ),
+              onPressed: isDirty ? editorState.markClean : null,
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
