@@ -59,9 +59,8 @@ class BlockHighlightArea extends StatefulWidget {
 
   /// Diagnostic counter for the H2.3 stutter investigation. See
   /// `BlockSelectionArea.debugBuilderCallCount` for rationale — same
-  /// pattern, separate counter so a test can attribute calls to the
+  /// pattern, separate counter so a logger can attribute calls to the
   /// highlight path independently.
-  @visibleForTesting
   static int debugBuilderCallCount = 0;
 
   @override

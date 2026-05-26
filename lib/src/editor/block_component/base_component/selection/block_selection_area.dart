@@ -100,7 +100,9 @@ class BlockSelectionArea extends StatefulWidget {
   /// paint emit. After H2.3.a (derived listenable), this count drops
   /// from ~3N to ~6 per selection notify on an N-block document.
   /// One integer increment per build; production cost is negligible.
-  @visibleForTesting
+  ///
+  /// Public (no `@visibleForTesting`) so example apps can wire a
+  /// runtime stutter logger without an analyzer escape hatch.
   static int debugBuilderCallCount = 0;
 
   @override

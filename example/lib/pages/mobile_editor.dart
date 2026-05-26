@@ -1,4 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:example/util/stutter_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:universal_platform/universal_platform.dart';
@@ -21,6 +22,7 @@ class _MobileEditorState extends State<MobileEditor> {
   EditorState get editorState => widget.editorState;
 
   late final EditorScrollController editorScrollController;
+  late final StutterLogger _stutterLogger;
 
   late EditorStyle editorStyle;
   late Map<String, BlockComponentBuilder> blockComponentBuilders;
@@ -34,8 +36,21 @@ class _MobileEditorState extends State<MobileEditor> {
       shrinkWrap: false,
     );
 
+    // Dev-only diagnostic — logs per-notify BSA/BHA build deltas during
+    // a selection handle drag. Tail with
+    //   adb logcat | grep STUTTER
+    // and trigger by long-pressing in the document.
+    _stutterLogger = StutterLogger(editorState);
+
     editorStyle = _buildMobileEditorStyle();
     blockComponentBuilders = _buildBlockComponentBuilders();
+  }
+
+  @override
+  void dispose() {
+    _stutterLogger.dispose();
+    editorScrollController.dispose();
+    super.dispose();
   }
 
   @override
