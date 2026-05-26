@@ -101,10 +101,7 @@ class TestableEditor {
     if (withFloatingToolbar) {
       if (inMobile) {
         final items = <MobileToolbarItem>[
-          textDecorationMobileToolbarItemSheet,
-          headingMobileToolbarItemSheet,
           todoListMobileToolbarItem,
-          listMobileToolbarItemSheet,
           linkMobileToolbarItemSheet,
           quoteMobileToolbarItem,
           codeMobileToolbarItem,

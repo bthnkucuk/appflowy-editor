@@ -73,11 +73,8 @@ class _MobileEditorState extends State<MobileEditor> {
       toolbarItems: [
         undoMobileToolbarItem,
         redoMobileToolbarItem,
-        listMobileToolbarItemSheet,
         codeMobileToolbarItem,
         quoteMobileToolbarItem,
-        textDecorationMobileToolbarItemSheet, // Aa (sheet) variant — A/B
-        headingMobileToolbarItemSheet,
         textDecorationMobileToolbarItemV2Sheet,
         buildTextAndBackgroundColorMobileToolbarItemSheet(),
         blocksMobileToolbarItemSheet,

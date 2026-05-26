@@ -23,10 +23,7 @@ class _MobileAppWithToolbarWidgetState
     final localToolbarItems =
         widget.toolbarItems ??
         [
-          textDecorationMobileToolbarItemSheet,
-          headingMobileToolbarItemSheet,
           todoListMobileToolbarItem,
-          listMobileToolbarItemSheet,
           linkMobileToolbarItemSheet,
           quoteMobileToolbarItem,
           codeMobileToolbarItem,
