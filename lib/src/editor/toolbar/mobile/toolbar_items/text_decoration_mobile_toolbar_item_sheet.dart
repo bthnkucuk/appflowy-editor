@@ -47,6 +47,10 @@ final textDecorationMobileToolbarItemSheet = MobileToolbarItem.action(
           ),
         )
         .then((_) {
+          // Pair the .increase() above the .push — without this, every
+          // sheet open leaks +1 on the counter and the keyboard service
+          // permanently skips focus-loss cleanups (cf. heading sheet).
+          editorState.keepFocusNotifier.decrease();
           // Drop the "hide toolbar" flag so V2 comes back, and re-open the
           // keyboard so the user can keep typing.
           editorState.updateSelectionWithReason(

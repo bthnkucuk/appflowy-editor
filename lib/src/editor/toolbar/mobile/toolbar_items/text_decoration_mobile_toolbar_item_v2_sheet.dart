@@ -43,6 +43,9 @@ final textDecorationMobileToolbarItemV2Sheet = MobileToolbarItem.action(
           ),
         )
         .then((_) {
+          // Pair the .increase() above the .push — without this every
+          // sheet open leaks +1 on the counter (cf. heading sheet).
+          editorState.keepFocusNotifier.decrease();
           editorState.updateSelectionWithReason(
             selection,
             extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},

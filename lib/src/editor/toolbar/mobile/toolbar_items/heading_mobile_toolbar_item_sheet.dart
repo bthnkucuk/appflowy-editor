@@ -45,6 +45,12 @@ final headingMobileToolbarItemSheet = MobileToolbarItem.action(
           ),
         )
         .then((_) {
+          // Paired with the increase() above. Was missing pre-fix —
+          // every sheet open leaked +1 on the counter, leaving
+          // `shouldKeepFocus == true` forever after the first use and
+          // the keyboard service silently skipping selection clears /
+          // IME closes.
+          editorState.keepFocusNotifier.decrease();
           editorState.updateSelectionWithReason(
             selection,
             extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
@@ -73,35 +79,39 @@ class _SheetHeadingMenu extends StatefulWidget {
 }
 
 class _SheetHeadingMenuState extends State<_SheetHeadingMenu> {
-  VoidCallback? _selectionWatcher;
-
   @override
   void initState() {
     super.initState();
-    _selectionWatcher = () {
-      if (!mounted) return;
-      final live = widget.editorState.selection;
-      if (live != widget.selection) {
-        widget.editorState.updateSelectionWithReason(
-          widget.selection,
-          extraInfo: {
-            selectionExtraInfoDisableMobileToolbarKey: true,
-            selectionExtraInfoDisableFloatingToolbar: true,
-            selectionExtraInfoDoNotAttachTextService: true,
-          },
-        );
-      }
-    };
-    widget.editorState.selectionNotifier.addListener(_selectionWatcher!);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _selectionWatcher!());
+    // The action handler that pushed this route just synchronously
+    // called updateSelectionWithReason with `selection`, and nothing
+    // between that call and this initState mutates selection (the
+    // wrapping `MobileToolbarItemMenu` doesn't touch it). So no
+    // post-frame catch-up call is needed — the listener catches every
+    // subsequent change.
+    widget.editorState.selectionNotifier.addListener(_pinSelection);
   }
 
   @override
   void dispose() {
-    if (_selectionWatcher != null) {
-      widget.editorState.selectionNotifier.removeListener(_selectionWatcher!);
-    }
+    widget.editorState.selectionNotifier.removeListener(_pinSelection);
     super.dispose();
+  }
+
+  /// Snap the live selection back to the one this sheet was opened with,
+  /// if it has drifted. The sheet's actions all assume the original
+  /// selection is still in play — any IME/focus side-effect that moved
+  /// the caret elsewhere would otherwise format the wrong block.
+  void _pinSelection() {
+    if (!mounted) return;
+    if (widget.editorState.selection == widget.selection) return;
+    widget.editorState.updateSelectionWithReason(
+      widget.selection,
+      extraInfo: {
+        selectionExtraInfoDisableMobileToolbarKey: true,
+        selectionExtraInfoDisableFloatingToolbar: true,
+        selectionExtraInfoDoNotAttachTextService: true,
+      },
+    );
   }
 
   final _headings = [

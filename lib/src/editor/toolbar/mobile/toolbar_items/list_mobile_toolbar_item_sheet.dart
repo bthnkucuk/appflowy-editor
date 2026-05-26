@@ -42,6 +42,9 @@ final listMobileToolbarItemSheet = MobileToolbarItem.action(
           ),
         )
         .then((_) {
+          // Paired with the .increase() above the .push — see
+          // heading_mobile_toolbar_item_sheet for the rationale.
+          editorState.keepFocusNotifier.decrease();
           editorState.updateSelectionWithReason(
             selection,
             extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
