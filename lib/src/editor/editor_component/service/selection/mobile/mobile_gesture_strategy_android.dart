@@ -60,6 +60,14 @@ class AndroidGestureStrategy extends MobileGestureStrategy {
       extraInfo: {
         selectionDragModeKey: pan.dragMode,
         selectionExtraInfoDisableFloatingToolbar: true,
+        // H2.8.b: the very first selection write of a long-press
+        // (this method) was missing the IME-skip flag, so the IME
+        // popped open on drag start. Subsequent onLongPressMoveUpdate
+        // ticks (H2.3.f) suppressed it, but by then `showSoftInput` +
+        // `handleResized` had already fired — a 30 ms layout pass
+        // visible on the second-or-third drag tick of the log. Set the
+        // flag from the very first update.
+        selectionExtraInfoDoNotAttachTextService: true,
       },
     );
   }
