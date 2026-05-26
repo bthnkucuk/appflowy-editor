@@ -8,6 +8,7 @@ import 'package:appflowy_editor/src/history/undo_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+export 'editor_state/editor_chrome.dart';
 export 'editor_state/selection_drag_mode.dart';
 export 'editor_state/types.dart';
 
@@ -28,7 +29,7 @@ export 'editor_state/types.dart';
 /// all the mutations should be applied through [Transaction].
 ///
 /// Mutating the document with document's API is not recommended.
-class EditorState {
+class EditorState with EditorChromeMixin {
   EditorState({
     required this.document,
     this.minHistoryItemDuration = const Duration(milliseconds: 50),
@@ -46,26 +47,11 @@ class EditorState {
   // the minimum duration for saving the history item.
   final Duration minHistoryItemDuration;
 
-  /// Whether the editor is editable.
-  ValueNotifier<bool> editableNotifier = ValueNotifier(true);
-
-  bool get editable => editableNotifier.value;
-
-  set editable(bool value) {
-    if (value == editable) {
-      return;
-    }
-    editableNotifier.value = value;
-  }
-
   /// Whether the editor should disable auto scroll.
   bool disableAutoScroll = false;
 
   /// The edge offset of the auto scroll.
   double autoScrollEdgeOffset = appFlowyEditorAutoScrollEdgeOffset;
-
-  /// The style of the editor.
-  late EditorStyle editorStyle;
 
   /// The selection notifier of the editor.
   final PropertyValueNotifier<Selection?> selectionNotifier =
@@ -160,11 +146,6 @@ class EditorState {
     service.rendererService = value;
   }
 
-  /// Customize the debug info for the editor state.
-  ///
-  /// Refer to [EditorStateDebugInfo] for more details.
-  EditorStateDebugInfo debugInfo = EditorStateDebugInfo();
-
   /// store the auto scroller instance in here temporarily.
   AutoScroller? autoScroller;
   ScrollableState? scrollableState;
@@ -173,9 +154,6 @@ class EditorState {
   /// such as log level and log output callbacks,
   /// with this variable.
   AppFlowyLogConfiguration get logConfiguration => AppFlowyLogConfiguration();
-
-  /// Stores the selection menu items.
-  List<SelectionMenuItem> selectionMenuItems = [];
 
   /// listen to this stream to get notified when the transaction applies.
   Stream<EditorTransactionValue> get transactionStream => _observer.stream;
@@ -225,12 +203,6 @@ class EditorState {
 
     return transaction;
   }
-
-  bool showHeader = false;
-  bool showFooter = false;
-
-  bool enableAutoComplete = false;
-  AppFlowyAutoCompleteTextProvider? autoCompleteTextProvider;
 
   @visibleForTesting
   bool disableSealTimer = false;
@@ -331,7 +303,7 @@ class EditorState {
     document.dispose();
     selectionNotifier.dispose();
     highlightNotifier.dispose();
-    editableNotifier.dispose();
+    disposeChrome();
     tapNotifier.dispose();
     remoteSelections.dispose();
     toggledStyleNotifier.dispose();
