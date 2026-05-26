@@ -52,10 +52,10 @@
   - Her area kendini her frame `addPostFrameCallback` ile **yeniden zamanlıyor** — `lib/src/editor/block_component/base_component/widget/block_selection_area.dart:230-232` + `block_highlight_area.dart:267-269`
   - `mobile_selection_service._updateSelectionDuringDrag` zaten 2-3 post-frame derinliğinde — `mobile_selection_service.dart:415-428, 518-537`
   - **Coalesce neden yetmedi:** darboğaz event sıklığı değil, tek update'in N rebuild + per-block self-rescheduling üretmesi
-- `EditorState` god-object (~915 satır): selection + highlight + tap + toggledStyle + remote + autoScroller + scrollableState + documentRules + debouncedSeal + transactionStream + asyncObserver + autoCompleteText + selectionExtraInfo Map + showHeader/showFooter
+- ~~`EditorState` god-object (~915 satır)~~ → 425 satıra indi (H3.1 mixin split büyük ölçüde tamam). Kalan: apply pipeline + documentRules + query helpers facade'de duruyor — H3.1 backlog'una bak.
 - `lib/src/service/` (eski) ve `lib/src/editor/editor_component/service/` (yeni) çakışıyor — hangisi canonical belirsiz
 - `package:appflowy_editor/src/...` 157 yerde içeriden — refactor'da sessizce kırılır
-- `MobileSelectionService` 985 satır + global mutable flag'ler (`disableMagnifier`, `disableIOSSelectWordEdgeOnTap`, `appFlowyEditorOnTapSelectionArea`, `keepEditorFocusNotifier`)
+- ~~`MobileSelectionService` 985 satır~~ → 462 satır (H3.3 split tamam). Kalan 2 global mutable flag: `disableMagnifier`, `disableIOSSelectWordEdgeOnTap` — H3.3 backlog.
 - `selectionExtraInfo` tipsiz `Map?` + `dragMode.toString() != 'MobileSelectionDragMode.none'` string karşılaştırması
 - Toolbar/Selection v1+v2 koexistansı — `mobile_toolbar` + `_v2` ikisi export'ta
 
@@ -134,11 +134,22 @@ Hedef: auto-memory'deki "yavaşla-hızlan" pattern'ini *ölçerek* kapat.
 
 #### H3.1 — `EditorState`'i dağıt (Etki: Yüksek / Çaba: L / Risk: Orta)
 
-- [ ] `SelectionController` çıkar (selectionNotifier + highlightNotifier + tapNotifier + remoteSelections + dragMode + extraInfo type-safe)
-- [ ] `HistoryController` çıkar (undoManager + debouncedSeal + disableSealTimer)
-- [ ] `EditorChrome` çıkar (showHeader/showFooter/scrollableState/autoScroller)
-- [ ] `StyleController` çıkar (toggledStyle)
-- [ ] `EditorState` cephesini koru, deprecated forward'lar ver
+**Durum (2026-05-26):** `editor_state.dart` 915 → **425 satır**. Library-private mixin'lere bölündü (`_EditorChromeMixin`, `_HistoryMixin`, `_SelectionStyleMixin`, `_TransactionPipelineMixin`, `_ScrollCoordinatorMixin`, `_EditorServiceMixin`, `_TableOfContentsMixin`). Facade `abstract class _EditorStateBase` üzerinden composed.
+
+- [x] `HistoryController` çıkar → `_HistoryMixin`
+- [x] `EditorChrome` çıkar → `_EditorChromeMixin`
+- [x] `StyleController` çıkar → `_SelectionStyleMixin` (selection + highlight + toggledStyle)
+- [x] `TransactionPipelineMixin` (broadcast + content-based dirty hash + `isDirtyNotifier`/`markClean()`)
+- [x] `TableOfContentsMixin` — reactive outline (`TocEntry`, `tableOfContents` ValueListenable, microtask-coalesced recompute) + `jumpToTocEntry`
+- [x] `EditorState` cephesini koru — mixin'ler `_` prefix'li, downstream API kırılmadı
+
+**Kalan iş** — facade'i ~150-200 satıra indirmek için:
+
+- [ ] `apply()` + `_applyTransactionInLocal` + `_applyTransactionFromRemote` (~150 satır) → `_TransactionApplyMixin` (veya pipeline mixin'in altına). Etki: Yüksek / Çaba: M / Risk: Orta (apply hot path, transaction record/undo'yla iç içe)
+- [ ] `documentRules` + `_subscription` zincirini `mixin _DocumentRulesMixin on _EditorStateBase`'e taşı (`on _EditorStateBase` `this`-cast gymnastic'ini ortadan kaldırır). Etki: Orta / Çaba: S
+- [ ] Query helpers (`getNodesInSelection`, `getSelectedNodes`, `getNodeAtPath`, ~95 satır) → `_DocumentQueryMixin`. Etki: Düşük / Çaba: S
+- [ ] `selectionExtraInfo` Map → type-safe `SelectionExtraInfo` field (setter da). `SelectionExtraInfo.from(Map?)` zaten var; setter Map kalıyor. **Breaking** — H3.4 ile aynı major'a sıkıştır. Etki: Orta / Çaba: S / Risk: Yüksek (breaking)
+- [ ] `SelectionController` çıkar (selectionNotifier + highlightNotifier + tapNotifier + remoteSelections + dragMode + extraInfo type-safe) — roadmap'in orijinal niyeti. Kısmen `_SelectionStyleMixin` ve type-safe extra info maddeleriyle örtüşüyor; bu kalemi *birleşik selection refactor* olarak tut.
 
 #### H3.2 — `service/` çift katmanını birleştir (Etki: Yüksek / Çaba: M / Risk: Düşük)
 
@@ -150,11 +161,27 @@ Hedef: auto-memory'deki "yavaşla-hızlan" pattern'ini *ölçerek* kapat.
 
 #### H3.3 — Mobile/desktop composition (Etki: Yüksek / Çaba: L / Risk: Orta)
 
-- [ ] `SelectionServiceWidget` build içi `if (isDesktop)` branch'ini ayrı widget'a böl
-- [ ] `MobileSelectionService` 985 satırını böl: `MobileSelectionGestureLayer`, `MobileSelectionHandles`, `MobileSelectionAutoScroller`, `MobileSelectionMagnifier`
-- [ ] `mobile_toolbar_v1`'i kaldır, `_v2` resmi olsun
-- [ ] Global mutable flag'leri (`disableMagnifier`, `disableIOSSelectWordEdgeOnTap`, `appFlowyEditorOnTapSelectionArea`, `keepEditorFocusNotifier`) instance-scoped configa taşı
-- [ ] `selectionExtraInfo` Map'ini type-safe field'lara çevir
+**Durum (2026-05-26):** `mobile_selection_service.dart` 985 → **462 satır**. Split büyük ölçüde tamam — kalan 462 satır esas widget'ın kendisi (state + public SelectionService API + gesture callbacks), daha fazla bölmek diminishing returns.
+
+- [x] `MobileSelectionService` split:
+  - `MobileSelectionAutoScroller` ([selection/mobile/mobile_selection_auto_scroller.dart](lib/src/editor/editor_component/service/selection/mobile/mobile_selection_auto_scroller.dart))
+  - `MobileGestureStrategy` (iOS + Android implementations)
+  - `MobileSelectionOverlays` (handles + cursor overlay)
+  - `PanDragState`
+  - `MobileMagnifier` ([selection/mobile_magnifier.dart](lib/src/editor/editor_component/service/selection/mobile_magnifier.dart))
+  - `MobileHighlightService` (ayrı dosya)
+- [x] `mobile_toolbar_v1` kaldırıldı — sadece `mobile_toolbar_v2.dart` kaldı (rename `_v2` suffix'inden kurtulmak cosmetic backlog)
+- [x] `appFlowyEditorOnTapSelectionArea` + `keepEditorFocusNotifier` global flag'leri taşındı/kaldırıldı
+
+**Kalan iş:**
+
+- [ ] `SelectionServiceWidget` build içi `if (PlatformExtension.isDesktopOrWeb)` ([selection_service_widget.dart:46](lib/src/editor/editor_component/service/selection_service_widget.dart#L46)) — tek if-branch ama hâlâ açık. Desktop/Mobile ayrı widget olup host PlatformExtension'a göre seçer. Etki: Orta / Çaba: S / Risk: Düşük
+- [ ] Kalan 2 global mutable flag → instance-scoped `MobileSelectionConfig`:
+  - `bool disableIOSSelectWordEdgeOnTap` ([mobile_selection_service.dart:26](lib/src/editor/editor_component/service/selection/mobile_selection_service.dart#L26))
+  - `bool disableMagnifier` ([mobile_selection_service.dart:33](lib/src/editor/editor_component/service/selection/mobile_selection_service.dart#L33))
+  Etki: Orta / Çaba: S / Risk: Orta (breaking — downstream tüketiciler global'e bel bağlamış olabilir)
+- [ ] `selectionExtraInfo` Map → type-safe (H3.1 ile birleşik kalem, oraya bakın)
+- [ ] Cosmetic: `mobile_toolbar_v2.dart` → `mobile_toolbar.dart` rename + `_v2` tip suffix'lerini kaldır. Etki: Düşük / Çaba: XS
 
 #### H3.4 — Public API daralt (Etki: Yüksek / Çaba: M / Risk: Yüksek — breaking)
 

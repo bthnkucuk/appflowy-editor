@@ -17,6 +17,7 @@ import 'package:example/pages/editor_list.dart';
 import 'package:example/pages/fixed_toolbar_editor.dart';
 import 'package:example/pages/focus_example_for_editor.dart';
 import 'package:example/pages/markdown_editor.dart';
+import 'package:example/pages/tts_reader_page.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -256,6 +257,14 @@ class _HomePageState extends State<HomePage> {
               context,
               MaterialPageRoute(
                 builder: (context) => const AutoCompleteEditor(),
+              ),
+            );
+          }),
+          _buildListTile(context, 'TTS Reader (read-along)', () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const TtsReaderPage(),
               ),
             );
           }),

@@ -210,6 +210,16 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
       return;
     }
 
+    // editable: false means the editor is a pure viewer — no caret, no
+    // text input. Don't attach the IME on selection updates in that
+    // case. A read-only document tapped by the user should NOT make
+    // the soft keyboard appear (consistent with web, with read-only
+    // TextFields, and with how other rich-text viewers behave).
+    if (!editorState.editable) {
+      textInputService.close();
+      return;
+    }
+
     // attach the delta text input service if needed
     final selection = editorState.selection;
 
