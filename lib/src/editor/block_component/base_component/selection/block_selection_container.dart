@@ -1,5 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/base_component/selection/block_highlight_area.dart';
+import 'block_highlight_area.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 

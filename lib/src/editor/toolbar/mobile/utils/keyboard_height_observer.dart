@@ -1,4 +1,4 @@
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
+import '../../../util/platform_extension.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:keyboard_height_plugin/keyboard_height_plugin.dart';
 

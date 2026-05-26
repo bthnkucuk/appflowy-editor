@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/scroll/auto_scroller.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
-import 'package:appflowy_editor/src/editor_state/undo_manager.dart';
+import 'editor/editor_component/service/scroll/auto_scroller.dart';
+import 'editor/util/platform_extension.dart';
+import 'editor_state/undo_manager.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';

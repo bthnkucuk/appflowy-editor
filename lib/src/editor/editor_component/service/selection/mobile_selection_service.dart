@@ -1,16 +1,16 @@
 import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/mobile_gesture_strategy.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/mobile_gesture_strategy_android.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/mobile_gesture_strategy_ios.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/mobile_selection_auto_scroller.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/mobile_selection_overlays.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/pan_drag_state.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/shared.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
-import 'package:appflowy_editor/src/render/selection/mobile_basic_handle.dart';
-import 'package:appflowy_editor/src/service/selection/mobile_selection_gesture.dart';
+import 'mobile/mobile_gesture_strategy.dart';
+import 'mobile/mobile_gesture_strategy_android.dart';
+import 'mobile/mobile_gesture_strategy_ios.dart';
+import 'mobile/mobile_selection_auto_scroller.dart';
+import 'mobile/mobile_selection_overlays.dart';
+import 'mobile/pan_drag_state.dart';
+import 'shared.dart';
+import '../../../util/platform_extension.dart';
+import '../../../../render/selection/mobile_basic_handle.dart';
+import '../../../../service/selection/mobile_selection_gesture.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

@@ -1,6 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/heading_block_component/heading_command_shortcut.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
+import 'heading_block_component/heading_command_shortcut.dart';
+import '../util/platform_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/highlight_service_widget.dart';
+import 'highlight_service_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

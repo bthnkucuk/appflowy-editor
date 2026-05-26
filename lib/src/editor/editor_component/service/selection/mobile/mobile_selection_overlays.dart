@@ -1,17 +1,17 @@
 import 'dart:async';
 
-import 'package:appflowy_editor/src/core/location/selection.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/pan_drag_state.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_magnifier.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart'
+import '../../../../../core/location/selection.dart';
+import 'pan_drag_state.dart';
+import '../mobile_magnifier.dart';
+import '../mobile_selection_service.dart'
     show disableMagnifier;
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
-import 'package:appflowy_editor/src/editor/util/property_notifier.dart';
-import 'package:appflowy_editor/src/editor_state.dart';
-import 'package:appflowy_editor/src/extensions/node_extensions.dart';
-import 'package:appflowy_editor/src/render/selection/mobile_basic_handle.dart';
-import 'package:appflowy_editor/src/render/selection/mobile_collapsed_handle.dart';
-import 'package:appflowy_editor/src/render/selection/mobile_selection_handle.dart';
+import '../../../../util/platform_extension.dart';
+import '../../../../util/property_notifier.dart';
+import '../../../../../editor_state.dart';
+import '../../../../../extensions/node_extensions.dart';
+import '../../../../../render/selection/mobile_basic_handle.dart';
+import '../../../../../render/selection/mobile_collapsed_handle.dart';
+import '../../../../../render/selection/mobile_selection_handle.dart';
 import 'package:flutter/material.dart';
 
 /// The lens that follows the user's finger during a long-press / drag on

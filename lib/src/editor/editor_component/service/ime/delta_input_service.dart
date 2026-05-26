@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/ime/text_input_service.dart';
+import 'text_input_service.dart';
 import 'package:flutter/services.dart';
 
 class DeltaTextInputService extends TextInputService with DeltaTextInputClient {

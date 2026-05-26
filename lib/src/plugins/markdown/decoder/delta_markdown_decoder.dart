@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:appflowy_editor/src/core/document/attributes.dart';
-import 'package:appflowy_editor/src/core/document/text_delta.dart';
-import 'package:appflowy_editor/src/core/legacy/built_in_attribute_keys.dart';
-import 'package:appflowy_editor/src/plugins/markdown/decoder/custom_syntaxes/underline_syntax.dart';
+import '../../../core/document/attributes.dart';
+import '../../../core/document/text_delta.dart';
+import '../../../core/legacy/built_in_attribute_keys.dart';
+import 'custom_syntaxes/underline_syntax.dart';
 import 'package:markdown/markdown.dart' as md;
 
 import 'custom_syntaxes/formula_syntax.dart';

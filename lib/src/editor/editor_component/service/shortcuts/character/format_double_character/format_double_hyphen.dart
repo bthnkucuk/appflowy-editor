@@ -1,5 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/shortcuts/character_shortcut_events/format_double_characters/utils.dart';
+import '../../character_shortcut_events/format_double_characters/utils.dart';
 
 const _hyphen = '-';
 const _emDash = '—'; // This is an em dash — not a single dash - !!

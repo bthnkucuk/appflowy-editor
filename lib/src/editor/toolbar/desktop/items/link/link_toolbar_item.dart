@@ -1,6 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/toolbar/desktop/items/link/link_menu.dart';
-import 'package:appflowy_editor/src/editor/util/link_util.dart';
+import 'link_menu.dart';
+import '../../../../util/link_util.dart';
 import 'package:flutter/material.dart';
 
 const _menuWidth = 300;

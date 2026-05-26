@@ -1,8 +1,8 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/scroll/desktop_scroll_service.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/scroll/mobile_scroll_service.dart';
-import 'package:appflowy_editor/src/editor/toolbar/mobile/utils/keyboard_height_observer.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
+import 'scroll/desktop_scroll_service.dart';
+import 'scroll/mobile_scroll_service.dart';
+import '../../toolbar/mobile/utils/keyboard_height_observer.dart';
+import '../../util/platform_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

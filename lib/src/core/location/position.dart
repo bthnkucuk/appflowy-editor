@@ -1,4 +1,4 @@
-import 'package:appflowy_editor/src/core/document/path.dart';
+import '../document/path.dart';
 
 class Position {
   final Path path;

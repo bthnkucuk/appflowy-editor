@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/shared.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
-import 'package:appflowy_editor/src/service/selection/mobile_selection_gesture.dart';
+import 'shared.dart';
+import '../../../util/platform_extension.dart';
+import '../../../../service/selection/mobile_selection_gesture.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

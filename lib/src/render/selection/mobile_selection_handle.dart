@@ -1,5 +1,5 @@
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
-import 'package:appflowy_editor/src/render/selection/mobile_basic_handle.dart';
+import '../../editor/util/platform_extension.dart';
+import 'mobile_basic_handle.dart';
 import 'package:flutter/material.dart';
 
 class MobileSelectionHandle extends StatelessWidget {

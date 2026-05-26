@@ -1,6 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/toolbar/desktop/items/utils/overlay_util.dart';
-import 'package:appflowy_editor/src/editor/util/link_util.dart';
+import '../utils/overlay_util.dart';
+import '../../../../util/link_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

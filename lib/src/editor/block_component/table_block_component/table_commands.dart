@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/table_block_component/util.dart';
+import 'util.dart';
 
 final List<CommandShortcutEvent> tableCommands = [
   enterInTableCell,

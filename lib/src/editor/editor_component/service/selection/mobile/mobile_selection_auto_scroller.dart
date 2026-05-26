@@ -1,8 +1,8 @@
-import 'package:appflowy_editor/src/core/document/node.dart';
-import 'package:appflowy_editor/src/core/location/selection.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/pan_drag_state.dart';
-import 'package:appflowy_editor/src/editor_state.dart';
-import 'package:appflowy_editor/src/extensions/node_extensions.dart';
+import '../../../../../core/document/node.dart';
+import '../../../../../core/location/selection.dart';
+import 'pan_drag_state.dart';
+import '../../../../../editor_state.dart';
+import '../../../../../extensions/node_extensions.dart';
 import 'package:flutter/material.dart';
 
 /// Drives the selection update that happens when the editor scrolls while

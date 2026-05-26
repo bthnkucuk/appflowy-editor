@@ -3,9 +3,9 @@
 /// editor_state.dart can stay focused on stateful behavior.
 library;
 
-import 'package:appflowy_editor/src/core/transform/transaction.dart';
-import 'package:appflowy_editor/src/editor_state/selection_drag_mode.dart';
-import 'package:appflowy_editor/src/editor_state/undo_manager.dart';
+import '../core/transform/transaction.dart';
+import 'selection_drag_mode.dart';
+import 'undo_manager.dart';
 
 /// The record broadcast by `EditorState.transactionStream`. Pattern-matched
 /// at consumer sites; consumers depend on the field order

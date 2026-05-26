@@ -1,7 +1,7 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/ime/character_shortcut_event_helper.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/ime/delta_input_impl.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
+import 'character_shortcut_event_helper.dart';
+import 'delta_input_impl.dart';
+import '../../../util/platform_extension.dart';
 import 'package:flutter/services.dart';
 
 Future<void> onReplace(
