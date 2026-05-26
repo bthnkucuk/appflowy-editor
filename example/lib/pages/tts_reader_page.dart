@@ -39,6 +39,7 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   late final EditorState editorState;
   late final EditorScrollController editorScrollController;
   late final Map<String, BlockComponentBuilder> _blockComponentBuilders;
+  late final EditorStyle _editorStyle;
 
   /// Pre-computed word selections, in reading order. Computed once from
   /// the static sample document — editor is read-only so it never
@@ -81,6 +82,7 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
       shrinkWrap: false,
     );
     _blockComponentBuilders = _buildBlockComponentBuilders();
+    _editorStyle = _buildEditorStyle();
     _tokens.addAll(_computeWordTokens(editorState.document));
 
     // Scroll listener — tells us when the user manually drags.
@@ -107,23 +109,69 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     super.dispose();
   }
 
-  /// Block-component config — tight vertical padding so paragraphs
-  /// don't have huge gaps between them. The editor's default padding
-  /// is generous (good for editing, too airy for read-along).
+  /// Build a FRESH map of block component builders. The default
+  /// [standardBlockComponentBuilderMap] is a top-level `final` map of
+  /// shared builder instances — mutating their `.configuration` would
+  /// leak into every other example that mounts an editor. We construct
+  /// new builders for paragraph + heading (the only blocks this sample
+  /// document uses) with tight vertical padding so consecutive
+  /// paragraphs sit close together.
+  ///
+  /// Spacing source map (so future tweaks know what to touch):
+  /// - inter-block gap → [BlockComponentConfiguration.padding] (each
+  ///   block wraps its child in `Container(padding: ...)`).
+  /// - intra-paragraph line spacing →
+  ///   [TextStyleConfiguration.lineHeight], set in [_buildEditorStyle].
   Map<String, BlockComponentBuilder> _buildBlockComponentBuilders() {
-    return standardBlockComponentBuilderMap.map((key, value) {
-      value.configuration = value.configuration.copyWith(
+    EdgeInsets paragraphPadding(Node _) =>
+        const EdgeInsets.symmetric(vertical: 2);
+    EdgeInsets headingPadding(Node _) =>
+        const EdgeInsets.only(top: 12, bottom: 2);
+
+    final paragraph = ParagraphBlockComponentBuilder(
+      configuration: const BlockComponentConfiguration().copyWith(
+        padding: paragraphPadding,
         placeholderText: (_) => '',
-        padding: (node) {
-          if (node.type == HeadingBlockKeys.type) {
-            return const EdgeInsets.only(top: 12, bottom: 4);
-          }
-          return const EdgeInsets.symmetric(vertical: 2);
-        },
-      );
-      value.showActions = (_) => false;
-      return MapEntry(key, value);
-    });
+      ),
+    )..showActions = (_) => false;
+
+    final heading = HeadingBlockComponentBuilder(
+      configuration: const BlockComponentConfiguration().copyWith(
+        padding: headingPadding,
+        placeholderText: (_) => '',
+      ),
+    )..showActions = (_) => false;
+
+    final page = PageBlockComponentBuilder()..showActions = (_) => false;
+
+    return {
+      PageBlockKeys.type: page,
+      ParagraphBlockKeys.type: paragraph,
+      HeadingBlockKeys.type: heading,
+    };
+  }
+
+  /// The default [TextStyleConfiguration.lineHeight] is 1.5, which at
+  /// fontSize 16 produces 24-px line boxes — fine for editing, but
+  /// makes multi-line paragraphs in a viewer feel airy enough that
+  /// users read the gap between visual lines as "huge spacing between
+  /// paragraphs". Tightening to 1.35 collapses that visual gap without
+  /// crushing readability.
+  EditorStyle _buildEditorStyle() {
+    return EditorStyle.mobile(
+      padding: const EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: 160, // room for the bottom control panel
+      ),
+      cursorColor: Colors.transparent,
+      selectionColor: const Color(0x33000000),
+      textStyleConfiguration: const TextStyleConfiguration(
+        text: TextStyle(fontSize: 17, color: Colors.black87),
+        lineHeight: 1.35,
+      ),
+    );
   }
 
   /// Walks every block in reading order, splits its plain text on
@@ -353,20 +401,15 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
               child: AppFlowyEditor(
                 editorState: editorState,
                 editable: false,
+                // Belt: keep the keyboard service off entirely for the
+                // viewer, on top of the editor's own `editable:false`
+                // gate. The example user is testing on Android where
+                // any IME attach causes the keyboard to flash up.
+                disableKeyboardService: true,
+                showMagnifier: false,
                 editorScrollController: editorScrollController,
                 blockComponentBuilders: _blockComponentBuilders,
-                editorStyle: EditorStyle.desktop(
-                  padding: const EdgeInsets.only(
-                    left: 24,
-                    right: 24,
-                    top: 16,
-                    bottom: 160, // room for the bottom control panel
-                  ),
-                  cursorColor: Colors.transparent,
-                  selectionColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.18,
-                  ),
-                ),
+                editorStyle: _editorStyle,
               ),
             ),
           ),
