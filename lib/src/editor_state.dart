@@ -17,6 +17,7 @@ export 'editor_state/types.dart';
 // remains a private implementation detail not surfaced on the public
 // API).
 part 'editor_state/history_mixin.dart';
+part 'editor_state/selection_style_mixin.dart';
 
 /// The state of the editor.
 ///
@@ -35,7 +36,7 @@ part 'editor_state/history_mixin.dart';
 /// all the mutations should be applied through [Transaction].
 ///
 /// Mutating the document with document's API is not recommended.
-class EditorState with EditorChromeMixin, HistoryMixin {
+class EditorState with EditorChromeMixin, HistoryMixin, SelectionStyleMixin {
   EditorState({
     required this.document,
     this.minHistoryItemDuration = const Duration(milliseconds: 50),
@@ -61,13 +62,8 @@ class EditorState with EditorChromeMixin, HistoryMixin {
   /// The edge offset of the auto scroll.
   double autoScrollEdgeOffset = appFlowyEditorAutoScrollEdgeOffset;
 
-  /// The selection notifier of the editor.
-  final PropertyValueNotifier<Selection?> selectionNotifier =
-      PropertyValueNotifier<Selection?>(null);
-
-  /// The highlight notifier of the editor.
-  final PropertyValueNotifier<Selection?> highlightNotifier =
-      PropertyValueNotifier<Selection?>(null);
+  // Selection/highlight/tap notifiers + selectionType/selectionUpdateReason
+  // + selectionExtraInfo live in [SelectionStyleMixin].
 
   final ValueNotifier<bool> isAutoScrollHighlightNotifier = ValueNotifier(
     false,
@@ -78,68 +74,6 @@ class EditorState with EditorChromeMixin, HistoryMixin {
   set isAutoScrollHighlight(bool value) {
     isAutoScrollHighlightNotifier.value = value;
   }
-
-  /// The tap notifier of the editor.
-  final PropertyValueNotifier<Selection?> tapNotifier =
-      PropertyValueNotifier<Selection?>(null);
-
-  /// The selection of the editor.
-  Selection? get selection => selectionNotifier.value;
-
-  /// The highlight of the editor.
-  Selection? get highlight => highlightNotifier.value;
-
-  Selection? get tap => tapNotifier.value;
-
-  /// Remote selection is the selection from other users.
-  final PropertyValueNotifier<List<RemoteSelection>> remoteSelections =
-      PropertyValueNotifier<List<RemoteSelection>>([]);
-
-  /// Sets the selection of the editor.
-  set selection(Selection? value) {
-    // clear the toggled style when the selection is changed.
-    if (selectionNotifier.value != value) {
-      _toggledStyle.clear();
-    }
-
-    // reset slice flag
-    sliceUpcomingAttributes = true;
-
-    // H2.1: short-circuit notify on identical selection to avoid the
-    // PropertyValueNotifier always-notify cascade across N block widgets.
-    if (selectionNotifier.value == value) return;
-
-    selectionNotifier.value = value;
-  }
-
-  /// Sets the highlight of the editor.
-  set highlight(Selection? value) {
-    if (highlightNotifier.value == value) return;
-
-    highlightNotifier.value = value;
-  }
-
-  /// Sets the highlight of the editor.
-  set tap(Selection? value) {
-    tapNotifier.value = value;
-  }
-
-  SelectionType? _selectionType;
-
-  set selectionType(SelectionType? value) {
-    if (value == _selectionType) {
-      return;
-    }
-    _selectionType = value;
-  }
-
-  SelectionType? get selectionType => _selectionType;
-
-  SelectionUpdateReason _selectionUpdateReason = SelectionUpdateReason.uiEvent;
-
-  SelectionUpdateReason get selectionUpdateReason => _selectionUpdateReason;
-
-  Map? selectionExtraInfo;
 
   // Service reference.
   final service = EditorService();
@@ -170,38 +104,7 @@ class EditorState with EditorChromeMixin, HistoryMixin {
   final StreamController<EditorTransactionValue> _asyncObserver =
       StreamController.broadcast();
 
-  /// Store the toggled format style, like bold, italic, etc.
-  /// All the values must be the key from [AppFlowyRichTextKeys.supportToggled].
-  ///
-  /// Use the method [updateToggledStyle] to update key-value pairs
-  ///
-  /// NOTES: It only works once;
-  ///   after the selection is changed, the toggled style will be cleared.
-  UnmodifiableMapView<String, dynamic> get toggledStyle =>
-      UnmodifiableMapView<String, dynamic>(_toggledStyle);
-  final _toggledStyle = Attributes();
-  late final toggledStyleNotifier = ValueNotifier<Attributes>(toggledStyle);
-
-  void updateToggledStyle(String key, dynamic value) {
-    _toggledStyle[key] = value;
-    toggledStyleNotifier.value = {..._toggledStyle};
-  }
-
-  /// Whether the upcoming attributes should be sliced.
-  ///
-  /// If the value is true, the upcoming attributes will be sliced.
-  /// If the value is false, the upcoming attributes will be skipped.
-  bool _sliceUpcomingAttributes = true;
-
-  bool get sliceUpcomingAttributes => _sliceUpcomingAttributes;
-
-  set sliceUpcomingAttributes(bool value) {
-    if (value == _sliceUpcomingAttributes) {
-      return;
-    }
-    AppFlowyEditorLog.input.debug('sliceUpcomingAttributes: $value');
-    _sliceUpcomingAttributes = value;
-  }
+  // toggledStyle / sliceUpcomingAttributes live in [SelectionStyleMixin].
 
   Transaction get transaction {
     final transaction = Transaction(document: document);
@@ -253,39 +156,8 @@ class EditorState with EditorChromeMixin, HistoryMixin {
     return null;
   }
 
-  Future<void> updateSelectionWithReason(
-    Selection? selection, {
-    SelectionUpdateReason reason = SelectionUpdateReason.transaction,
-    Map? extraInfo,
-    SelectionType? customSelectionType,
-  }) async {
-    final completer = Completer<void>();
-
-    if (reason == SelectionUpdateReason.uiEvent) {
-      _selectionType = customSelectionType ?? SelectionType.inline;
-      WidgetsBinding.instance.addPostFrameCallback(
-        (timeStamp) => completer.complete(),
-      );
-    } else if (customSelectionType != null) {
-      _selectionType = customSelectionType;
-    }
-
-    // broadcast to other users here
-    selectionExtraInfo = extraInfo;
-    _selectionUpdateReason = reason;
-
-    this.selection = selection;
-
-    return completer.future;
-  }
-
-  void updateHighlight(Selection? highlight) {
-    this.highlight = highlight;
-  }
-
-  void updateTap(Selection? tap) {
-    this.tap = tap;
-  }
+  // updateSelectionWithReason / updateHighlight / updateTap live in
+  // [SelectionStyleMixin].
 
   final bool _enableCheckIntegrity = false;
 
@@ -303,12 +175,8 @@ class EditorState with EditorChromeMixin, HistoryMixin {
     onDispose.value += 1;
     onDispose.dispose();
     document.dispose();
-    selectionNotifier.dispose();
-    highlightNotifier.dispose();
+    _disposeSelectionStyle();
     disposeChrome();
-    tapNotifier.dispose();
-    remoteSelections.dispose();
-    toggledStyleNotifier.dispose();
     _subscription?.cancel();
     _onScrollViewScrolledListeners.clear();
   }
