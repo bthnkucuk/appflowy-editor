@@ -1,4 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:example/appearance/appearance_sheet.dart' show appearanceTick;
 import 'package:example/util/stutter_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,8 +25,12 @@ class _MobileEditorState extends State<MobileEditor> {
   late final EditorScrollController editorScrollController;
   late final StutterLogger _stutterLogger;
 
-  late EditorStyle editorStyle;
   late Map<String, BlockComponentBuilder> blockComponentBuilders;
+
+  // Read live from editorState so the appearance sheet's mutations are
+  // visible after a `setState`. EditorState's late field is assigned in
+  // initState before AppFlowyEditor first builds.
+  EditorStyle get editorStyle => editorState.editorStyle;
 
   @override
   void initState() {
@@ -42,7 +47,7 @@ class _MobileEditorState extends State<MobileEditor> {
     // and trigger by long-pressing in the document.
     _stutterLogger = StutterLogger(editorState);
 
-    editorStyle = _buildMobileEditorStyle();
+    editorState.editorStyle = _buildMobileEditorStyle();
     blockComponentBuilders = _buildBlockComponentBuilders();
   }
 
@@ -57,7 +62,7 @@ class _MobileEditorState extends State<MobileEditor> {
   void reassemble() {
     super.reassemble();
 
-    editorStyle = _buildMobileEditorStyle();
+    editorState.editorStyle = _buildMobileEditorStyle();
     blockComponentBuilders = _buildBlockComponentBuilders();
   }
 
@@ -106,21 +111,29 @@ class _MobileEditorState extends State<MobileEditor> {
             ),
           );
         },
-        child: AppFlowyEditor(
-          editorStyle: editorStyle,
-          editorState: editorState,
-          editorScrollController: editorScrollController,
-          blockComponentBuilders: blockComponentBuilders,
-          showMagnifier: false,
-          // showcase 3: customize the header and footer.
-          header: Padding(
-            padding: const EdgeInsets.only(bottom: 10.0),
-            child: Image.asset(
-              'assets/images/header.png',
+        // Rebuild AppFlowyEditor whenever the appearance sheet bumps
+        // [appearanceTick]. Without this the cached editor widget in
+        // home_page doesn't get rebuilt by setState, so heading
+        // textStyleBuilder closures and body fontWeight changes wouldn't
+        // reach the editor subtree.
+        child: ValueListenableBuilder<int>(
+          valueListenable: appearanceTick,
+          builder: (context, _, __) => AppFlowyEditor(
+            editorStyle: editorStyle,
+            editorState: editorState,
+            editorScrollController: editorScrollController,
+            blockComponentBuilders: blockComponentBuilders,
+            showMagnifier: false,
+            // showcase 3: customize the header and footer.
+            header: Padding(
+              padding: const EdgeInsets.only(bottom: 10.0),
+              child: Image.asset(
+                'assets/images/header.png',
+              ),
             ),
-          ),
-          footer: const SizedBox(
-            height: 100,
+            footer: const SizedBox(
+              height: 100,
+            ),
           ),
         ),
       ),
@@ -158,20 +171,35 @@ class _MobileEditorState extends State<MobileEditor> {
     final map = {
       ...standardBlockComponentBuilderMap,
     };
-    // customize the heading block component
-    final levelToFontSize = [
-      24.0,
-      22.0,
-      20.0,
-      18.0,
-      16.0,
-      14.0,
-    ];
+    // Heading sizes scale off the current body font size in
+    // `editorState.editorStyle.textStyleConfiguration.text`, so the
+    // appearance sheet's font-size slider also moves the headings.
+    // Ratios derive from the pre-existing hardcoded table normalized
+    // against the previous body default (14): [24, 22, 20, 18, 16, 14]
+    // → [1.71, 1.57, 1.43, 1.29, 1.14, 1.0].
+    const headingRatios = <double>[1.71, 1.57, 1.43, 1.29, 1.14, 1.0];
     map[HeadingBlockKeys.type] = HeadingBlockComponentBuilder(
-      textStyleBuilder: (level) => GoogleFonts.poppins(
-        fontSize: levelToFontSize.elementAtOrNull(level - 1) ?? 14.0,
-        fontWeight: FontWeight.w600,
-      ),
+      textStyleBuilder: (level) {
+        final text = editorState.editorStyle.textStyleConfiguration.text;
+        final baseSize = text.fontSize ?? 14.0;
+        final family = text.fontFamily?.split('_').first ?? 'Poppins';
+        final ratio = headingRatios.elementAtOrNull(level - 1) ?? 1.0;
+        try {
+          return GoogleFonts.getFont(
+            family,
+            fontSize: baseSize * ratio,
+            fontWeight: FontWeight.w600,
+            color: text.color,
+          );
+        } catch (_) {
+          return TextStyle(
+            fontFamily: family,
+            fontSize: baseSize * ratio,
+            fontWeight: FontWeight.w600,
+            color: text.color,
+          );
+        }
+      },
     );
     map[ParagraphBlockKeys.type] = ParagraphBlockComponentBuilder(
       configuration: BlockComponentConfiguration(

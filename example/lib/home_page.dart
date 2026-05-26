@@ -4,6 +4,7 @@ import 'dart:io' if (dart.library.html) 'package:example/file_io_stub.dart';
 import 'dart:math';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:example/appearance/appearance_sheet.dart';
 import 'package:example/pages/animated_markdown_page.dart';
 import 'package:example/pages/auto_complete_editor.dart';
 import 'package:example/pages/auto_expand_editor.dart';
@@ -143,6 +144,14 @@ class _HomePageState extends State<HomePage> {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  IconButton(
+                    tooltip: 'Appearance',
+                    icon: const Icon(Icons.text_format),
+                    onPressed: () => openAppearanceSheet(
+                      context: context,
+                      editorState: editorState,
+                    ),
+                  ),
                   IconButton(
                     tooltip: 'Table of contents',
                     icon: const Icon(Icons.format_list_bulleted),
