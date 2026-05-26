@@ -96,8 +96,15 @@ class MobileSelectionAutoScroller {
         break;
 
       case MobileSelectionDragMode.cursor:
-        newSelection = Selection.collapsed(end);
-        break;
+        // H2.3 (drag stutter): cursor-mode is driven by the gesture
+        // strategy's `onLongPressMoveUpdate`, which extends the
+        // selection by word boundary. If we wrote a collapsed
+        // selection here on every scroll tick, we'd ping-pong against
+        // the strategy's extended selection on the very next tick — that
+        // was the dominant cause of the "fast-then-stutter" pattern.
+        // Scroll-during-drag is still useful for the visible viewport;
+        // we just don't touch the selection here.
+        return;
 
       case MobileSelectionDragMode.none:
         return;
