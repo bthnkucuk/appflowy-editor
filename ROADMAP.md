@@ -155,7 +155,7 @@ Hedef: auto-memory'deki "yavaşla-hızlan" pattern'ini *ölçerek* kapat.
 - [x] **H2.3.f** **Android cursor-drag IME spam suppression** — Android stratejisi `onLongPressMoveUpdate`'te `selectionExtraInfoDoNotAttachTextService: dragMode == cursor` flag'i set etmiyordu (iOS pattern'i atlamıştı). Her drag tick'i `showSoftInput` + `requestFocus` platform-channel hop'u → ~20-30ms frame. **Gerçek-cihaz fix sonrası**: frame >16ms tick oranı 6/13 → 2/16, ortalama frame ~17ms → ~9ms. → `9b96c8a0`
 - [x] **H2.3.g** Auto-scroll new-block mount spike kovalandı → H2.8 olarak detaylandırılıp shipped (aşağıya bak).
 - [ ] **H2.4** iOS Magnifier'ı `BackdropFilter`'sız variant ile A/B test et; ölçüm darboğazsa default'u değiştir — Çaba: S
-- [ ] **H2.5** `_AndroidDragHandle.onPanUpdate`'teki `HapticFeedback.selectionClick` yalnız selection karakter değiştiğinde tetiklensin — `mobile_basic_handle.dart:344` — Çaba: XS
+- [x] ~~**H2.5** `_AndroidDragHandle.onPanUpdate`'teki `HapticFeedback.selectionClick` yalnız selection karakter değiştiğinde tetiklensin~~ → **ALREADY DONE**. Guard 2024-01-05'te `7d2b456e` ile eklenmiş (`mobile_basic_handle.dart:343` `if (this.selection != selection)`). `Selection.==` deep comparison ile çalışıyor. iOS handle'da haptic hiç yok (iOS convention). ROADMAP item stale'di. 2026-05-26 verified.
 - [ ] **H2.6** Her PR sonrası H1.8 benchmark'ı koş ve sonuçları PR'a yapıştır
 - [ ] **H2.7** H1.8 benchmark'ına drag-simulation senaryosu ekle (regresyon koruması)
 
