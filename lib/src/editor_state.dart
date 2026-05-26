@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show max;
 
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'editor/editor_component/service/scroll/auto_scroller.dart';

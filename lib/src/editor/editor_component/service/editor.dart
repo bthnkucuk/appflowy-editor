@@ -1,8 +1,6 @@
-import 'dart:math';
-
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'highlight_service_widget.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
 /// The default value of the auto scroll edge offset on mobile
@@ -405,27 +403,4 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
   BlockComponentRendererService get _renderer =>
       BlockComponentRenderer(builders: {...widget.blockComponentBuilders});
-}
-
-class KeepEditorFocusNotifier extends ValueNotifier<int> {
-  KeepEditorFocusNotifier() : super(0);
-
-  bool get shouldKeepFocus => value > 0;
-
-  @override
-  set value(int v) {
-    super.value = max(0, v);
-  }
-
-  void increase() {
-    value++;
-  }
-
-  void decrease() {
-    value--;
-  }
-
-  void reset() {
-    value = 0;
-  }
 }

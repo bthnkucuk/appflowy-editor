@@ -58,17 +58,40 @@ mixin _EditorChromeMixin {
   /// Reference-counted "don't clear my selection / IME on focus loss"
   /// guard. Overlays (slash menu, color picker, link toolbar, mobile
   /// sheets) bump it while open; the keyboard service consults
-  /// [KeepEditorFocusNotifier.shouldKeepFocus] inside its
+  /// [_KeepEditorFocusNotifier.shouldKeepFocus] inside its
   /// `_onFocusChanged` and bails out instead of clearing the selection
   /// when the counter is positive. Pre-7.0 this lived as a global
   /// (`keepEditorFocusNotifier`); per-EditorState scoping removes the
   /// multi-editor and hot-reload contamination risks the global had.
-  final KeepEditorFocusNotifier keepFocusNotifier = KeepEditorFocusNotifier();
+  final _KeepEditorFocusNotifier keepFocusNotifier = _KeepEditorFocusNotifier();
 
   /// Called by [EditorState.dispose] at the chrome's slot in the
   /// load-bearing disposal order.
   void disposeChrome() {
     editableNotifier.dispose();
     keepFocusNotifier.dispose();
+  }
+}
+
+final class _KeepEditorFocusNotifier extends ValueNotifier<int> {
+  _KeepEditorFocusNotifier() : super(0);
+
+  bool get shouldKeepFocus => value > 0;
+
+  @override
+  set value(int v) {
+    super.value = max(0, v);
+  }
+
+  void increase() {
+    value++;
+  }
+
+  void decrease() {
+    value--;
+  }
+
+  void reset() {
+    value = 0;
   }
 }
