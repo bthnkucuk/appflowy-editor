@@ -35,12 +35,6 @@ class Selection {
   /// Create a collapsed selection with [position].
   Selection.collapsed(Position position) : start = position, end = position;
 
-  /// Create a collapsed selection with [position].
-  @Deprecated('use Selection.collapsed() instead')
-  Selection.collapse(Path path, int offset)
-    : start = Position(path: path, offset: offset),
-      end = Position(path: path, offset: offset);
-
   Selection.invalid() : start = Position.invalid(), end = Position.invalid();
 
   final Position start;

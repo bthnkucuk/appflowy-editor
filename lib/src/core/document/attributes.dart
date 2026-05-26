@@ -16,11 +16,14 @@ Attributes? composeAttributes(
 }) {
   base ??= {};
   other ??= {};
-  Attributes attributes = {...base, ...other};
+  // The `{...base, ...other}` spread already produced a fresh map; the
+  // previous version then did `Attributes.from(attributes)..removeWhere`
+  // which allocated a *second* copy for no reason. removeWhere in place is
+  // safe (this map is freshly owned, not visible to any caller yet).
+  final Attributes attributes = {...base, ...other};
 
   if (!keepNull) {
-    attributes = Attributes.from(attributes)
-      ..removeWhere((_, value) => value == null);
+    attributes.removeWhere((_, value) => value == null);
   }
 
   return attributes.isNotEmpty ? attributes : null;

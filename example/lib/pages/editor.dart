@@ -75,11 +75,6 @@ class _EditorState extends State<Editor> {
 
   @override
   Widget build(BuildContext context) {
-    // When the mobile keyboard is up, MobileToolbarV2 sits just above it.
-    // Push the word-counter above the toolbar so it doesn't get overlapped.
-    final keyboardOpen = MediaQuery.viewPaddingOf(context).bottom > 0;
-    final counterBottomOffset =
-        keyboardOpen && UniversalPlatform.isMobile ? 56.0 : 0.0;
     return Stack(
       children: [
         ColoredBox(

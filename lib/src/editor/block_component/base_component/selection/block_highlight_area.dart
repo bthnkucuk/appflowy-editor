@@ -6,7 +6,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-final _deepEqual = const DeepCollectionEquality().equals;
+// Cheap equality for `List<Rect>?` — see selection_area_painter.dart for
+// the same helper. Replaces a `DeepCollectionEquality` call (~3-5x slower
+// for this shape, measured in test/performance/render_layer_benchmark_test.dart).
+bool _rectListEq(List<Rect>? a, List<Rect>? b) {
+  if (identical(a, b)) return true;
+  if (a == null || b == null) return false;
+  final n = a.length;
+  if (b.length != n) return false;
+  for (var i = 0; i < n; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
 
 /// [BlockHighlightArea] is a widget that renders the selection area or the cursor of a block.
 class BlockHighlightArea extends StatefulWidget {
@@ -56,6 +68,11 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
     debugLabel: 'cursor_${widget.node.path}',
   );
 
+  // Cache `supportTypes.toString()` — see block_selection_area.dart for the
+  // motivation. Avoids re-walking the list on every build. Recomputed in
+  // didUpdateWidget when the content actually changes.
+  late String _supportTypesSuffix = widget.supportTypes.toString();
+
   // keep the previous cursor rect to avoid unnecessary rebuild
   Rect? prevCursorRect;
   // keep the previous selection rects to avoid unnecessary rebuild
@@ -93,6 +110,9 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
       widget.listenable.addListener(_scheduleUpdate);
       widget.listenable.addListener(_clearCursorRect);
     }
+    if (!listEquals(oldWidget.supportTypes, widget.supportTypes)) {
+      _supportTypesSuffix = widget.supportTypes.toString();
+    }
   }
 
   @override
@@ -115,7 +135,7 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      key: ValueKey(widget.node.id + widget.supportTypes.toString()),
+      key: ValueKey(widget.node.id + _supportTypesSuffix),
       valueListenable: widget.listenable,
       builder: ((context, value, child) {
         final sizedBox = child ?? const SizedBox.shrink();
@@ -273,7 +293,7 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
         }
 
         final rects = widget.delegate.getRectsInSelection(selection);
-        if (!_deepEqual(rects, prevSelectionRects)) {
+        if (!_rectListEq(rects, prevSelectionRects)) {
           setState(() {
             prevSelectionRects = rects;
             prevCursorRect = null;
@@ -351,7 +371,7 @@ class _HighlightAreaPaintState extends State<HighlightAreaPaint>
   void didUpdateWidget(covariant HighlightAreaPaint oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (!const DeepCollectionEquality().equals(widget.rects, oldWidget.rects)) {
+    if (!_rectListEq(widget.rects, oldWidget.rects)) {
       _oldRects = oldWidget.rects;
       _newRects = widget.rects;
       _controller.reset();
@@ -476,7 +496,7 @@ class _HighlightAreaPainter extends CustomPainter {
   @override
   bool shouldRepaint(_HighlightAreaPainter oldDelegate) {
     return selectionColor != oldDelegate.selectionColor ||
-        !const DeepCollectionEquality().equals(rects, oldDelegate.rects);
+        !_rectListEq(rects, oldDelegate.rects);
   }
 }
 

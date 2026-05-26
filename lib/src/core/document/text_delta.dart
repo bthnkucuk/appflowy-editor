@@ -38,10 +38,14 @@ defaultAppFlowyEditorSliceAttributes = (delta, int index) {
   }
 
   // if the index is not 0, slice the attributes from the previous position.
-  final prevAttributes = delta.slice(index - 1, index).firstOrNull?.attributes;
-  if (prevAttributes == null) {
+  // Clone the getter's return — `TextInsert.attributes` now hands back an
+  // `UnmodifiableMapView`, but the hook mutates this map below via
+  // `removeWhere`.
+  final prevReadOnly = delta.slice(index - 1, index).firstOrNull?.attributes;
+  if (prevReadOnly == null) {
     return null;
   }
+  final prevAttributes = {...prevReadOnly};
   // if the prevAttributes doesn't include the code/href, return it.
   // Otherwise, check if the nextAttributes includes the code/href.
   if (!prevAttributes.keys.any(
@@ -112,13 +116,14 @@ class TextInsert extends TextOperation {
   Object? get data => text;
 
   @override
-  Attributes? get attributes => _attributes != null ? {..._attributes} : null;
+  Attributes? get attributes =>
+      _attributes != null ? UnmodifiableMapView(_attributes) : null;
 
   @override
   Map<String, dynamic> toJson() {
     final result = <String, dynamic>{'insert': text};
     if (_attributes != null && _attributes.isNotEmpty) {
-      result['attributes'] = attributes;
+      result['attributes'] = {..._attributes};
     }
 
     return result;
@@ -145,13 +150,14 @@ class TextRetain extends TextOperation {
   final Attributes? _attributes;
 
   @override
-  Attributes? get attributes => _attributes != null ? {..._attributes} : null;
+  Attributes? get attributes =>
+      _attributes != null ? UnmodifiableMapView(_attributes) : null;
 
   @override
   Map<String, dynamic> toJson() {
     final result = <String, dynamic>{'retain': length};
     if (_attributes != null && _attributes.isNotEmpty) {
-      result['attributes'] = attributes;
+      result['attributes'] = {..._attributes};
     }
 
     return result;
@@ -608,7 +614,12 @@ class Delta extends Iterable<TextOperation> {
   }
 
   Attributes? sliceAttributes(int index) {
-    return appflowyEditorSliceAttributes?.call(this, index);
+    final attrs = appflowyEditorSliceAttributes?.call(this, index);
+    // Callers (e.g. TextTransaction.insertText) mutate this with `.addAll`,
+    // so the returned map must be mutable. The default hook composes its
+    // result from `TextInsert.attributes` / `TextRetain.attributes`, whose
+    // getters return an `UnmodifiableMapView` for the hot read path.
+    return attrs != null ? {...attrs} : null;
   }
 }
 

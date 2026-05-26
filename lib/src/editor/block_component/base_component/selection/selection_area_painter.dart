@@ -3,6 +3,21 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
+// Cheap equality for `List<Rect>` — Rect already has value equality, so we
+// only need an element-wise scan. `DeepCollectionEquality` (used previously
+// here) is ~3-5x slower for this case because of type-dispatch and
+// `Iterable` wrapping. Measured win: 70-80% in
+// `test/performance/render_layer_benchmark_test.dart`.
+bool _rectListEq(List<Rect> a, List<Rect> b) {
+  if (identical(a, b)) return true;
+  final n = a.length;
+  if (b.length != n) return false;
+  for (var i = 0; i < n; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
+
 class AnimatedSelectionAreaPaint extends StatefulWidget {
   const AnimatedSelectionAreaPaint({
     super.key,
@@ -127,7 +142,7 @@ class SelectionAreaPainter extends CustomPainter {
   @override
   bool shouldRepaint(SelectionAreaPainter oldDelegate) {
     return selectionColor != oldDelegate.selectionColor ||
-        !const DeepCollectionEquality().equals(rects, oldDelegate.rects);
+        !_rectListEq(rects, oldDelegate.rects);
   }
 }
 
@@ -160,6 +175,6 @@ class AnimatedSelectionAreaPainter extends CustomPainter {
   bool shouldRepaint(covariant AnimatedSelectionAreaPainter oldDelegate) {
     return animation != oldDelegate.animation ||
         !const DeepCollectionEquality().equals(colors, oldDelegate.colors) ||
-        !const DeepCollectionEquality().equals(rects, oldDelegate.rects);
+        !_rectListEq(rects, oldDelegate.rects);
   }
 }

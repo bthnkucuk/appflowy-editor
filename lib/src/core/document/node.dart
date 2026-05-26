@@ -430,7 +430,11 @@ final class Node extends ChangeNotifier
     final node = Node(
       type: type ?? this.type,
       id: Uuid().v4(),
-      attributes: attributes ?? {...this.attributes},
+      // Spread from the raw `_attributes` field instead of going through the
+      // `attributes` getter (which wraps in UnmodifiableMapView each call).
+      // Avoids one allocation + an indirection per spread element on a path
+      // that runs for every node clone during transactions/undo/redo.
+      attributes: attributes ?? {..._attributes},
       children: children ?? [],
     );
     if (children == null && _children.isNotEmpty) {

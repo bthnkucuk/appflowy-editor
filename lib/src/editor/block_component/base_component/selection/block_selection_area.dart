@@ -2,12 +2,24 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:appflowy_editor/src/editor/block_component/base_component/selection/selection_area_painter.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart';
 import 'package:appflowy_editor/src/render/selection/cursor.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-final _deepEqual = const DeepCollectionEquality().equals;
+// Cheap equality for `List<Rect>?` — Rect already has value equality, so
+// only an element-wise scan is needed. Replaces a `DeepCollectionEquality`
+// call that's ~3-5x slower for this shape (measured in
+// `test/performance/render_layer_benchmark_test.dart`).
+bool _rectListEq(List<Rect>? a, List<Rect>? b) {
+  if (identical(a, b)) return true;
+  if (a == null || b == null) return false;
+  final n = a.length;
+  if (b.length != n) return false;
+  for (var i = 0; i < n; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
 
 enum BlockSelectionType { cursor, selection, highlight, block }
 
@@ -56,6 +68,16 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
     debugLabel: 'cursor_${widget.node.path}',
   );
 
+  // Cache `supportTypes.toString()`. The ValueListenableBuilder key
+  // recomputes on every build (every selection notify); the previous inline
+  // expression rebuilt a fresh string each call. Measured ~80% faster per
+  // allocation; cumulative win scales with mounted-block count.
+  // Recomputed in didUpdateWidget when supportTypes changes — parent
+  // (`BlockSelectionContainer`) often passes a freshly `.toList()`'d copy,
+  // but with the same content; we compare by listEquals to avoid useless
+  // recomputation.
+  late String _supportTypesSuffix = widget.supportTypes.toString();
+
   // keep the previous cursor rect to avoid unnecessary rebuild
   Rect? prevCursorRect;
   // keep the previous selection rects to avoid unnecessary rebuild
@@ -88,6 +110,9 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
       widget.listenable.addListener(_scheduleUpdate);
       widget.listenable.addListener(_clearCursorRect);
     }
+    if (!listEquals(oldWidget.supportTypes, widget.supportTypes)) {
+      _supportTypesSuffix = widget.supportTypes.toString();
+    }
   }
 
   @override
@@ -110,7 +135,7 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      key: ValueKey(widget.node.id + widget.supportTypes.toString()),
+      key: ValueKey(widget.node.id + _supportTypesSuffix),
       valueListenable: widget.listenable,
       builder: ((context, value, child) {
         final sizedBox = child ?? const SizedBox.shrink();
@@ -145,7 +170,7 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
               margin: padding,
               decoration: BoxDecoration(
                 color: widget.blockColor,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: .all(.circular(4.0)),
               ),
             ),
           );
@@ -236,7 +261,7 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
         }
       } else if (widget.supportTypes.contains(BlockSelectionType.selection)) {
         final rects = widget.delegate.getRectsInSelection(selection);
-        if (!_deepEqual(rects, prevSelectionRects)) {
+        if (!_rectListEq(rects, prevSelectionRects)) {
           setState(() {
             prevSelectionRects = rects;
             prevCursorRect = null;

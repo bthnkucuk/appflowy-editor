@@ -130,21 +130,25 @@ class UpdateOperation extends Operation {
 
   @override
   Map<String, dynamic> toJson() {
+    // Previously cloned both attribute maps. The fields are `final`, no
+    // caller mutates them after the operation is constructed, and downstream
+    // JSON consumers (log dumps, broadcast hooks, persistence) only read.
+    // Passing references avoids two Map allocations per UpdateOperation,
+    // mirroring the TextInsert.toJson fix.
     return {
       'op': 'update',
       'path': path,
-      'attributes': {...attributes},
-      'oldAttributes': {...oldAttributes},
+      'attributes': attributes,
+      'oldAttributes': oldAttributes,
     };
   }
 
   @override
   Operation copyWith({Path? path}) {
-    return UpdateOperation(
-      path ?? this.path,
-      {...attributes},
-      {...oldAttributes},
-    );
+    // Same reasoning as toJson: attribute maps are immutable post-construction
+    // in practice, so cloning here was pure overhead. `transformOperation`
+    // is the hot caller — it runs inside `Transaction.add` per existing op.
+    return UpdateOperation(path ?? this.path, attributes, oldAttributes);
   }
 
   @override
