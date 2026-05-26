@@ -268,11 +268,11 @@ EditorRobot test-infra genişlemesi sırasında (`d7cfb070`) iki ajan paralel in
 
 #### H3.4 — Public API daralt (Etki: Yüksek / Çaba: M / Risk: Yüksek — breaking)
 
-- [ ] `lib/appflowy_editor.dart` barrel'ını elle küratörle (iç-detay dosyaları çıkar: `appflowy_rich_text.dart`, `export_sheet.dart`, `infra/log.dart`)
-- [ ] Sub-library'lere böl: `core.dart`, `blocks.dart`, `plugins.dart`, `mobile.dart`
-- [ ] İç `package:appflowy_editor/src/...` import'larını relative'e çevir (codemod, 157 yer)
-- [ ] 14+ deprecated API'yi kaldır (next major `7.0.0`)
-- [ ] `UPGRADING.md`'yi gerçekten doldur
+- [x] **Phase 1** — İç `package:appflowy_editor/src/...` import'larını relative'e çevir. **92 dosya / 182 import** rewrite, analyze + 996/996 test temiz. Commit `959f36bd`.
+- [x] **Phase 2-3** — Sub-library'lere böl: `core.dart`, `blocks.dart`, `plugins.dart`, `mobile.dart`. Main barrel artık alt-kütüphanelere delegate ediyor (geriye uyumlu). Bölümlere ayrılmış import sections.
+- [ ] **Phase 4** — Deprecated API'leri kaldır (kalan: `databaseIndex` family — constructor param + field + `toJsonIndexed`)
+- [ ] **Phase 5** — `UPGRADING.md`'yi gerçekten doldur (sub-library'lere geçiş rehberi, removed deprecated'lar, breaking değişiklikler)
+- [ ] (Opsiyonel) `lib/appflowy_editor.dart`'tan iç-detay export'ları gerçekten çıkar: `appflowy_rich_text.dart`, `export_sheet.dart`, `infra/log.dart`. **Defer**: Phase 4/5 ile birlikte yapmaya değer mi karar ver — şu an tutarsız bir API yarı-yarıya breaking olur.
 
 #### H3.5 — Table block yeniden yaz (Etki: Orta / Çaba: L / Risk: Orta)
 
