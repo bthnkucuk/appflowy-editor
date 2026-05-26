@@ -53,7 +53,7 @@ double _estimateExtentForNode(Node node) {
 }
 
 class _SmallDocumentPrecalcPolicy extends ExtentPrecalculationPolicy {
-  _SmallDocumentPrecalcPolicy();
+  _SmallDocumentPrecalcPolicy(this.editorState);
 
   // Threshold borrowed from the package's own example: precalculate the
   // remaining extents only while the list is short enough that the
@@ -62,13 +62,28 @@ class _SmallDocumentPrecalcPolicy extends ExtentPrecalculationPolicy {
   // section).
   static const int _precalcThreshold = 100;
 
+  final EditorState editorState;
+
   @override
   bool shouldPrecalculateExtents(ExtentPrecalculationContext context) {
-    return context.numberOfItems < _precalcThreshold;
+    if (context.numberOfItems >= _precalcThreshold) {
+      return false;
+    }
+    // H2.8: super_sliver_list's `measureExtentForItem` builds and lays
+    // out every newly-dirty item twice (a temp tree for measurement,
+    // then the real one for paint) when precalc is on. During an
+    // auto-scroll-driven mobile selection drag, that doubles the mount
+    // cost of every block scrolling into view — the dominant cause of
+    // the 26-31 ms frame spikes the H2.3 work couldn't explain. Skip
+    // precalc while a drag is in flight; the temporary scrollbar
+    // imprecision is invisible on mobile (scrollbar fades out).
+    final dragMode = editorState.selectionExtraInfo?[selectionDragModeKey];
+    if (dragMode != null && dragMode != MobileSelectionDragMode.none) {
+      return false;
+    }
+    return true;
   }
 }
-
-final _smallDocumentPrecalcPolicy = _SmallDocumentPrecalcPolicy();
 
 Node pageNode({
   required Iterable<Node> children,
@@ -183,8 +198,10 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
         // Small-document precision: precalculate real extents when there
         // aren't many items, so the scrollbar tracks exactly. For long
         // documents the package's docs note this has diminishing returns;
-        // we skip it.
-        extentPrecalculationPolicy: _smallDocumentPrecalcPolicy,
+        // we skip it. The policy is also drag-aware (see H2.8 notes in
+        // _SmallDocumentPrecalcPolicy) — instantiated per build so it
+        // closes over the live editorState.
+        extentPrecalculationPolicy: _SmallDocumentPrecalcPolicy(editorState),
         itemCount: items.length + extentCount,
         itemBuilder: (context, index) {
           editorState.updateAutoScroller(Scrollable.of(context));
