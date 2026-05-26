@@ -89,6 +89,7 @@ const Map<ToolbarIcons, IconifyIconData> _phMap = {
   ToolbarIcons.alignLeft: PhIcons.textAlignLeft,
   ToolbarIcons.alignCenter: PhIcons.textAlignCenter,
   ToolbarIcons.alignRight: PhIcons.textAlignRight,
+
   /// No phosphor "auto" direction icon — using magicWand as a best-guess fit.
   // TODO(icons): better match
   ToolbarIcons.textDirectionAuto: PhIcons.magicWand,
@@ -154,17 +155,17 @@ const Map<ToolbarIcons, IconifyIconData> _phMapFilled = {
 class ToolbarIcon extends StatelessWidget {
   const ToolbarIcon({
     super.key,
-    required this.afMobileIcons,
+    required this.icon,
     this.size = 24,
     this.color,
     this.selected = false,
   });
 
-  final ToolbarIcons afMobileIcons;
+  final ToolbarIcons icon;
   final double? size;
   final Color? color;
 
-  /// When true and a Fill variant exists for [afMobileIcons], renders
+  /// When true and a Fill variant exists for [icon], renders
   /// the filled (solid) Phosphor glyph instead of the regular outline.
   /// Useful for toggle buttons (bold/italic/heading level/alignment/…)
   /// that should "light up" when the surrounding text already has the
@@ -174,8 +175,8 @@ class ToolbarIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = selected
-        ? (_phMapFilled[afMobileIcons] ?? _phMap[afMobileIcons]!)
-        : _phMap[afMobileIcons]!;
+        ? (_phMapFilled[icon] ?? _phMap[icon]!)
+        : _phMap[icon]!;
     return IconifyIcon(data, size: size, color: color);
   }
 }

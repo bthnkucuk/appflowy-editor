@@ -26,9 +26,9 @@ MobileToolbarItem _buildToggleItem({
   required ToolbarIcons icon,
   required String attributeName,
 }) {
-  return MobileToolbarItem.action(
-    itemIconBuilder: (context, editorState, _) => ToolbarIcon(
-      afMobileIcons: icon,
+  return MobileToolbarItem(
+    itemIconBuilder: (context, editorState) => ToolbarIcon(
+      icon: icon,
       color: MobileToolbarTheme.of(context).iconColor,
       selected: _isAttributeActive(editorState, attributeName),
     ),

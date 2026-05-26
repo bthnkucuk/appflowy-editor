@@ -218,7 +218,7 @@ class _UploadImageMenuState extends State<UploadImageMenu> {
         suffixIcon: IconButton(
           padding: const EdgeInsets.all(4.0),
           icon: ToolbarIcon(
-            afMobileIcons: ToolbarIcons.clear,
+            icon: ToolbarIcons.clear,
             size: 24,
             color: widget.uploadButtonTextColor,
           ),
@@ -353,7 +353,7 @@ class _UploadImageMenuState extends State<UploadImageMenu> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         ToolbarIcon(
-                          afMobileIcons: ToolbarIcons.upload,
+                          icon: ToolbarIcons.upload,
                           size: 32,
                           color: widget.uploadIconColor,
                         ),

@@ -5,9 +5,9 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// Sheet-based variant of [blocksMobileToolbarItem]. Opens the heading/list/
 /// todo/quote grid in a [StupidSimpleSheetRoute] instead of the inline
 /// keyboard-height menu used by MobileToolbarV2.
-final blocksMobileToolbarItemSheet = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => ToolbarIcon(
-    afMobileIcons: ToolbarIcons.list,
+final blocksMobileToolbarItemSheet = MobileToolbarItem(
+  itemIconBuilder: (context, _) => ToolbarIcon(
+    icon: ToolbarIcons.list,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {
@@ -151,7 +151,7 @@ class _SheetBlocksMenuState extends State<_SheetBlocksMenu> {
 
       return MobileToolbarItemMenuBtn(
         icon: ToolbarIcon(
-          afMobileIcons: list.icon,
+          icon: list.icon,
           color: MobileToolbarTheme.of(context).iconColor,
           selected: isSelected,
         ),

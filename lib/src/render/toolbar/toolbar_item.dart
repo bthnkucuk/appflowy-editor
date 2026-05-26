@@ -53,7 +53,7 @@ class ToolbarItem {
       type: -1,
       group: -1,
       iconBuilder: (_) =>
-          const ToolbarIcon(afMobileIcons: ToolbarIcons.divider, size: 20),
+          const ToolbarIcon(icon: ToolbarIcons.divider, size: 20),
       validator: (editorState) => true,
       handler: (editorState, context) {},
       highlightCallback: (editorState) => false,

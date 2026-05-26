@@ -266,9 +266,7 @@ class _FindMenuState extends State<FindMenu> {
             widget.searchService.navigateToMatch(moveUp: true);
           },
           icon: const Icon(Icons.arrow_upward),
-          tooltip:
-              widget.localizations?.previousMatch ??
-              aft.previousMatch,
+          tooltip: widget.localizations?.previousMatch ?? aft.previousMatch,
         ),
         // next match button
         FindAndReplaceMenuIconButton(
@@ -282,17 +280,13 @@ class _FindMenuState extends State<FindMenu> {
             widget.searchService.navigateToMatch();
           },
           icon: const Icon(Icons.arrow_downward),
-          tooltip:
-              widget.localizations?.nextMatch ??
-              aft.nextMatch,
+          tooltip: widget.localizations?.nextMatch ?? aft.nextMatch,
         ),
         FindAndReplaceMenuIconButton(
           iconButtonKey: const Key('closeButton'),
           onPressed: widget.onDismiss,
           icon: const Icon(Icons.close),
-          tooltip:
-              widget.localizations?.close ??
-              aft.closeFind,
+          tooltip: widget.localizations?.close ?? aft.closeFind,
         ),
         // regex button
         if (showRegexButton)
@@ -305,7 +299,7 @@ class _FindMenuState extends State<FindMenu> {
               _searchPattern();
             },
             icon: ToolbarIcon(
-              afMobileIcons: ToolbarIcons.regex,
+              icon: ToolbarIcons.regex,
               size: 20,
               color: widget.searchService.regex ? Colors.black : Colors.grey,
             ),
@@ -323,7 +317,7 @@ class _FindMenuState extends State<FindMenu> {
               _searchPattern();
             },
             icon: ToolbarIcon(
-              afMobileIcons: ToolbarIcons.caseSensitive,
+              icon: ToolbarIcons.caseSensitive,
               size: 20,
               color: widget.searchService.caseSensitive
                   ? Colors.black
@@ -353,9 +347,7 @@ class _FindMenuState extends State<FindMenu> {
         message = aft.emptySearchBoxHint;
 
       default:
-        message =
-            widget.localizations?.noResult ??
-            aft.noFindResult;
+        message = widget.localizations?.noResult ?? aft.noFindResult;
     }
 
     _setState();
@@ -422,8 +414,7 @@ class _ReplaceMenuState extends State<ReplaceMenu> {
               });
             },
             decoration: _buildInputDecoration(
-              widget.localizations?.replace ??
-                  aft.replace,
+              widget.localizations?.replace ?? aft.replace,
             ),
           ),
         ),
@@ -431,9 +422,7 @@ class _ReplaceMenuState extends State<ReplaceMenu> {
           iconButtonKey: const Key('replaceSelectedButton'),
           onPressed: _replaceSelectedWord,
           icon: const Icon(Icons.find_replace),
-          tooltip:
-              widget.localizations?.replace ??
-              aft.replace,
+          tooltip: widget.localizations?.replace ?? aft.replace,
         ),
         FindAndReplaceMenuIconButton(
           iconButtonKey: const Key('replaceAllButton'),
@@ -441,9 +430,7 @@ class _ReplaceMenuState extends State<ReplaceMenu> {
             replaceTextEditingController.text,
           ),
           icon: const Icon(Icons.change_circle_outlined),
-          tooltip:
-              widget.localizations?.replaceAll ??
-              aft.replaceAll,
+          tooltip: widget.localizations?.replaceAll ?? aft.replaceAll,
         ),
       ],
     );

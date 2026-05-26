@@ -2,12 +2,14 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 
-/// Sheet-based variant of [listMobileToolbarItem]. Opens the
-/// bulleted/numbered choice in a [StupidSimpleSheetRoute] instead of the
-/// inline keyboard-height menu used by MobileToolbarV2.
-final listMobileToolbarItemSheet = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => ToolbarIcon(
-    afMobileIcons: ToolbarIcons.list,
+/// Bulleted/numbered list picker for the mobile toolbar. Opens a
+/// [StupidSimpleSheetRoute] above the keyboard with the two options.
+/// Pre-7.0 there was a sibling `listMobileToolbarItem` that used the
+/// legacy `withMenu` inline-menu path — that variant was retired
+/// alongside `MobileToolbarItem.withMenu`.
+final listMobileToolbarItemSheet = MobileToolbarItem(
+  itemIconBuilder: (context, _) => ToolbarIcon(
+    icon: ToolbarIcons.list,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {
@@ -125,7 +127,7 @@ class _SheetListMenuState extends State<_SheetListMenu> {
         ),
         child: MobileToolbarItemMenuBtn(
           icon: ToolbarIcon(
-            afMobileIcons: currentList.icon,
+            icon: currentList.icon,
             size: 20,
             color: MobileToolbarTheme.of(context).iconColor,
             selected: isSelected,
@@ -137,9 +139,7 @@ class _SheetListMenuState extends State<_SheetListMenu> {
               widget.editorState.formatNode(
                 widget.selection,
                 (node) => node.copyWith(
-                  type: isSelected
-                      ? ParagraphBlockKeys.type
-                      : currentList.name,
+                  type: isSelected ? ParagraphBlockKeys.type : currentList.name,
                   attributes: {
                     ParagraphBlockKeys.delta: (node.delta ?? Delta()).toJson(),
                   },
@@ -162,4 +162,12 @@ class _SheetListMenuState extends State<_SheetListMenu> {
       ),
     );
   }
+}
+
+class ListUnit {
+  final ToolbarIcons icon;
+  final String label;
+  final String name;
+
+  ListUnit({required this.icon, required this.label, required this.name});
 }

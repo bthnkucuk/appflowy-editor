@@ -102,10 +102,7 @@ class _LinkMenuState extends State<LinkMenu> {
           isDense: true,
           suffixIcon: IconButton(
             padding: const EdgeInsets.all(4.0),
-            icon: const ToolbarIcon(
-              afMobileIcons: ToolbarIcons.clear,
-              size: 24,
-            ),
+            icon: const ToolbarIcon(icon: ToolbarIcons.clear, size: 24),
             onPressed: _textEditingController.clear,
             splashRadius: 5,
           ),
@@ -133,7 +130,7 @@ class _LinkMenuState extends State<LinkMenu> {
       height: 36,
       child: TextButton.icon(
         icon: ToolbarIcon(
-          afMobileIcons: icon,
+          icon: icon,
           size: 20,
           color: Theme.of(context).textTheme.labelLarge?.color,
         ),

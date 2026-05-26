@@ -5,19 +5,6 @@ import 'package:flutter/material.dart';
 
 const String selectionExtraInfoDisableMobileToolbarKey = 'disableMobileToolbar';
 
-/// Legacy hook kept so existing [MobileToolbarItem.itemIconBuilder] signatures
-/// still compile. The new inline-above-keyboard toolbar has no menu state to
-/// expose, so [closeItemMenu] is a no-op.
-abstract class MobileToolbarWidgetService {
-  void closeItemMenu();
-}
-
-class _NoopToolbarService implements MobileToolbarWidgetService {
-  const _NoopToolbarService();
-  @override
-  void closeItemMenu() {}
-}
-
 class MobileToolbarV2 extends StatefulWidget {
   const MobileToolbarV2({
     super.key,
@@ -196,20 +183,11 @@ class _ToolbarRow extends StatelessWidget {
               itemCount: toolbarItems.length,
               itemBuilder: (context, index) {
                 final item = toolbarItems[index];
-                final icon = item.itemIconBuilder?.call(
-                  context,
-                  editorState,
-                  const _NoopToolbarService(),
-                );
+                final icon = item.itemIconBuilder(context, editorState);
                 if (icon == null) return const SizedBox.shrink();
                 return IconButton(
                   icon: icon,
-                  onPressed: () {
-                    // withMenu items are legacy — their inline menu was
-                    // removed when sheet variants replaced them. Tapping is
-                    // a no-op; callers should migrate to the sheet variant.
-                    item.actionHandler?.call(context, editorState);
-                  },
+                  onPressed: () => item.actionHandler(context, editorState),
                 );
               },
             ),

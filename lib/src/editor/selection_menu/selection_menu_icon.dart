@@ -29,7 +29,7 @@ class SelectionMenuIconWidget extends StatelessWidget {
       );
     } else if (name != null) {
       return ToolbarIcon(
-        afMobileIcons: name!,
+        icon: name!,
         size: 18.0,
         color: isSelected
             ? style.selectionMenuItemSelectedIconColor

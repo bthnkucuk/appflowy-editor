@@ -6,7 +6,8 @@ import '../../../../new/infra/testable_editor.dart';
 import '../test_helpers/mobile_app_with_toolbar_widget.dart';
 
 void main() {
-  testWidgets('listMobileToolbarItem', (WidgetTester tester) async {
+  testWidgets('blocksMobileToolbarItemSheet — list options',
+      (WidgetTester tester) async {
     const text = 'Welcome to Appflowy 😁';
     final editor = tester.editor..addParagraphs(3, initialText: text);
     await editor.startTesting();

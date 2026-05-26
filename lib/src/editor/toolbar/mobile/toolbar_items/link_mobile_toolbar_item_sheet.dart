@@ -6,9 +6,9 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// [StupidSimpleSheetRoute] instead of the inline keyboard-height menu used
 /// by MobileToolbarV2. Unlike the other sheet variants, this one keeps the
 /// soft keyboard open — the TextField inside [MobileLinkMenu] needs it.
-final linkMobileToolbarItemSheet = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => ToolbarIcon(
-    afMobileIcons: ToolbarIcons.link,
+final linkMobileToolbarItemSheet = MobileToolbarItem(
+  itemIconBuilder: (context, _) => ToolbarIcon(
+    icon: ToolbarIcons.link,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {
@@ -245,8 +245,7 @@ class _MobileLinkMenuState extends State<MobileLinkMenu> {
                   child: ElevatedButton(
                     onPressed: () {
                       widget.onSubmitted.call(_textEditingController.text);
-                      widget.editorState.keyboardService
-                          ?.closeKeyboard();
+                      widget.editorState.keyboardService?.closeKeyboard();
                     },
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.all(

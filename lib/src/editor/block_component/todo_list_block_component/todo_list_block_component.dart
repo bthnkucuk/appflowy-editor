@@ -290,8 +290,7 @@ class _TodoListIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = context.read<EditorState>().editorStyle;
-    final baseFontSize =
-        style.textStyleConfiguration.text.fontSize ?? 14.0;
+    final baseFontSize = style.textStyleConfiguration.text.fontSize ?? 14.0;
     final scaled = baseFontSize * style.textScaleFactor;
     final iconSize = scaled * _iconToFontRatio;
     final lineHeight = scaled * _lineHeight;
@@ -311,9 +310,7 @@ class _TodoListIcon extends StatelessWidget {
             child: Center(
               child: ToolbarIcon(
                 size: iconSize,
-                afMobileIcons: checked
-                    ? ToolbarIcons.check
-                    : ToolbarIcons.uncheck,
+                icon: checked ? ToolbarIcons.check : ToolbarIcons.uncheck,
               ),
             ),
           ),

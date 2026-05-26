@@ -1,8 +1,8 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 
-final undoMobileToolbarItem = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => ToolbarIcon(
-    afMobileIcons: ToolbarIcons.undo,
+final undoMobileToolbarItem = MobileToolbarItem(
+  itemIconBuilder: (context, _) => ToolbarIcon(
+    icon: ToolbarIcons.undo,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) async {
@@ -10,9 +10,9 @@ final undoMobileToolbarItem = MobileToolbarItem.action(
   },
 );
 
-final redoMobileToolbarItem = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => ToolbarIcon(
-    afMobileIcons: ToolbarIcons.redo,
+final redoMobileToolbarItem = MobileToolbarItem(
+  itemIconBuilder: (context, _) => ToolbarIcon(
+    icon: ToolbarIcons.redo,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) async {

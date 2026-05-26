@@ -28,7 +28,7 @@ class SVGIconItemWidget extends StatelessWidget {
     Widget child = iconBuilder != null
         ? iconBuilder!(context)
         : ToolbarIcon(
-            afMobileIcons: icon!,
+            icon: icon!,
             color: isHighlight ? highlightColor : iconColor,
             size: iconSize.shortestSide,
           );

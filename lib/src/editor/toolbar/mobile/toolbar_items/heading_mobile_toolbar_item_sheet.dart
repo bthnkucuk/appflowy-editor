@@ -7,9 +7,9 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// Sheet-based variant of [headingMobileToolbarItem]. Opens the H1/H2/H3
 /// row in a [StupidSimpleSheetRoute] instead of the inline keyboard-height
 /// menu used by MobileToolbarV2.
-final headingMobileToolbarItemSheet = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => ToolbarIcon(
-    afMobileIcons: ToolbarIcons.heading,
+final headingMobileToolbarItemSheet = MobileToolbarItem(
+  itemIconBuilder: (context, _) => ToolbarIcon(
+    icon: ToolbarIcons.heading,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {
@@ -138,7 +138,7 @@ class _SheetHeadingMenuState extends State<_SheetHeadingMenu> {
         ),
         child: MobileToolbarItemMenuBtn(
           icon: ToolbarIcon(
-            afMobileIcons: currentHeading.icon,
+            icon: currentHeading.icon,
             size: 20,
             color: MobileToolbarTheme.of(context).iconColor,
             selected: isSelected,

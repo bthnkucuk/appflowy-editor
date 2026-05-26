@@ -124,10 +124,7 @@ class _ColorPickerState extends State<ColorPicker> {
             ),
             // checkbox
             if (isChecked)
-              const ToolbarIcon(
-                afMobileIcons: ToolbarIcons.checkmark,
-                size: 20,
-              ),
+              const ToolbarIcon(icon: ToolbarIcons.checkmark, size: 20),
           ],
         ),
       ),
@@ -169,7 +166,7 @@ class ResetColorButton extends StatelessWidget {
       child: TextButton.icon(
         onPressed: () => onPressed(null),
         icon: ToolbarIcon(
-          afMobileIcons: resetIcon,
+          icon: resetIcon,
           size: 13,
           color: Theme.of(context).iconTheme.color,
         ),

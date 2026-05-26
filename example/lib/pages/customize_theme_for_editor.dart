@@ -142,7 +142,7 @@ class _CustomizeThemeForEditorState extends State<CustomizeThemeForEditor> {
           return const Padding(
             padding: EdgeInsets.only(right: 5.0),
             child: ToolbarIcon(
-              afMobileIcons: ToolbarIcons.quote,
+              icon: ToolbarIcons.quote,
               size: 20,
               color: Colors.pink,
             ),

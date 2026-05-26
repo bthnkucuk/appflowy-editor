@@ -6,9 +6,9 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// bold/italic/underline/strikethrough/code grid in a
 /// [StupidSimpleSheetRoute] instead of the inline keyboard-height menu used
 /// by MobileToolbarV2.
-final textDecorationMobileToolbarItemV2Sheet = MobileToolbarItem.action(
-  itemIconBuilder: (context, _, _) => ToolbarIcon(
-    afMobileIcons: ToolbarIcons.textDecorationBold,
+final textDecorationMobileToolbarItemV2Sheet = MobileToolbarItem(
+  itemIconBuilder: (context, _) => ToolbarIcon(
+    icon: ToolbarIcons.textDecorationBold,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
   actionHandler: (context, editorState) {
@@ -151,7 +151,7 @@ class _SheetTextDecorationV2MenuState
 
       return MobileToolbarItemMenuBtn(
         icon: ToolbarIcon(
-          afMobileIcons: currentDecoration.icon,
+          icon: currentDecoration.icon,
           color: MobileToolbarTheme.of(context).iconColor,
           selected: isSelected,
         ),

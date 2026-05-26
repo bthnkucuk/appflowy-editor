@@ -104,7 +104,7 @@ class TestableEditor {
           textDecorationMobileToolbarItemSheet,
           headingMobileToolbarItemSheet,
           todoListMobileToolbarItem,
-          listMobileToolbarItem,
+          listMobileToolbarItemSheet,
           linkMobileToolbarItemSheet,
           quoteMobileToolbarItem,
           codeMobileToolbarItem,

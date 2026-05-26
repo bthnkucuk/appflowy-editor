@@ -26,7 +26,7 @@ class _MobileAppWithToolbarWidgetState
           textDecorationMobileToolbarItemSheet,
           headingMobileToolbarItemSheet,
           todoListMobileToolbarItem,
-          listMobileToolbarItem,
+          listMobileToolbarItemSheet,
           linkMobileToolbarItemSheet,
           quoteMobileToolbarItem,
           codeMobileToolbarItem,
