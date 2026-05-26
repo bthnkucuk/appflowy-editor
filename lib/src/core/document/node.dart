@@ -336,12 +336,28 @@ final class Node extends ChangeNotifier
     return 'Node(id: $id, type: $type, attributes: $attributes, children: $children)';
   }
 
-  Delta? get delta {
-    if (attributes['delta'] is List) {
-      return Delta.fromJson(attributes['delta']);
-    }
+  // Cache for [delta]. Source-of-truth is `_attributes['delta']`; whenever
+  // that reference changes (the only mutation path is `_attributes = ...`
+  // in the constructor and `updateAttributes`), the next call rebuilds.
+  // 194 read sites across the codebase, several called multiple times per
+  // build / per transaction — caching avoids re-parsing the same JSON
+  // list into a fresh `Delta` tree on every access.
+  Delta? _cachedDelta;
+  Object? _cachedDeltaSource;
 
-    return null;
+  Delta? get delta {
+    final raw = _attributes['delta'];
+    if (raw is! List) {
+      _cachedDelta = null;
+      _cachedDeltaSource = null;
+      return null;
+    }
+    if (identical(raw, _cachedDeltaSource)) {
+      return _cachedDelta;
+    }
+    _cachedDeltaSource = raw;
+    _cachedDelta = Delta.fromJson(raw);
+    return _cachedDelta;
   }
 
   Map<String, Object> toJson({
