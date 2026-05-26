@@ -1,8 +1,4 @@
-import 'package:appflowy_editor/src/editor/block_component/rich_text/appflowy_rich_text.dart';
-import 'package:appflowy_editor/src/editor/editor_component/style/editor_style.dart';
-import 'package:appflowy_editor/src/editor/selection_menu/selection_menu_widget.dart';
-import 'package:appflowy_editor/src/editor_state/types.dart';
-import 'package:flutter/foundation.dart';
+part of '../editor_state.dart';
 
 /// Static-ish presentation surface mixed into [EditorState] — fields
 /// that describe what the editor looks like (style, header/footer
@@ -18,7 +14,7 @@ import 'package:flutter/foundation.dart';
 /// `editorState.showHeader`, `editorState.editorStyle`, etc. directly —
 /// no forwarder boilerplate, no second instance to construct or dispose,
 /// no public API delta.
-mixin EditorChromeMixin {
+mixin _EditorChromeMixin {
   /// The visual style of the editor. Late-initialized once from the
   /// hosting `AppFlowyEditor` widget; assigning twice is allowed by
   /// `late` semantics and matches the pre-refactor contract.

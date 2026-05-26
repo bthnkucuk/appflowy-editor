@@ -2,7 +2,7 @@ part of '../editor_state.dart';
 
 /// Selection + Style state for [EditorState], bundled into one mixin
 /// because the two concerns share a critical section in the
-/// [SelectionStyleMixin.selection] setter: every selection change must
+/// [_SelectionStyleMixin.selection] setter: every selection change must
 /// also clear the toggled-style map and reset the slice-attributes flag
 /// — in that exact order, even when the selection value is identical
 /// (only the H2.1 short-circuit on the notifier itself happens after the
@@ -13,7 +13,7 @@ part of '../editor_state.dart';
 /// Lives in the same library as EditorState (`part of`) so its private
 /// fields (`_selectionType`, `_selectionUpdateReason`, `_toggledStyle`,
 /// `_sliceUpcomingAttributes`) stay invisible to downstream consumers.
-mixin SelectionStyleMixin {
+mixin _SelectionStyleMixin {
   // ---------------------------------------------------------------------------
   // Selection notifiers
   // ---------------------------------------------------------------------------

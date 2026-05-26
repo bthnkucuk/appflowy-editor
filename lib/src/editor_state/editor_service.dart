@@ -1,5 +1,4 @@
-import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:flutter/material.dart';
+part of '../editor_state.dart';
 
 /// Service-locator surface mixed into [EditorState]. Owns the
 /// `GlobalKey`s that point at the live service widgets (selection,
@@ -9,7 +8,7 @@ import 'package:flutter/material.dart';
 /// directly — the `editorState.service.X` middleman is gone. The
 /// `_Key` fields and the `_service` getters are now first-class members
 /// of EditorState.
-mixin EditorServiceMixin {
+mixin _EditorServiceMixin {
   // selection service
   final selectionServiceKey = GlobalKey(
     debugLabel: 'appflowy_editor_selection_service',

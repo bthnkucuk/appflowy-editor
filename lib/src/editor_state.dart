@@ -8,15 +8,15 @@ import 'package:appflowy_editor/src/history/undo_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-export 'editor_state/editor_chrome.dart';
-export 'editor_state/editor_service.dart';
 export 'editor_state/selection_drag_mode.dart';
 export 'editor_state/types.dart';
 
-// Internal mixin files. Kept as `part`/`part of` so they can share
-// library-level privacy with EditorState (e.g. `_recordRedoOrUndo`
-// remains a private implementation detail not surfaced on the public
-// API).
+// Internal mixin files. Kept as `part`/`part of` so they share
+// library-level privacy with EditorState — the mixin types themselves
+// are library-private (`_` prefix) and the implementation details
+// (`_recordRedoOrUndo`, `_disposeXxx`) stay invisible to downstream.
+part 'editor_state/editor_chrome.dart';
+part 'editor_state/editor_service.dart';
 part 'editor_state/history_mixin.dart';
 part 'editor_state/scroll_coordinator_mixin.dart';
 part 'editor_state/selection_style_mixin.dart';
@@ -39,14 +39,22 @@ part 'editor_state/transaction_pipeline_mixin.dart';
 /// all the mutations should be applied through [Transaction].
 ///
 /// Mutating the document with document's API is not recommended.
-class EditorState
+///
+/// Internal: the mixin composition lives on [_EditorStateBase] below;
+/// EditorState only extends it. Downstream consumers see EditorState
+/// as the public API surface — the underscore-prefixed mixin types
+/// (`_EditorChromeMixin`, `_HistoryMixin`, …) are library-private and
+/// can't be applied to anything outside this library.
+abstract class _EditorStateBase
     with
-        EditorChromeMixin,
-        EditorServiceMixin,
-        HistoryMixin,
-        SelectionStyleMixin,
-        ScrollCoordinatorMixin,
-        TransactionPipelineMixin {
+        _EditorChromeMixin,
+        _EditorServiceMixin,
+        _HistoryMixin,
+        _SelectionStyleMixin,
+        _ScrollCoordinatorMixin,
+        _TransactionPipelineMixin {}
+
+class EditorState extends _EditorStateBase {
   EditorState({
     required this.document,
     this.minHistoryItemDuration = const Duration(milliseconds: 50),
@@ -62,22 +70,22 @@ class EditorState
   final Document document;
 
   // the minimum duration for saving the history item.
-  // Satisfies [HistoryMixin.minHistoryItemDuration] abstract getter.
+  // Satisfies [_HistoryMixin.minHistoryItemDuration] abstract getter.
   @override
   final Duration minHistoryItemDuration;
 
   // Selection/highlight/tap notifiers + selectionType/selectionUpdateReason
-  // + selectionExtraInfo live in [SelectionStyleMixin].
+  // + selectionExtraInfo live in [_SelectionStyleMixin].
   //
   // Scroll config (disableAutoScroll, autoScrollEdgeOffset),
   // isAutoScrollHighlight, autoScroller, scrollableState,
   // selectionRects/highlightRects, scrollToHighlight + friends,
   // updateAutoScroller, renderBox, and the scroll-view listener set
-  // live in [ScrollCoordinatorMixin].
+  // live in [_ScrollCoordinatorMixin].
 
   // Service-locator surface (selectionService / keyboardService /
   // scrollService / rendererService + their GlobalKeys) lives in
-  // [EditorServiceMixin]. Consumers read them as direct members of
+  // [_EditorServiceMixin]. Consumers read them as direct members of
   // EditorState (no `.service.` middleman).
 
   /// Configures log output parameters,
@@ -87,8 +95,8 @@ class EditorState
 
   // transactionStream + _observer + _asyncObserver +
   // _broadcastTransaction + cancelSubscription live in
-  // [TransactionPipelineMixin].
-  // toggledStyle / sliceUpcomingAttributes live in [SelectionStyleMixin].
+  // [_TransactionPipelineMixin].
+  // toggledStyle / sliceUpcomingAttributes live in [_SelectionStyleMixin].
 
   Transaction get transaction {
     final transaction = Transaction(document: document);
@@ -117,10 +125,10 @@ class EditorState
   StreamSubscription? _subscription;
 
   // updateSelectionWithReason / updateHighlight / updateTap live in
-  // [SelectionStyleMixin].
+  // [_SelectionStyleMixin].
   //
   // The scroll-view listener set, renderBox, and updateAutoScroller live
-  // in [ScrollCoordinatorMixin].
+  // in [_ScrollCoordinatorMixin].
 
   final bool _enableCheckIntegrity = false;
 
@@ -209,7 +217,7 @@ class EditorState
   /// if selection is backward, return nodes in order
   /// if selection is forward, return nodes in reverse order
   ///
-  /// Satisfies [ScrollCoordinatorMixin.getNodesInSelection] abstract.
+  /// Satisfies [_ScrollCoordinatorMixin.getNodesInSelection] abstract.
   @override
   List<Node> getNodesInSelection(Selection selection) {
     // Normalize the selection.
@@ -303,9 +311,9 @@ class EditorState
   // selectionRects, highlightRects, scrollToHighlight,
   // enableAutoScrollHighlight, disableAutoScrollHighlight,
   // highlightChanged, updateAutoScroller all live in
-  // [ScrollCoordinatorMixin].
+  // [_ScrollCoordinatorMixin].
 
-  // cancelSubscription lives in [TransactionPipelineMixin].
+  // cancelSubscription lives in [_TransactionPipelineMixin].
 
   void _applyTransactionInLocal(Transaction transaction) {
     for (final op in transaction.operations) {

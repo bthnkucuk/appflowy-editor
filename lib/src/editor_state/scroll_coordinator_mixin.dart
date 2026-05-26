@@ -6,29 +6,29 @@ part of '../editor_state.dart';
 /// scroll code consumes to position auto-scroll targets.
 ///
 /// Declared as a mixin with abstract dependencies (rather than an `on`
-/// clause) because EditorState applies several mixins (`EditorChromeMixin`,
-/// `HistoryMixin`, `SelectionStyleMixin`, this one) and an `on` clause
+/// clause) because EditorState applies several mixins (`_EditorChromeMixin`,
+/// `_HistoryMixin`, `_SelectionStyleMixin`, this one) and an `on` clause
 /// referencing EditorState would tangle the mixin-application chain. The
 /// abstract members below are satisfied by EditorState directly (`service`,
-/// `getNodesInSelection`) or by [SelectionStyleMixin] (`selection`,
+/// `getNodesInSelection`) or by [_SelectionStyleMixin] (`selection`,
 /// `highlight`, `selectionExtraInfo`).
-mixin ScrollCoordinatorMixin {
+mixin _ScrollCoordinatorMixin {
   // ---------------------------------------------------------------------------
   // Abstract dependencies (provided by EditorState + other mixins)
   // ---------------------------------------------------------------------------
 
-  /// Provided by [EditorServiceMixin] — used by [renderBox] to reach
+  /// Provided by [_EditorServiceMixin] — used by [renderBox] to reach
   /// the scrollable's render object.
   GlobalKey get scrollServiceKey;
 
-  /// Provided by [SelectionStyleMixin] — the active selection.
+  /// Provided by [_SelectionStyleMixin] — the active selection.
   Selection? get selection;
 
-  /// Provided by [SelectionStyleMixin] — the active highlight (search /
+  /// Provided by [_SelectionStyleMixin] — the active highlight (search /
   /// programmatic scroll target).
   Selection? get highlight;
 
-  /// Provided by [SelectionStyleMixin] — extra info carried by the most
+  /// Provided by [_SelectionStyleMixin] — extra info carried by the most
   /// recent selection update. Read for drag-mode detection during
   /// auto-scroll.
   Map? get selectionExtraInfo;

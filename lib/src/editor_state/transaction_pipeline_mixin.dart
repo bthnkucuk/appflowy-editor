@@ -16,7 +16,7 @@ part of '../editor_state.dart';
 /// `DocumentRule.shouldApply(editorState: this)` — that call expects
 /// EditorState, which the mixin's `this` is not without a cast.
 /// Keeping the setter on the facade avoids that gymnastic.
-mixin TransactionPipelineMixin {
+mixin _TransactionPipelineMixin {
   /// listen to this stream to get notified when the transaction applies.
   Stream<EditorTransactionValue> get transactionStream => _observer.stream;
 

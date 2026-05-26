@@ -14,7 +14,7 @@ part of '../editor_state.dart';
 /// `this` from inside this mixin is typed as the mixin itself, not as
 /// EditorState — typing it would require `on EditorState`, which would
 /// create a circular import between editor_state.dart and this file.
-mixin HistoryMixin {
+mixin _HistoryMixin {
   /// Provided by the host EditorState — the minimum interval after
   /// which a user-edit history item is sealed (grouping consecutive
   /// keystrokes into one undo step). Declared as an abstract getter so
