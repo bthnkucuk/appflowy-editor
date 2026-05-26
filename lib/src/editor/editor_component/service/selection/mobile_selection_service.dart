@@ -172,27 +172,22 @@ class _MobileSelectionServiceWidgetState
       ],
     );
 
-    return PlatformExtension.isIOS
-        ? MobileSelectionGestureDetector(
-            onTapUp: _gestureStrategy.onTapUp,
-            onDoubleTapUp: _gestureStrategy.onDoubleTapUp,
-            onTripleTapUp: _gestureStrategy.onTripleTapUp,
-            onLongPressStart: _gestureStrategy.onLongPressStart,
-            onLongPressMoveUpdate: _gestureStrategy.onLongPressMoveUpdate,
-            onLongPressEnd: _gestureStrategy.onLongPressEnd,
-            child: stack,
-          )
-        : MobileSelectionGestureDetector(
-            onTapUp: _gestureStrategy.onTapUp,
-            onDoubleTapUp: _gestureStrategy.onDoubleTapUp,
-            onTripleTapUp: _gestureStrategy.onTripleTapUp,
-            onLongPressStart: _gestureStrategy.onLongPressStart,
-            onLongPressMoveUpdate: _gestureStrategy.onLongPressMoveUpdate,
-            onLongPressEnd: _gestureStrategy.onLongPressEnd,
-            onPanUpdate: _gestureStrategy.onPanUpdate,
-            onPanEnd: _gestureStrategy.onPanEnd,
-            child: stack,
-          );
+    // iOS leaves onPanUpdate/onPanEnd null so the PanGestureRecognizer
+    // (always installed by MobileSelectionGestureDetector) receives no
+    // callbacks — matches the pre-refactor behavior, which omitted these
+    // arguments entirely on iOS.
+    final isIOS = PlatformExtension.isIOS;
+    return MobileSelectionGestureDetector(
+      onTapUp: _gestureStrategy.onTapUp,
+      onDoubleTapUp: _gestureStrategy.onDoubleTapUp,
+      onTripleTapUp: _gestureStrategy.onTripleTapUp,
+      onLongPressStart: _gestureStrategy.onLongPressStart,
+      onLongPressMoveUpdate: _gestureStrategy.onLongPressMoveUpdate,
+      onLongPressEnd: _gestureStrategy.onLongPressEnd,
+      onPanUpdate: isIOS ? null : _gestureStrategy.onPanUpdate,
+      onPanEnd: isIOS ? null : _gestureStrategy.onPanEnd,
+      child: stack,
+    );
   }
 
   @override
