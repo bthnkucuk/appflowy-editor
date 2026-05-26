@@ -112,6 +112,16 @@ class AndroidGestureStrategy extends MobileGestureStrategy {
         extraInfo: {
           selectionDragModeKey: pan.dragMode,
           selectionExtraInfoDisableFloatingToolbar: true,
+          // H2.3.f: every drag tick used to fire IME `showSoftInput` +
+          // `focusNode.requestFocus()` because we never told the keyboard
+          // service that we're mid-cursor-drag. Two platform-channel
+          // hops per tick on Android added ~30 ms to the frame even
+          // when the rebuild was nearly empty. Mirror iOS's pattern
+          // (see _MobileSelectionServiceWidgetState.updateSelection in
+          // mobile_selection_service.dart) and signal the keyboard
+          // service to skip the IME re-attach during cursor drags.
+          selectionExtraInfoDoNotAttachTextService:
+              pan.dragMode == MobileSelectionDragMode.cursor,
         },
       );
     }
