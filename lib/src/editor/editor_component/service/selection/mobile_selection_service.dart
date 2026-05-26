@@ -2,13 +2,11 @@ import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/mobile_selection_auto_scroller.dart';
+import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/mobile_selection_overlays.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/pan_drag_state.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_magnifier.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/shared.dart';
 import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
 import 'package:appflowy_editor/src/render/selection/mobile_basic_handle.dart';
-import 'package:appflowy_editor/src/render/selection/mobile_collapsed_handle.dart';
-import 'package:appflowy_editor/src/render/selection/mobile_selection_handle.dart';
 import 'package:appflowy_editor/src/service/selection/mobile_selection_gesture.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -92,10 +90,6 @@ class _MobileSelectionServiceWidgetState
     listen: false,
   );
 
-  bool isCollapsedHandleVisible = false;
-
-  Timer? collapsedHandleTimer;
-
   @override
   void initState() {
     super.initState();
@@ -121,7 +115,6 @@ class _MobileSelectionServiceWidgetState
     selectionNotifierAfterLayout.dispose();
     editorState.selectionNotifier.removeListener(_updateSelection);
     editorState.removeScrollViewScrolledListener(_autoScroller.onScroll);
-    collapsedHandleTimer?.cancel();
 
     super.dispose();
   }
@@ -134,12 +127,27 @@ class _MobileSelectionServiceWidgetState
         widget.child,
 
         // magnifier for zoom in the text.
-        if (widget.showMagnifier) _buildMagnifier(),
+        if (widget.showMagnifier)
+          MagnifierOverlay(pan: _pan, size: widget.magnifierSize),
 
         // the handles for expanding the selection area.
-        _buildLeftHandle(),
-        _buildRightHandle(),
-        _buildCollapsedHandle(),
+        SelectionHandleOverlay(
+          handleType: HandleType.left,
+          editorState: editorState,
+          pan: _pan,
+          selectionNotifierAfterLayout: selectionNotifierAfterLayout,
+        ),
+        SelectionHandleOverlay(
+          handleType: HandleType.right,
+          editorState: editorState,
+          pan: _pan,
+          selectionNotifierAfterLayout: selectionNotifierAfterLayout,
+        ),
+        CollapsedHandleOverlay(
+          editorState: editorState,
+          pan: _pan,
+          selectionNotifierAfterLayout: selectionNotifierAfterLayout,
+        ),
       ],
     );
 
@@ -164,191 +172,6 @@ class _MobileSelectionServiceWidgetState
             onPanEnd: _onPanEndAndroid,
             child: stack,
           );
-  }
-
-  Widget _buildMagnifier() {
-    return ValueListenableBuilder(
-      valueListenable: _pan.lastPanOffset,
-      builder: (_, offset, _) {
-        if (offset == null || disableMagnifier) {
-          return const SizedBox.shrink();
-        }
-        final renderBox = context.findRenderObject() as RenderBox;
-        final local = renderBox.globalToLocal(offset);
-
-        return MobileMagnifier(size: widget.magnifierSize, offset: local);
-      },
-    );
-  }
-
-  Widget _buildCollapsedHandle() {
-    return ValueListenableBuilder(
-      valueListenable: selectionNotifierAfterLayout,
-      builder: (context, selection, _) {
-        if (selection == null || !selection.isCollapsed) {
-          isCollapsedHandleVisible = false;
-
-          return const SizedBox.shrink();
-        }
-
-        // on Android, the drag handle should be updated when typing text.
-        if (PlatformExtension.isAndroid &&
-            editorState.selectionUpdateReason !=
-                SelectionUpdateReason.uiEvent) {
-          isCollapsedHandleVisible = false;
-
-          return const SizedBox.shrink();
-        }
-
-        if (selection.isCollapsed &&
-            [
-              MobileSelectionDragMode.leftSelectionHandle,
-              MobileSelectionDragMode.rightSelectionHandle,
-            ].contains(_pan.dragMode)) {
-          isCollapsedHandleVisible = false;
-
-          return const SizedBox.shrink();
-        }
-
-        selection = selection.normalized;
-
-        final node = editorState.getNodeAtPath(selection.start.path);
-        final selectable = node?.selectable;
-        var rect = selectable?.getCursorRectInPosition(
-          selection.start,
-          shiftWithBaseOffset: true,
-        );
-
-        if (node == null || rect == null) {
-          isCollapsedHandleVisible = false;
-
-          return const SizedBox.shrink();
-        }
-
-        isCollapsedHandleVisible = true;
-
-        _clearCollapsedHandleOnAndroid();
-
-        final editorStyle = editorState.editorStyle;
-
-        return MobileCollapsedHandle(
-          layerLink: node.layerLink,
-          rect: rect,
-          handleColor: editorStyle.dragHandleColor,
-          handleWidth: editorStyle.mobileDragHandleWidth,
-          handleBallWidth: editorStyle.mobileDragHandleBallSize.width,
-          enableHapticFeedbackOnAndroid:
-              editorStyle.enableHapticFeedbackOnAndroid,
-          onDragging: (isDragging) {
-            if (isDragging) {
-              collapsedHandleTimer?.cancel();
-              collapsedHandleTimer = null;
-            } else {
-              _clearCollapsedHandleOnAndroid();
-            }
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildLeftHandle() {
-    return _buildHandle(HandleType.left);
-  }
-
-  Widget _buildRightHandle() {
-    return _buildHandle(HandleType.right);
-  }
-
-  Widget _buildHandle(HandleType handleType) {
-    if (![HandleType.left, HandleType.right].contains(handleType)) {
-      throw ArgumentError('showLeftHandle and showRightHandle cannot be same.');
-    }
-
-    return ValueListenableBuilder(
-      valueListenable: selectionNotifierAfterLayout,
-      builder: (context, selection, _) {
-        if (selection == null) {
-          return const SizedBox.shrink();
-        }
-
-        if (selection.isCollapsed &&
-            [
-              MobileSelectionDragMode.none,
-              MobileSelectionDragMode.cursor,
-            ].contains(_pan.dragMode)) {
-          return const SizedBox.shrink();
-        }
-
-        final isCollapsedWhenDraggingHandle =
-            selection.isCollapsed &&
-            [
-              MobileSelectionDragMode.leftSelectionHandle,
-              MobileSelectionDragMode.rightSelectionHandle,
-            ].contains(_pan.dragMode);
-
-        selection = selection.normalized;
-
-        final node = editorState.getNodeAtPath(
-          handleType == HandleType.left
-              ? selection.start.path
-              : selection.end.path,
-        );
-        final selectable = node?.selectable;
-
-        // get the cursor rect when the selection is collapsed.
-        final rects = isCollapsedWhenDraggingHandle
-            ? [
-                selectable?.getCursorRectInPosition(
-                      selection.start,
-                      shiftWithBaseOffset: true,
-                    ) ??
-                    Rect.zero,
-              ]
-            : selectable?.getRectsInSelection(
-                selection,
-                shiftWithBaseOffset: true,
-              );
-
-        if (node == null || rects == null || rects.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        final editorStyle = editorState.editorStyle;
-
-        return MobileSelectionHandle(
-          layerLink: node.layerLink,
-          rect: handleType == HandleType.left ? rects.first : rects.last,
-          handleType: handleType,
-          handleColor: isCollapsedWhenDraggingHandle
-              ? Colors.transparent
-              : editorStyle.dragHandleColor,
-          handleWidth: editorStyle.mobileDragHandleWidth,
-          handleBallWidth: editorStyle.mobileDragHandleBallSize.width,
-          enableHapticFeedbackOnAndroid:
-              editorStyle.enableHapticFeedbackOnAndroid,
-        );
-      },
-    );
-  }
-
-  // The collapsed handle will be dismissed when no user interaction is detected.
-  void _clearCollapsedHandleOnAndroid() {
-    if (!PlatformExtension.isAndroid) {
-      return;
-    }
-    collapsedHandleTimer?.cancel();
-    collapsedHandleTimer = Timer(
-      editorState.editorStyle.autoDismissCollapsedHandleDuration,
-      () {
-        if (isCollapsedHandleVisible) {
-          editorState.updateSelectionWithReason(
-            editorState.selection,
-            reason: SelectionUpdateReason.transaction,
-          );
-        }
-      },
-    );
   }
 
   @override
