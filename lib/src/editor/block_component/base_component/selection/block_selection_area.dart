@@ -22,6 +22,44 @@ bool _rectListEq(List<Rect>? a, List<Rect>? b) {
 
 enum BlockSelectionType { cursor, selection, highlight, block }
 
+/// Paint-relevant state for a single [BlockSelectionArea]. Captures
+/// what — if anything — this block needs to render right now. Equality
+/// is value-based so the per-block notifier in
+/// [_BlockSelectionAreaState] can short-circuit emit when nothing
+/// changed.
+///
+/// H2.3.a: out-of-selection blocks transition to `null` once and stay
+/// there until the selection re-enters their path. Each transition
+/// fires the notifier once; equal-to-prev assignments (the common case
+/// during a drag, for ~N−1 blocks per tick) are absorbed silently.
+@immutable
+class _BlockSelectionPaint {
+  const _BlockSelectionPaint({
+    required this.type,
+    this.cursorRect,
+    this.selectionRects,
+    this.blockRect,
+  });
+
+  final BlockSelectionType type;
+  final Rect? cursorRect;
+  final List<Rect>? selectionRects;
+  final Rect? blockRect;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _BlockSelectionPaint &&
+        other.type == type &&
+        other.cursorRect == cursorRect &&
+        other.blockRect == blockRect &&
+        _rectListEq(other.selectionRects, selectionRects);
+  }
+
+  @override
+  int get hashCode => Object.hash(type, cursorRect, blockRect);
+}
+
 /// [BlockSelectionArea] is a widget that renders the selection area or the cursor of a block.
 class BlockSelectionArea extends StatefulWidget {
   const BlockSelectionArea({
@@ -58,12 +96,10 @@ class BlockSelectionArea extends StatefulWidget {
   final List<BlockSelectionType> supportTypes;
 
   /// Diagnostic counter for the H2.3 stutter investigation. Incremented
-  /// inside the `ValueListenableBuilder` body — i.e. once per
-  /// `selectionNotifier` fire per mounted area. Used by
-  /// `test/performance/selection_notification_cascade_test.dart` to lock
-  /// in the "3N → ~9" rebuild reduction once H2.3.a (derived listenable)
-  /// lands. One integer increment per build; production cost is
-  /// negligible.
+  /// inside the `ValueListenableBuilder` body — i.e. once per per-block
+  /// paint emit. After H2.3.a (derived listenable), this count drops
+  /// from ~3N to ~6 per selection notify on an N-block document.
+  /// One integer increment per build; production cost is negligible.
   @visibleForTesting
   static int debugBuilderCallCount = 0;
 
@@ -72,27 +108,28 @@ class BlockSelectionArea extends StatefulWidget {
 }
 
 class _BlockSelectionAreaState extends State<BlockSelectionArea> {
-  // We need to keep the key to refresh the cursor status when typing continuously.
+  // Forces the Cursor widget's blink ticker to re-sync on every cursor
+  // rebuild — kept across paint-state changes via GlobalKey.
   late GlobalKey cursorKey = GlobalKey(
     debugLabel: 'cursor_${widget.node.path}',
   );
 
   // Cache `supportTypes.toString()`. The ValueListenableBuilder key
-  // recomputes on every build (every selection notify); the previous inline
-  // expression rebuilt a fresh string each call. Measured ~80% faster per
-  // allocation; cumulative win scales with mounted-block count.
-  // Recomputed in didUpdateWidget when supportTypes changes — parent
-  // (`BlockSelectionContainer`) often passes a freshly `.toList()`'d copy,
-  // but with the same content; we compare by listEquals to avoid useless
-  // recomputation.
+  // recomputes on every build (every paint emit); the previous inline
+  // expression rebuilt a fresh string each call.
   late String _supportTypesSuffix = widget.supportTypes.toString();
 
-  // keep the previous cursor rect to avoid unnecessary rebuild
-  Rect? prevCursorRect;
-  // keep the previous selection rects to avoid unnecessary rebuild
-  List<Rect>? prevSelectionRects;
-  // keep the block selection rect to avoid unnecessary rebuild
-  Rect? prevBlockRect;
+  /// Derived per-block paint state. The outer `widget.listenable`
+  /// (= `editorState.selectionNotifier`) fires on every selection
+  /// change; that wakes _every_ mounted [BlockSelectionArea] in the
+  /// document. By dispatching the builder off this _local_ notifier
+  /// instead — and only writing into it when the paint actually
+  /// differs (handled by ValueNotifier's `==` short-circuit) — the
+  /// rebuild count drops from ~3N per selection notify to ~6 (only the
+  /// blocks at the old and new selection boundaries actually transition).
+  final ValueNotifier<_BlockSelectionPaint?> _paintNotifier = ValueNotifier(
+    null,
+  );
 
   // H2.2: drives _updateSelectionIfNeeded on selection-change instead of
   // self-rescheduling every frame. Pending flag coalesces multiple notifies
@@ -104,7 +141,6 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
     super.initState();
 
     widget.listenable.addListener(_scheduleUpdate);
-    widget.listenable.addListener(_clearCursorRect);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateSelectionIfNeeded();
     });
@@ -115,9 +151,7 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.listenable != widget.listenable) {
       oldWidget.listenable.removeListener(_scheduleUpdate);
-      oldWidget.listenable.removeListener(_clearCursorRect);
       widget.listenable.addListener(_scheduleUpdate);
-      widget.listenable.addListener(_clearCursorRect);
     }
     if (!listEquals(oldWidget.supportTypes, widget.supportTypes)) {
       _supportTypesSuffix = widget.supportTypes.toString();
@@ -127,8 +161,7 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
   @override
   void dispose() {
     widget.listenable.removeListener(_scheduleUpdate);
-    widget.listenable.removeListener(_clearCursorRect);
-
+    _paintNotifier.dispose();
     super.dispose();
   }
 
@@ -143,92 +176,86 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
+    return ValueListenableBuilder<_BlockSelectionPaint?>(
       key: ValueKey(widget.node.id + _supportTypesSuffix),
-      valueListenable: widget.listenable,
-      builder: ((context, value, child) {
+      valueListenable: _paintNotifier,
+      builder: (context, paint, _) {
         BlockSelectionArea.debugBuilderCallCount++;
-        final sizedBox = child ?? const SizedBox.shrink();
-        final selection = value?.normalized;
-
-        if (selection == null) {
-          return sizedBox;
+        if (paint == null) {
+          return const SizedBox.shrink();
         }
 
-        final path = widget.node.path;
-        if (!path.inSelection(selection)) {
-          return sizedBox;
-        }
-
-        final editorState = context.read<EditorState>();
-
-        if (editorState.selectionType == SelectionType.block) {
-          if (!widget.supportTypes.contains(BlockSelectionType.block) ||
-              !path.inSelection(selection, isSameDepth: true) ||
-              prevBlockRect == null) {
-            return sizedBox;
-          }
-          final builder = editorState.rendererService
-              .blockComponentBuilder(widget.node.type);
-          final padding = builder?.configuration.blockSelectionAreaMargin(
-            widget.node,
-          );
-
-          return Positioned.fromRect(
-            rect: prevBlockRect!,
-            child: Container(
-              margin: padding,
-              decoration: BoxDecoration(
-                color: widget.blockColor,
-                borderRadius: .all(.circular(4.0)),
+        switch (paint.type) {
+          case BlockSelectionType.block:
+            final blockRect = paint.blockRect;
+            if (blockRect == null) return const SizedBox.shrink();
+            final editorState = context.read<EditorState>();
+            final builder = editorState.rendererService.blockComponentBuilder(
+              widget.node.type,
+            );
+            final padding = builder?.configuration.blockSelectionAreaMargin(
+              widget.node,
+            );
+            return Positioned.fromRect(
+              rect: blockRect,
+              child: Container(
+                margin: padding,
+                decoration: BoxDecoration(
+                  color: widget.blockColor,
+                  borderRadius: BorderRadius.all(Radius.circular(4.0)),
+                ),
               ),
-            ),
-          );
+            );
+          case BlockSelectionType.cursor:
+            final cursorRect = paint.cursorRect;
+            if (cursorRect == null) return const SizedBox.shrink();
+            final editorState = context.read<EditorState>();
+            final dragMode =
+                editorState.selectionExtraInfo?[selectionDragModeKey];
+            final shouldBlink =
+                widget.delegate.shouldCursorBlink &&
+                dragMode != MobileSelectionDragMode.cursor;
+
+            final cursor = Cursor(
+              key: cursorKey,
+              rect: cursorRect,
+              shouldBlink: shouldBlink,
+              cursorStyle: widget.delegate.cursorStyle,
+              color: widget.cursorColor,
+            );
+            // Force the cursor to be visible (not mid-blink-off) on each
+            // rebuild — equivalent to the pre-refactor `_clearCursorRect`
+            // behavior, but now only fires when paint actually differs.
+            cursorKey.currentState?.unwrapOrNull<CursorState>()?.show();
+            return cursor;
+          case BlockSelectionType.selection:
+            final rects = paint.selectionRects;
+            if (rects == null || rects.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            if (rects.length == 1 && rects.first.width == 0) {
+              return const SizedBox.shrink();
+            }
+            return SelectionAreaPaint(
+              rects: rects,
+              selectionColor: widget.selectionColor,
+            );
+          case BlockSelectionType.highlight:
+            // BlockSelectionArea doesn't paint the highlight variant —
+            // that's BlockHighlightArea's job. Sibling widgets are
+            // expected to consume different supportTypes lists.
+            return const SizedBox.shrink();
         }
-        // show the cursor when the selection is collapsed
-        else if (selection.isCollapsed) {
-          if (!widget.supportTypes.contains(BlockSelectionType.cursor) ||
-              prevCursorRect == null) {
-            return sizedBox;
-          }
-          final editorState = context.read<EditorState>();
-          final dragMode =
-              editorState.selectionExtraInfo?[selectionDragModeKey];
-          final shouldBlink =
-              widget.delegate.shouldCursorBlink &&
-              dragMode != MobileSelectionDragMode.cursor;
-
-          final cursor = Cursor(
-            key: cursorKey,
-            rect: prevCursorRect!,
-            shouldBlink: shouldBlink,
-            cursorStyle: widget.delegate.cursorStyle,
-            color: widget.cursorColor,
-          );
-          // force to show the cursor
-          cursorKey.currentState?.unwrapOrNull<CursorState>()?.show();
-
-          return cursor;
-        } else {
-          // show the selection area when the selection is not collapsed
-          if (!widget.supportTypes.contains(BlockSelectionType.selection) ||
-              prevSelectionRects == null ||
-              prevSelectionRects!.isEmpty ||
-              (prevSelectionRects!.length == 1 &&
-                  prevSelectionRects!.first.width == 0)) {
-            return sizedBox;
-          }
-
-          return SelectionAreaPaint(
-            rects: prevSelectionRects ?? <Rect>[],
-            selectionColor: widget.selectionColor,
-          );
-        }
-      }),
-      child: const SizedBox.shrink(),
+      },
     );
   }
 
+  /// Compute the paint state implied by the current selection and the
+  /// owning block's path. Returns `null` if nothing should be rendered
+  /// for this block — that's the dominant case on every notify (only
+  /// the few blocks intersecting the selection produce a non-null
+  /// paint). ValueNotifier's `==` short-circuit absorbs equal-to-prev
+  /// assignments silently.
   void _updateSelectionIfNeeded() {
     if (!mounted) {
       return;
@@ -237,60 +264,47 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
     final selection = widget.listenable.value?.normalized;
     final path = widget.node.path;
 
-    // the current path is in the selection
-    if (selection != null && path.inSelection(selection)) {
-      if (widget.supportTypes.contains(BlockSelectionType.block) &&
-          context.read<EditorState>().selectionType == SelectionType.block) {
-        if (!path.inSelection(selection, isSameDepth: true)) {
-          if (prevBlockRect != null) {
-            setState(() {
-              prevBlockRect = null;
-              prevCursorRect = null;
-              prevSelectionRects = null;
-            });
-          }
-        } else {
-          final rect = widget.delegate.getBlockRect();
-          if (prevBlockRect != rect) {
-            setState(() {
-              prevBlockRect = rect;
-              prevCursorRect = null;
-              prevSelectionRects = null;
-            });
-          }
-        }
-      } else if (widget.supportTypes.contains(BlockSelectionType.cursor) &&
-          selection.isCollapsed) {
-        final rect = widget.delegate.getCursorRectInPosition(selection.start);
-        if (rect != prevCursorRect) {
-          setState(() {
-            prevCursorRect = rect;
-            prevBlockRect = null;
-            prevSelectionRects = null;
-          });
-        }
-      } else if (widget.supportTypes.contains(BlockSelectionType.selection)) {
-        final rects = widget.delegate.getRectsInSelection(selection);
-        if (!_rectListEq(rects, prevSelectionRects)) {
-          setState(() {
-            prevSelectionRects = rects;
-            prevCursorRect = null;
-            prevBlockRect = null;
-          });
-        }
-      }
-    } else if (prevBlockRect != null ||
-        prevSelectionRects != null ||
-        prevCursorRect != null) {
-      setState(() {
-        prevBlockRect = null;
-        prevSelectionRects = null;
-        prevCursorRect = null;
-      });
+    if (selection == null || !path.inSelection(selection)) {
+      _paintNotifier.value = null;
+      return;
     }
-  }
 
-  void _clearCursorRect() {
-    prevCursorRect = null;
+    final editorState = context.read<EditorState>();
+    final supportTypes = widget.supportTypes;
+
+    if (supportTypes.contains(BlockSelectionType.block) &&
+        editorState.selectionType == SelectionType.block) {
+      if (!path.inSelection(selection, isSameDepth: true)) {
+        _paintNotifier.value = null;
+        return;
+      }
+      final rect = widget.delegate.getBlockRect();
+      _paintNotifier.value = _BlockSelectionPaint(
+        type: BlockSelectionType.block,
+        blockRect: rect,
+      );
+      return;
+    }
+
+    if (supportTypes.contains(BlockSelectionType.cursor) &&
+        selection.isCollapsed) {
+      final rect = widget.delegate.getCursorRectInPosition(selection.start);
+      _paintNotifier.value = _BlockSelectionPaint(
+        type: BlockSelectionType.cursor,
+        cursorRect: rect,
+      );
+      return;
+    }
+
+    if (supportTypes.contains(BlockSelectionType.selection)) {
+      final rects = widget.delegate.getRectsInSelection(selection);
+      _paintNotifier.value = _BlockSelectionPaint(
+        type: BlockSelectionType.selection,
+        selectionRects: rects,
+      );
+      return;
+    }
+
+    _paintNotifier.value = null;
   }
 }
