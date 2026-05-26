@@ -214,17 +214,22 @@ EditorRobot test-infra genişlemesi sırasında (`d7cfb070`) iki ajan paralel in
 
 **Durum (2026-05-26):** `editor_state.dart` 915 → **425 satır**. Library-private mixin'lere bölündü (`_EditorChromeMixin`, `_HistoryMixin`, `_SelectionStyleMixin`, `_TransactionPipelineMixin`, `_ScrollCoordinatorMixin`, `_EditorServiceMixin`, `_TableOfContentsMixin`). Facade `abstract class _EditorStateBase` üzerinden composed.
 
+**Durum 2026-05-26 (revize):** `editor_state.dart` 915 → **323 satır**. H3.1 effectively done — facade artık küçük + mantıksal olarak compose layer + apply pipeline'dan ibaret. Hedef "150-200" tamamen ulaşılmadı ama apply pipeline'ın facade'de kalması intentional (transaction record/undo ile iç içe, mixin'e bölmek karmaşıklık katar). Kalan iki kalem (apply pipeline mixin, type-safe extraInfo) **defer'd** — H3.4 breaking change penceresi açıldığında değerlendir.
+
 - [x] `HistoryController` çıkar → `_HistoryMixin`
 - [x] `EditorChrome` çıkar → `_EditorChromeMixin`
 - [x] `StyleController` çıkar → `_SelectionStyleMixin` (selection + highlight + toggledStyle)
 - [x] `TransactionPipelineMixin` (broadcast + content-based dirty hash + `isDirtyNotifier`/`markClean()`)
 - [x] `TableOfContentsMixin` — reactive outline (`TocEntry`, `tableOfContents` ValueListenable, microtask-coalesced recompute) + `jumpToTocEntry`
+- [x] `_DocumentQueryMixin` — `getNodesInSelection`, `getSelectedNodes`, `getNodeAtPath` (e2851479)
+- [x] `_DocumentRulesMixin` — `documentRules` setter + `_asyncObserver` subscription. Note: `on _EditorStateBase` clause döner ki "this-cast gymnastic'ini engeller" — pratikte circular superinterface error verir, abstract-getter pattern kullanıldı (1edf0148).
+- [x] `UndoManager` taşı `lib/src/history/` → `lib/src/editor_state/` (0c011fe4)
 - [x] `EditorState` cephesini koru — mixin'ler `_` prefix'li, downstream API kırılmadı
 
-**Kalan iş** — facade'i ~150-200 satıra indirmek için:
+**Defer'd (H3.4 breaking penceresi ile birlikte revisit):**
 
-- [ ] `apply()` + `_applyTransactionInLocal` + `_applyTransactionFromRemote` (~150 satır) → `_TransactionApplyMixin` (veya pipeline mixin'in altına). Etki: Yüksek / Çaba: M / Risk: Orta (apply hot path, transaction record/undo'yla iç içe)
-- [ ] `documentRules` + `_subscription` zincirini `mixin _DocumentRulesMixin on _EditorStateBase`'e taşı (`on _EditorStateBase` `this`-cast gymnastic'ini ortadan kaldırır). Etki: Orta / Çaba: S
+- [ ] `apply()` + `_applyTransactionInLocal` + `_applyTransactionFromRemote` (~150 satır) → `_TransactionApplyMixin`. **Defer**: Apply pipeline transaction record/undo'yla iç içe; mixin'e ayırmak karmaşıklık ekler, ROI düşük. Mevcut konum okunabilir.
+- [ ] `selectionExtraInfo` Map → type-safe `SelectionExtraInfo` field. **Defer**: Breaking change, H3.4 ile aynı major'da.
 - [ ] Query helpers (`getNodesInSelection`, `getSelectedNodes`, `getNodeAtPath`, ~95 satır) → `_DocumentQueryMixin`. Etki: Düşük / Çaba: S
 - [ ] `selectionExtraInfo` Map → type-safe `SelectionExtraInfo` field (setter da). `SelectionExtraInfo.from(Map?)` zaten var; setter Map kalıyor. **Breaking** — H3.4 ile aynı major'a sıkıştır. Etki: Orta / Çaba: S / Risk: Yüksek (breaking)
 - [ ] `SelectionController` çıkar (selectionNotifier + highlightNotifier + tapNotifier + remoteSelections + dragMode + extraInfo type-safe) — roadmap'in orijinal niyeti. Kısmen `_SelectionStyleMixin` ve type-safe extra info maddeleriyle örtüşüyor; bu kalemi *birleşik selection refactor* olarak tut.
