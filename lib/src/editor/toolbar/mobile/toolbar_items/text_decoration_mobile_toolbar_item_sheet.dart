@@ -28,7 +28,7 @@ final textDecorationMobileToolbarItemSheet = MobileToolbarItem.action(
         selectionExtraInfoDoNotAttachTextService: true,
       },
     );
-    keepEditorFocusNotifier.increase();
+    editorState.keepFocusNotifier.increase();
 
     Navigator.of(context)
         .push(

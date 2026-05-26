@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
@@ -13,6 +15,7 @@ final headingMobileToolbarItemSheet = MobileToolbarItem.action(
   actionHandler: (context, editorState) {
     final selection = editorState.selection;
     if (selection == null) return;
+    log('headingMobileToolbarItemSheet: selection=$selection');
 
     editorState.keyboardService?.closeKeyboard();
     editorState.updateSelectionWithReason(
@@ -23,7 +26,7 @@ final headingMobileToolbarItemSheet = MobileToolbarItem.action(
         selectionExtraInfoDoNotAttachTextService: true,
       },
     );
-    keepEditorFocusNotifier.increase();
+    editorState.keepFocusNotifier.increase();
 
     Navigator.of(context)
         .push(
@@ -102,21 +105,9 @@ class _SheetHeadingMenuState extends State<_SheetHeadingMenu> {
   }
 
   final _headings = [
-    HeadingUnit(
-      icon: ToolbarIcons.h1,
-      label: aft.mobileHeading1,
-      level: 1,
-    ),
-    HeadingUnit(
-      icon: ToolbarIcons.h2,
-      label: aft.mobileHeading2,
-      level: 2,
-    ),
-    HeadingUnit(
-      icon: ToolbarIcons.h3,
-      label: aft.mobileHeading3,
-      level: 3,
-    ),
+    HeadingUnit(icon: ToolbarIcons.h1, label: aft.mobileHeading1, level: 1),
+    HeadingUnit(icon: ToolbarIcons.h2, label: aft.mobileHeading2, level: 2),
+    HeadingUnit(icon: ToolbarIcons.h3, label: aft.mobileHeading3, level: 3),
   ];
 
   @override

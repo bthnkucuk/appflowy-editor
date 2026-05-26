@@ -18,7 +18,15 @@ class NonDeltaTextInputService extends TextInputService with TextInputClient {
     required super.onPerformAction,
     super.contentInsertionConfiguration,
     super.onFloatingCursor,
+    this.onClose,
   });
+
+  /// Invoked from [close]. Pre-7.0 this hook ran a global
+  /// `keepEditorFocusNotifier.reset()` directly inside [close]; with
+  /// the notifier now living on `editorState.keepFocusNotifier`, the
+  /// owning keyboard service injects this callback so the service
+  /// doesn't need a back-reference to EditorState.
+  final VoidCallback? onClose;
 
   @override
   TextRange? composingTextRange;
@@ -133,7 +141,7 @@ class NonDeltaTextInputService extends TextInputService with TextInputClient {
 
   @override
   void close() {
-    keepEditorFocusNotifier.reset();
+    onClose?.call();
     currentTextEditingValue = null;
     composingTextRange = null;
     _textInputConnection?.close();

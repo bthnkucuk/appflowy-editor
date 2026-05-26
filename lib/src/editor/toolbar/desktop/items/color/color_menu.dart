@@ -37,7 +37,7 @@ void showColorMenu(
     overlay = null;
   }
 
-  keepEditorFocusNotifier.increase();
+  editorState.keepFocusNotifier.increase();
   overlay = FullScreenOverlayEntry(
     top: top,
     bottom: bottom,
@@ -67,7 +67,7 @@ void showColorMenu(
                   withUpdateSelection: true,
                 );
           dismissOverlay();
-          keepEditorFocusNotifier.decrease();
+          editorState.keepFocusNotifier.decrease();
         },
         resetText: isTextColor
             ? aft.resetToDefaultColor

@@ -91,7 +91,7 @@ Future<bool> _showSlashMenu(
 
   // insert the slash character
   if (shouldInsertSlash) {
-    keepEditorFocusNotifier.increase();
+    editorState.keepFocusNotifier.increase();
     await editorState.insertTextAtPosition('/', position: selection.start);
   }
 
@@ -117,7 +117,7 @@ Future<bool> _showSlashMenu(
 
   if (shouldInsertSlash) {
     WidgetsBinding.instance.addPostFrameCallback(
-      (timeStamp) => keepEditorFocusNotifier.decrease(),
+      (timeStamp) => editorState.keepFocusNotifier.decrease(),
     );
   }
 

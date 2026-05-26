@@ -73,7 +73,7 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
     focusNode = widget.focusNode ?? FocusNode(debugLabel: 'keyboard service');
     focusNode.addListener(_onFocusChanged);
 
-    keepEditorFocusNotifier.addListener(_onKeepEditorFocusChanged);
+    editorState.keepFocusNotifier.addListener(_onKeepEditorFocusChanged);
   }
 
   @override
@@ -87,7 +87,7 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
     if (widget.focusNode == null) {
       focusNode.dispose();
     }
-    keepEditorFocusNotifier.removeListener(_onKeepEditorFocusChanged);
+    editorState.keepFocusNotifier.removeListener(_onKeepEditorFocusChanged);
     super.dispose();
   }
 
@@ -338,7 +338,7 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
 
     // clear the selection when the focus is lost.
     if (!focusNode.hasFocus) {
-      if (keepEditorFocusNotifier.shouldKeepFocus) {
+      if (editorState.keepFocusNotifier.shouldKeepFocus) {
         return;
       }
 
@@ -353,10 +353,10 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
 
   void _onKeepEditorFocusChanged() {
     AppFlowyEditorLog.editor.debug(
-      'keyboard service - on keep editor focus changed: ${keepEditorFocusNotifier.value}}',
+      'keyboard service - on keep editor focus changed: ${editorState.keepFocusNotifier.value}}',
     );
 
-    if (!keepEditorFocusNotifier.shouldKeepFocus) {
+    if (!editorState.keepFocusNotifier.shouldKeepFocus) {
       focusNode.requestFocus();
     }
   }
@@ -387,6 +387,7 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
 
   NonDeltaTextInputService buildTextInputService() {
     return NonDeltaTextInputService(
+      onClose: editorState.keepFocusNotifier.reset,
       onInsert: (insertion) async {
         for (final interceptor in interceptors) {
           final result = await interceptor.interceptInsert(

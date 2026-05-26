@@ -28,7 +28,7 @@ MobileToolbarItem buildTextAndBackgroundColorMobileToolbarItemSheet({
           selectionExtraInfoDoNotAttachTextService: true,
         },
       );
-      keepEditorFocusNotifier.increase();
+      editorState.keepFocusNotifier.increase();
 
       Navigator.of(context)
           .push(

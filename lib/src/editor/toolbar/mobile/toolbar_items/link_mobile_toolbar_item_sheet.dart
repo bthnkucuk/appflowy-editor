@@ -27,7 +27,7 @@ final linkMobileToolbarItemSheet = MobileToolbarItem.action(
         selectionExtraInfoDoNotAttachTextService: true,
       },
     );
-    keepEditorFocusNotifier.increase();
+    editorState.keepFocusNotifier.increase();
 
     final String? linkText = editorState.getDeltaAttributeValueInSelection(
       AppFlowyRichTextKeys.href,

@@ -356,7 +356,7 @@ class _SelectionMenuWidgetState extends State<SelectionMenuWidget> {
       _listController = ListController();
     }
 
-    keepEditorFocusNotifier.increase();
+    widget.editorState.keepFocusNotifier.increase();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -365,7 +365,7 @@ class _SelectionMenuWidgetState extends State<SelectionMenuWidget> {
   @override
   void dispose() {
     _focusNode.dispose();
-    keepEditorFocusNotifier.decrease();
+    widget.editorState.keepFocusNotifier.decrease();
     _scrollController?.dispose();
     _listController?.dispose();
 
