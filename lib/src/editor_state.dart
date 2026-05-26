@@ -18,6 +18,7 @@ export 'editor_state/types.dart';
 // are library-private (`_` prefix) and the implementation details
 // (`_recordRedoOrUndo`, `_disposeXxx`) stay invisible to downstream.
 part 'editor_state/document_query_mixin.dart';
+part 'editor_state/document_rules_mixin.dart';
 part 'editor_state/editor_chrome.dart';
 part 'editor_state/editor_service.dart';
 part 'editor_state/history_mixin.dart';
@@ -58,7 +59,8 @@ abstract class _EditorStateBase
         _ScrollCoordinatorMixin,
         _DocumentQueryMixin,
         _TransactionPipelineMixin,
-        _TableOfContentsMixin {}
+        _TableOfContentsMixin,
+        _DocumentRulesMixin {}
 
 class EditorState extends _EditorStateBase {
   EditorState({
@@ -115,24 +117,7 @@ class EditorState extends _EditorStateBase {
     return transaction;
   }
 
-  /// The rules to apply to the document.
-  List<DocumentRule> get documentRules => _documentRules;
-  List<DocumentRule> _documentRules = [];
-
-  set documentRules(List<DocumentRule> value) {
-    _documentRules = value;
-
-    _subscription?.cancel();
-    _subscription = _asyncObserver.stream.listen((value) async {
-      for (final rule in _documentRules) {
-        if (rule.shouldApply(editorState: this, value: value)) {
-          await rule.apply(editorState: this, value: value);
-        }
-      }
-    });
-  }
-
-  StreamSubscription? _subscription;
+  // documentRules + _subscription live in [_DocumentRulesMixin].
 
   // updateSelectionWithReason / updateHighlight / updateTap live in
   // [_SelectionStyleMixin].
@@ -160,7 +145,7 @@ class EditorState extends _EditorStateBase {
     document.dispose();
     _disposeSelectionStyle();
     disposeChrome();
-    _subscription?.cancel();
+    _disposeDocumentRules();
   }
 
   /// Apply the transaction to the state.
