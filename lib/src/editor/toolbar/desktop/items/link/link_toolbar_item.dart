@@ -35,7 +35,7 @@ final linkItem = ToolbarItem(
       return tooltipBuilder(
         context,
         _kLinkItemId,
-        AppFlowyEditorL10n.current.link,
+        aft.link,
         child,
       );
     }

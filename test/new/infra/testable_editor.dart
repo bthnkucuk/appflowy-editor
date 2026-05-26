@@ -53,7 +53,7 @@ class TestableEditor {
     String? defaultTextDirection,
     TextDirection textDirection = TextDirection.ltr,
   }) async {
-    await AppFlowyEditorLocalizations.load(locale);
+    await LocaleSettings.setLocaleRaw((locale).toLanguageTag());
 
     if (withFloatingToolbar) {
       scrollController ??= ScrollController();
@@ -137,9 +137,8 @@ class TestableEditor {
           GlobalMaterialLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
-          AppFlowyEditorLocalizations.delegate,
         ],
-        supportedLocales: AppFlowyEditorLocalizations.delegate.supportedLocales,
+        supportedLocales: AppLocaleUtils.supportedLocales,
         locale: locale,
         home: Scaffold(body: wrapper == null ? editor : wrapper(editor)),
       ),

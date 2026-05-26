@@ -20,7 +20,7 @@ final List<CommandShortcutEvent> toggleHeadingCommands = [
 ///
 final CommandShortcutEvent toggleH1 = CommandShortcutEvent(
   key: 'toggle H1',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleH1,
+  getDescription: () => aft.cmdToggleH1,
   command: 'ctrl+shift+t',
   macOSCommand: 'cmd+shift+t',
   handler: (editorState) => _toggleAttribute(editorState, 1),
@@ -28,7 +28,7 @@ final CommandShortcutEvent toggleH1 = CommandShortcutEvent(
 
 final CommandShortcutEvent toggleH2 = CommandShortcutEvent(
   key: 'toggle H2',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleH2,
+  getDescription: () => aft.cmdToggleH2,
   command: 'ctrl+shift+g',
   macOSCommand: 'cmd+shift+g',
   handler: (editorState) => _toggleAttribute(editorState, 2),
@@ -36,7 +36,7 @@ final CommandShortcutEvent toggleH2 = CommandShortcutEvent(
 
 final CommandShortcutEvent toggleH3 = CommandShortcutEvent(
   key: 'toggle H3',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleH3,
+  getDescription: () => aft.cmdToggleH3,
   command: 'ctrl+shift+j',
   macOSCommand: 'cmd+shift+j',
   handler: (editorState) => _toggleAttribute(editorState, 3),
@@ -44,7 +44,7 @@ final CommandShortcutEvent toggleH3 = CommandShortcutEvent(
 
 final CommandShortcutEvent toggleBody = CommandShortcutEvent(
   key: 'toggle Body',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleBody,
+  getDescription: () => aft.cmdToggleBody,
   command: 'ctrl+shift+b',
   macOSCommand: 'cmd+shift+b',
   handler: (editorState) => _toggleAttribute(editorState, 1, true),

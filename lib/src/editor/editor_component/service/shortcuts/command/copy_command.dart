@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 ///
 final CommandShortcutEvent copyCommand = CommandShortcutEvent(
   key: 'copy the selected content',
-  getDescription: () => AppFlowyEditorL10n.current.cmdCopySelection,
+  getDescription: () => aft.cmdCopySelection,
   command: 'ctrl+c',
   macOSCommand: 'cmd+c',
   handler: _copyCommandHandler,

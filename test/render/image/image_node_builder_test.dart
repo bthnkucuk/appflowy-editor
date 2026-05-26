@@ -16,7 +16,7 @@ void main() async {
     const url =
         'https://images.unsplash.com/photo-1682961941145-e73336a53bc6?dl=katsuma-tanaka-cWpkMDSQbWQ-unsplash.jpg';
     testWidgets('render image node', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
           ..addNode(imageNode(url: url))
@@ -32,7 +32,7 @@ void main() async {
     });
 
     testWidgets('cannot see action menu when not editable', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
           ..addNode(imageNode(url: url))
@@ -61,7 +61,7 @@ void main() async {
     });
 
     testWidgets('can see action menu when editable', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
           ..addNode(imageNode(url: url))
@@ -90,7 +90,7 @@ void main() async {
     });
 
     testWidgets('render image align', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
           ..addNode(imageNode(url: url, align: 'left', width: 100))
@@ -141,7 +141,7 @@ void main() async {
     });
 
     testWidgets('render image copy', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
           ..addNode(imageNode(url: url))
@@ -160,7 +160,7 @@ void main() async {
     });
 
     testWidgets('render image delete', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
           ..addNode(imageNode(url: url))

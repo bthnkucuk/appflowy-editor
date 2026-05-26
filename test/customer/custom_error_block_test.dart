@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() async {
-  await AppFlowyEditorLocalizations.load(
-    const Locale.fromSubtags(languageCode: 'en'),
+  await LocaleSettings.setLocaleRaw((const Locale.fromSubtags(languageCode: 'en').toLanguageTag()),
   );
 
   testWidgets('custom error block', (tester) async {

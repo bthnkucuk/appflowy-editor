@@ -19,7 +19,7 @@ final List<CommandShortcutEvent> arrowDownKeys = [
 // move the cursor downward vertically
 final CommandShortcutEvent moveCursorDownCommand = CommandShortcutEvent(
   key: 'move the cursor downward',
-  getDescription: () => AppFlowyEditorL10n.current.cmdMoveCursorDown,
+  getDescription: () => aft.cmdMoveCursorDown,
   command: 'arrow down',
   handler: _moveCursorDownCommandHandler,
 );
@@ -43,7 +43,7 @@ CommandShortcutEventHandler _moveCursorDownCommandHandler = (editorState) {
 /// move the cursor to the bottommost position of the document and select everything in between
 CommandShortcutEvent moveCursorBottomSelectCommand = CommandShortcutEvent(
   key: 'move cursor to end of file and select all',
-  getDescription: () => AppFlowyEditorL10n.current.cmdMoveCursorBottomSelect,
+  getDescription: () => aft.cmdMoveCursorBottomSelect,
   command: 'ctrl+shift+arrow down',
   macOSCommand: 'cmd+shift+arrow down',
   handler: _moveCursorBottomSelectCommandHandler,
@@ -75,7 +75,7 @@ CommandShortcutEventHandler _moveCursorBottomSelectCommandHandler =
 /// move the cursor to the bottommost position of the document
 CommandShortcutEvent moveCursorBottomCommand = CommandShortcutEvent(
   key: 'move cursor to end of file',
-  getDescription: () => AppFlowyEditorL10n.current.cmdMoveCursorBottom,
+  getDescription: () => aft.cmdMoveCursorBottom,
   command: 'ctrl+arrow down',
   macOSCommand: 'cmd+arrow down',
   handler: _moveCursorBottomCommandHandler,
@@ -106,7 +106,7 @@ CommandShortcutEventHandler _moveCursorBottomCommandHandler = (editorState) {
 /// moves vertically down one line and selects everything between
 CommandShortcutEvent moveCursorDownSelectCommand = CommandShortcutEvent(
   key: 'move cursor down and select one line',
-  getDescription: () => AppFlowyEditorL10n.current.cmdMoveCursorDownSelect,
+  getDescription: () => aft.cmdMoveCursorDownSelect,
   command: 'shift+arrow down',
   macOSCommand: 'shift+arrow down',
   handler: _moveCursorDownSelectCommandHandler,

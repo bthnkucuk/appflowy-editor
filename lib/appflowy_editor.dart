@@ -23,7 +23,6 @@ export 'plugins.dart';
 export 'src/editor/editor.dart';
 export 'src/editor/export/export_sheet.dart';
 export 'src/editor/find_replace_menu/find_and_replace.dart';
-export 'src/editor/l10n/appflowy_editor_l10n.dart';
 export 'src/editor/selection_menu/selection_menu.dart';
 
 // EditorState and friends
@@ -36,7 +35,10 @@ export 'src/editor_state/undo_manager.dart' show TransactionSource;
 export 'src/extensions/extensions.dart';
 export 'src/infra/clipboard.dart';
 export 'src/infra/log.dart';
-export 'src/l10n/l10n.dart';
+// Slang-generated translations. Consumer apps that use slang themselves will
+// hide these by importing this barrel with `hide LocaleSettings,
+// TranslationProvider, AppLocaleUtils` to avoid name clashes.
+export 'src/localizations/strings.g.dart';
 
 // ---------------------------------------------------------------------------
 // Render layer

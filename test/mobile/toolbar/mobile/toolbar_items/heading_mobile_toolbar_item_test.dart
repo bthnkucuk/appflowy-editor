@@ -35,15 +35,15 @@ void main() {
     // Show its menu and it has 3 buttons
     expect(find.byType(MobileToolbarItemMenu), findsOneWidget);
     expect(
-      find.text(AppFlowyEditorL10n.current.mobileHeading1),
+      find.text(aft.mobileHeading1),
       findsOneWidget,
     );
     expect(
-      find.text(AppFlowyEditorL10n.current.mobileHeading2),
+      find.text(aft.mobileHeading2),
       findsOneWidget,
     );
     expect(
-      find.text(AppFlowyEditorL10n.current.mobileHeading3),
+      find.text(aft.mobileHeading3),
       findsOneWidget,
     );
 
@@ -51,7 +51,7 @@ void main() {
     await tester.tap(
       find.widgetWithText(
         MobileToolbarItemMenuBtn,
-        AppFlowyEditorL10n.current.mobileHeading1,
+        aft.mobileHeading1,
       ),
     );
     var node = editor.editorState.getNodeAtPath([1]);
@@ -66,7 +66,7 @@ void main() {
     await tester.tap(
       find.widgetWithText(
         MobileToolbarItemMenuBtn,
-        AppFlowyEditorL10n.current.mobileHeading2,
+        aft.mobileHeading2,
       ),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
@@ -82,7 +82,7 @@ void main() {
     await tester.tap(
       find.widgetWithText(
         MobileToolbarItemMenuBtn,
-        AppFlowyEditorL10n.current.mobileHeading3,
+        aft.mobileHeading3,
       ),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 500));

@@ -96,12 +96,12 @@ class _SheetListMenuState extends State<_SheetListMenu> {
   final _lists = [
     ListUnit(
       icon: ToolbarIcons.bulletedList,
-      label: AppFlowyEditorL10n.current.bulletedList,
+      label: aft.bulletedList,
       name: 'bulleted_list',
     ),
     ListUnit(
       icon: ToolbarIcons.numberedList,
-      label: AppFlowyEditorL10n.current.numberedList,
+      label: aft.numberedList,
       name: 'numbered_list',
     ),
   ];

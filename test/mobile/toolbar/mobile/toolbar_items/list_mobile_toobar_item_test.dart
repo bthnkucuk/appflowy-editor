@@ -34,14 +34,14 @@ void main() {
 
     // Show its menu and it has 2 buttons
     expect(find.byType(MobileToolbarItemMenu), findsOneWidget);
-    expect(find.text(AppFlowyEditorL10n.current.bulletedList), findsOneWidget);
-    expect(find.text(AppFlowyEditorL10n.current.numberedList), findsOneWidget);
+    expect(find.text(aft.bulletedList), findsOneWidget);
+    expect(find.text(aft.numberedList), findsOneWidget);
 
     // Test Bulleted List button
     await tester.tap(
       find.widgetWithText(
         MobileToolbarItemMenuBtn,
-        AppFlowyEditorL10n.current.bulletedList,
+        aft.bulletedList,
       ),
     );
     var node = editor.editorState.getNodeAtPath([1]);
@@ -52,7 +52,7 @@ void main() {
     await tester.tap(
       find.widgetWithText(
         MobileToolbarItemMenuBtn,
-        AppFlowyEditorL10n.current.numberedList,
+        aft.numberedList,
       ),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 500));

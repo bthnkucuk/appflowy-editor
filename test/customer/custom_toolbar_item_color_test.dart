@@ -7,8 +7,7 @@ void main() async {
     TestWidgetsFlutterBinding.ensureInitialized();
   });
 
-  await AppFlowyEditorLocalizations.load(
-    const Locale.fromSubtags(languageCode: 'en'),
+  await LocaleSettings.setLocaleRaw((const Locale.fromSubtags(languageCode: 'en').toLanguageTag()),
   );
   testWidgets('customize highlight color', (tester) async {
     const text = 'Hello World';
@@ -41,7 +40,6 @@ class CustomToolbarItemColor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      localizationsDelegates: const [AppFlowyEditorLocalizations.delegate],
       supportedLocales: const [Locale('en', 'US')],
       home: Scaffold(
         body: SafeArea(

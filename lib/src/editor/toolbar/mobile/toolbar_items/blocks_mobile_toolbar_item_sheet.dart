@@ -96,40 +96,40 @@ class _SheetBlocksMenuState extends State<_SheetBlocksMenu> {
   final _lists = [
     _SheetListUnit(
       icon: ToolbarIcons.h1,
-      label: AppFlowyEditorL10n.current.mobileHeading1,
+      label: aft.mobileHeading1,
       name: HeadingBlockKeys.type,
       level: 1,
     ),
     _SheetListUnit(
       icon: ToolbarIcons.h2,
-      label: AppFlowyEditorL10n.current.mobileHeading2,
+      label: aft.mobileHeading2,
       name: HeadingBlockKeys.type,
       level: 2,
     ),
     _SheetListUnit(
       icon: ToolbarIcons.h3,
-      label: AppFlowyEditorL10n.current.mobileHeading3,
+      label: aft.mobileHeading3,
       name: HeadingBlockKeys.type,
       level: 3,
     ),
     _SheetListUnit(
       icon: ToolbarIcons.bulletedList,
-      label: AppFlowyEditorL10n.current.bulletedList,
+      label: aft.bulletedList,
       name: BulletedListBlockKeys.type,
     ),
     _SheetListUnit(
       icon: ToolbarIcons.numberedList,
-      label: AppFlowyEditorL10n.current.numberedList,
+      label: aft.numberedList,
       name: NumberedListBlockKeys.type,
     ),
     _SheetListUnit(
       icon: ToolbarIcons.checkbox,
-      label: AppFlowyEditorL10n.current.checkbox,
+      label: aft.checkbox,
       name: TodoListBlockKeys.type,
     ),
     _SheetListUnit(
       icon: ToolbarIcons.quote,
-      label: AppFlowyEditorL10n.current.quote,
+      label: aft.quote,
       name: QuoteBlockKeys.type,
     ),
   ];

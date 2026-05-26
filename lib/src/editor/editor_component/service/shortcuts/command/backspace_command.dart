@@ -11,7 +11,7 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 ///
 final CommandShortcutEvent backspaceCommand = CommandShortcutEvent(
   key: 'backspace',
-  getDescription: () => AppFlowyEditorL10n.current.cmdDeleteLeft,
+  getDescription: () => aft.cmdDeleteLeft,
   command: 'backspace, shift+backspace',
   handler: _backspaceCommandHandler,
 );

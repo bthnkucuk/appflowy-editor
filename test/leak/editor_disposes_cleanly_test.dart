@@ -14,9 +14,8 @@ Widget _wrap(Widget child) => MaterialApp(
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
     GlobalWidgetsLocalizations.delegate,
-    AppFlowyEditorLocalizations.delegate,
   ],
-  supportedLocales: AppFlowyEditorLocalizations.delegate.supportedLocales,
+  supportedLocales: AppLocaleUtils.supportedLocales,
   locale: const Locale('en'),
   home: Scaffold(body: child),
 );

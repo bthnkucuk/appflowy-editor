@@ -108,22 +108,22 @@ class _SheetTextDecorationMenuState extends State<_SheetTextDecorationMenu> {
   final _textDecorations = [
     TextDecorationUnit(
       icon: ToolbarIcons.bold,
-      label: AppFlowyEditorL10n.current.bold,
+      label: aft.bold,
       name: AppFlowyRichTextKeys.bold,
     ),
     TextDecorationUnit(
       icon: ToolbarIcons.italic,
-      label: AppFlowyEditorL10n.current.italic,
+      label: aft.italic,
       name: AppFlowyRichTextKeys.italic,
     ),
     TextDecorationUnit(
       icon: ToolbarIcons.underline,
-      label: AppFlowyEditorL10n.current.underline,
+      label: aft.underline,
       name: AppFlowyRichTextKeys.underline,
     ),
     TextDecorationUnit(
       icon: ToolbarIcons.strikethrough,
-      label: AppFlowyEditorL10n.current.strikethrough,
+      label: aft.strikethrough,
       name: AppFlowyRichTextKeys.strikethrough,
     ),
   ];

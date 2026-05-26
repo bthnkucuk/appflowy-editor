@@ -42,8 +42,8 @@ void showActionMenu(
           _menuItem(
             context,
             dir == TableDirection.col
-                ? AppFlowyEditorL10n.current.colAddBefore
-                : AppFlowyEditorL10n.current.rowAddBefore,
+                ? aft.colAddBefore
+                : aft.rowAddBefore,
             dir == TableDirection.col
                 ? Icons.first_page
                 : Icons.vertical_align_top,
@@ -55,8 +55,8 @@ void showActionMenu(
           _menuItem(
             context,
             dir == TableDirection.col
-                ? AppFlowyEditorL10n.current.colAddAfter
-                : AppFlowyEditorL10n.current.rowAddAfter,
+                ? aft.colAddAfter
+                : aft.rowAddAfter,
             dir == TableDirection.col
                 ? Icons.last_page
                 : Icons.vertical_align_bottom,
@@ -68,8 +68,8 @@ void showActionMenu(
           _menuItem(
             context,
             dir == TableDirection.col
-                ? AppFlowyEditorL10n.current.colRemove
-                : AppFlowyEditorL10n.current.rowRemove,
+                ? aft.colRemove
+                : aft.rowRemove,
             Icons.delete,
             () {
               TableActions.delete(node, position, editorState, dir);
@@ -79,8 +79,8 @@ void showActionMenu(
           _menuItem(
             context,
             dir == TableDirection.col
-                ? AppFlowyEditorL10n.current.colDuplicate
-                : AppFlowyEditorL10n.current.rowDuplicate,
+                ? aft.colDuplicate
+                : aft.rowDuplicate,
             Icons.content_copy,
             () {
               TableActions.duplicate(node, position, editorState, dir);
@@ -89,7 +89,7 @@ void showActionMenu(
           ),
           _menuItem(
             context,
-            AppFlowyEditorL10n.current.backgroundColor,
+            aft.backgroundColor,
             Icons.format_color_fill,
             () {
               final cell = dir == TableDirection.col
@@ -121,8 +121,8 @@ void showActionMenu(
           _menuItem(
             context,
             dir == TableDirection.col
-                ? AppFlowyEditorL10n.current.colClear
-                : AppFlowyEditorL10n.current.rowClear,
+                ? aft.colClear
+                : aft.rowClear,
             Icons.clear,
             () {
               TableActions.clear(node, position, editorState, dir);
@@ -191,14 +191,14 @@ void _showColorMenu(
     left: left,
     builder: (context) {
       return ColorPicker(
-        title: AppFlowyEditorL10n.current.highlightColor,
+        title: aft.highlightColor,
         selectedColorHex: selectedColorHex,
         colorOptions: generateHighlightColorOptions(),
         onSubmittedColorHex: (color, _) {
           action(color);
           dismissOverlay();
         },
-        resetText: AppFlowyEditorL10n.current.clearHighlightColor,
+        resetText: aft.clearHighlightColor,
         resetIcon: ToolbarIcons.clearHighlightColor,
       );
     },

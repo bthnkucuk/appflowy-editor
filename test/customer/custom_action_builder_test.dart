@@ -7,8 +7,7 @@ import 'package:network_image_mock/network_image_mock.dart';
 
 void main() async {
   /// customize the action builder
-  await AppFlowyEditorLocalizations.load(
-    const Locale.fromSubtags(languageCode: 'en'),
+  await LocaleSettings.setLocaleRaw((const Locale.fromSubtags(languageCode: 'en').toLanguageTag()),
   );
   testWidgets('customize the image block\'s menu', (tester) async {
     await mockNetworkImagesFor(() async {

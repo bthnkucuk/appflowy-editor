@@ -247,7 +247,7 @@ class SelectionMenu extends SelectionMenuService {
 
 final List<SelectionMenuItem> standardSelectionMenuItems = [
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.text,
+    getName: () => aft.text,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.text,
       isSelected: isSelected,
@@ -259,7 +259,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.heading1,
+    getName: () => aft.heading1,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.h1,
       isSelected: isSelected,
@@ -271,7 +271,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.heading2,
+    getName: () => aft.heading2,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.h2,
       isSelected: isSelected,
@@ -283,7 +283,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.heading3,
+    getName: () => aft.heading3,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.h3,
       isSelected: isSelected,
@@ -295,7 +295,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.image,
+    getName: () => aft.image,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.selectionMenuImage,
       isSelected: isSelected,
@@ -308,7 +308,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.bulletedList,
+    getName: () => aft.bulletedList,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.bulletedList,
       isSelected: isSelected,
@@ -320,7 +320,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.numberedList,
+    getName: () => aft.numberedList,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.numberedList,
       isSelected: isSelected,
@@ -332,7 +332,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.checkbox,
+    getName: () => aft.checkbox,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.checkbox,
       isSelected: isSelected,
@@ -344,7 +344,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.quote,
+    getName: () => aft.quote,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.quote,
       isSelected: isSelected,
@@ -361,7 +361,7 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
 
 final List<SelectionMenuItem> singleColumnVisibleMenuItems = [
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.text,
+    getName: () => aft.text,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.text,
       isSelected: isSelected,
@@ -373,7 +373,7 @@ final List<SelectionMenuItem> singleColumnVisibleMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.heading1,
+    getName: () => aft.heading1,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.h1,
       isSelected: isSelected,
@@ -385,7 +385,7 @@ final List<SelectionMenuItem> singleColumnVisibleMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.heading2,
+    getName: () => aft.heading2,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
       name: ToolbarIcons.h2,
       isSelected: isSelected,

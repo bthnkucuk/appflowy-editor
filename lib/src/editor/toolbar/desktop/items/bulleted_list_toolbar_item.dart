@@ -26,7 +26,7 @@ final ToolbarItem bulletedListItem = ToolbarItem(
       return tooltipBuilder(
         context,
         _kBulletedListItemId,
-        AppFlowyEditorL10n.current.bulletedList,
+        aft.bulletedList,
         child,
       );
     }

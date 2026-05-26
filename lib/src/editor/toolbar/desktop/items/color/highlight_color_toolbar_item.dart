@@ -58,7 +58,7 @@ ToolbarItem buildHighlightColorItem({List<ColorOption>? colorOptions}) {
         return tooltipBuilder(
           context,
           _kHighlightColorItemId,
-          AppFlowyEditorL10n.current.highlightColor,
+          aft.highlightColor,
           child,
         );
       }

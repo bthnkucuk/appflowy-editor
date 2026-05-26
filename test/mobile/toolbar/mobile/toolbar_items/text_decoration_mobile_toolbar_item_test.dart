@@ -24,16 +24,16 @@ void main() {
 
     // Show its menu and it has 4 buttons
     expect(find.byType(MobileToolbarItemMenu), findsOneWidget);
-    expect(find.text(AppFlowyEditorL10n.current.bold), findsOneWidget);
-    expect(find.text(AppFlowyEditorL10n.current.italic), findsOneWidget);
-    expect(find.text(AppFlowyEditorL10n.current.underline), findsOneWidget);
-    expect(find.text(AppFlowyEditorL10n.current.strikethrough), findsOneWidget);
+    expect(find.text(aft.bold), findsOneWidget);
+    expect(find.text(aft.italic), findsOneWidget);
+    expect(find.text(aft.underline), findsOneWidget);
+    expect(find.text(aft.strikethrough), findsOneWidget);
 
     // Test bold button
     await tester.tap(
       find.widgetWithText(
         MobileToolbarItemMenuBtn,
-        AppFlowyEditorL10n.current.bold,
+        aft.bold,
       ),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
@@ -51,7 +51,7 @@ void main() {
     await tester.tap(
       find.widgetWithText(
         MobileToolbarItemMenuBtn,
-        AppFlowyEditorL10n.current.italic,
+        aft.italic,
       ),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
@@ -68,7 +68,7 @@ void main() {
     await tester.tap(
       find.widgetWithText(
         MobileToolbarItemMenuBtn,
-        AppFlowyEditorL10n.current.underline,
+        aft.underline,
       ),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
@@ -86,7 +86,7 @@ void main() {
     await tester.tap(
       find.widgetWithText(
         MobileToolbarItemMenuBtn,
-        AppFlowyEditorL10n.current.strikethrough,
+        aft.strikethrough,
       ),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 500));

@@ -16,10 +16,13 @@ void main() async {
       const SystemUiOverlayStyle(systemNavigationBarColor: Colors.transparent),
     );
   }
+  // Pick up the device locale for the editor's slang-generated translations.
+  await LocaleSettings.useDeviceLocale();
+
   // Important for Offline Collaboration
   await AppflowyEditorSyncUtilityFunctions.initAppFlowyEditorSync();
 
-  runApp(const MyApp());
+  runApp(TranslationProvider(child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -32,9 +35,9 @@ class MyApp extends StatelessWidget {
         GlobalMaterialLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
-        AppFlowyEditorLocalizations.delegate,
       ],
-      supportedLocales: AppFlowyEditorLocalizations.delegate.supportedLocales,
+      supportedLocales: AppLocaleUtils.supportedLocales,
+      locale: TranslationProvider.of(context).flutterLocale,
       debugShowCheckedModeBanner: false,
       home: const HomePage(),
       theme: ThemeData.light(useMaterial3: true),

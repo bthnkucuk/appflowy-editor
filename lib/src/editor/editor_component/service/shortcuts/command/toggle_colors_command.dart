@@ -22,7 +22,7 @@ class ToggleColorsStyle {
 
 final CommandShortcutEvent toggleHighlightCommand = CommandShortcutEvent(
   key: 'toggle highlight',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleHighlight,
+  getDescription: () => aft.cmdToggleHighlight,
   command: 'ctrl+shift+h',
   macOSCommand: 'cmd+shift+h',
   handler: (editorState) =>
@@ -33,7 +33,7 @@ CommandShortcutEvent customToggleHighlightCommand({
   required ToggleColorsStyle style,
 }) => CommandShortcutEvent(
   key: 'toggle highlight',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleHighlight,
+  getDescription: () => aft.cmdToggleHighlight,
   command: 'ctrl+shift+h',
   macOSCommand: 'cmd+shift+h',
   handler: (editorState) => _toggleHighlight(editorState, style: style),

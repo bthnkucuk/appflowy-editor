@@ -122,8 +122,8 @@ class _SheetTextAndBackgroundColorMenuState
   Widget build(BuildContext context) {
     final style = MobileToolbarTheme.of(context);
     final myTabs = <Tab>[
-      Tab(text: AppFlowyEditorL10n.current.textColor),
-      Tab(text: AppFlowyEditorL10n.current.backgroundColor),
+      Tab(text: aft.textColor),
+      Tab(text: aft.backgroundColor),
     ];
 
     return DefaultTabController(

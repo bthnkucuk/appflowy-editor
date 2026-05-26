@@ -56,7 +56,7 @@ ToolbarItem buildTextColorItem({List<ColorOption>? colorOptions}) {
         return tooltipBuilder(
           context,
           _kTextColorItemId,
-          AppFlowyEditorL10n.current.textColor,
+          aft.textColor,
           child,
         );
       }

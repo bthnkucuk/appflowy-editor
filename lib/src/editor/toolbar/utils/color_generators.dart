@@ -11,35 +11,35 @@ List<ColorOption> generateTextColorOptions() {
   return [
     ColorOption(
       colorHex: Colors.grey.toHex(),
-      name: AppFlowyEditorL10n.current.fontColorGray,
+      name: aft.fontColorGray,
     ),
     ColorOption(
       colorHex: Colors.brown.toHex(),
-      name: AppFlowyEditorL10n.current.fontColorBrown,
+      name: aft.fontColorBrown,
     ),
     ColorOption(
       colorHex: Colors.yellow.toHex(),
-      name: AppFlowyEditorL10n.current.fontColorYellow,
+      name: aft.fontColorYellow,
     ),
     ColorOption(
       colorHex: Colors.green.toHex(),
-      name: AppFlowyEditorL10n.current.fontColorGreen,
+      name: aft.fontColorGreen,
     ),
     ColorOption(
       colorHex: Colors.blue.toHex(),
-      name: AppFlowyEditorL10n.current.fontColorBlue,
+      name: aft.fontColorBlue,
     ),
     ColorOption(
       colorHex: Colors.purple.toHex(),
-      name: AppFlowyEditorL10n.current.fontColorPurple,
+      name: aft.fontColorPurple,
     ),
     ColorOption(
       colorHex: Colors.pink.toHex(),
-      name: AppFlowyEditorL10n.current.fontColorPink,
+      name: aft.fontColorPink,
     ),
     ColorOption(
       colorHex: Colors.red.toHex(),
-      name: AppFlowyEditorL10n.current.fontColorRed,
+      name: aft.fontColorRed,
     ),
   ];
 }
@@ -54,35 +54,35 @@ List<ColorOption> generateHighlightColorOptions() {
   return [
     ColorOption(
       colorHex: Colors.grey.withValues(alpha: 0.3).toHex(),
-      name: AppFlowyEditorL10n.current.backgroundColorGray,
+      name: aft.backgroundColorGray,
     ),
     ColorOption(
       colorHex: Colors.brown.withValues(alpha: 0.3).toHex(),
-      name: AppFlowyEditorL10n.current.backgroundColorBrown,
+      name: aft.backgroundColorBrown,
     ),
     ColorOption(
       colorHex: Colors.yellow.withValues(alpha: 0.3).toHex(),
-      name: AppFlowyEditorL10n.current.backgroundColorYellow,
+      name: aft.backgroundColorYellow,
     ),
     ColorOption(
       colorHex: Colors.green.withValues(alpha: 0.3).toHex(),
-      name: AppFlowyEditorL10n.current.backgroundColorGreen,
+      name: aft.backgroundColorGreen,
     ),
     ColorOption(
       colorHex: Colors.blue.withValues(alpha: 0.3).toHex(),
-      name: AppFlowyEditorL10n.current.backgroundColorBlue,
+      name: aft.backgroundColorBlue,
     ),
     ColorOption(
       colorHex: Colors.purple.withValues(alpha: 0.3).toHex(),
-      name: AppFlowyEditorL10n.current.backgroundColorPurple,
+      name: aft.backgroundColorPurple,
     ),
     ColorOption(
       colorHex: Colors.pink.withValues(alpha: 0.3).toHex(),
-      name: AppFlowyEditorL10n.current.backgroundColorPink,
+      name: aft.backgroundColorPink,
     ),
     ColorOption(
       colorHex: Colors.red.withValues(alpha: 0.3).toHex(),
-      name: AppFlowyEditorL10n.current.backgroundColorRed,
+      name: aft.backgroundColorRed,
     ),
   ];
 }

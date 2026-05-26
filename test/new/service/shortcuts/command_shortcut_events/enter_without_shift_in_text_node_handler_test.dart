@@ -110,13 +110,13 @@ void main() async {
     testWidgets('Presses enter key in multiple selection from top to bottom', (
       tester,
     ) async {
-      _testMultipleSelection(tester, true);
+      await _testMultipleSelection(tester, true);
     });
 
     testWidgets('Presses enter key in multiple selection from bottom to top', (
       tester,
     ) async {
-      _testMultipleSelection(tester, false);
+      await _testMultipleSelection(tester, false);
     });
 
     testWidgets('Presses enter key in the first line', (tester) async {

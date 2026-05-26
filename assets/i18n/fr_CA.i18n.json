@@ -1,0 +1,18 @@
+{
+  "bold": "gras",
+  "bulletedList": "liste à puces",
+  "checkbox": "case à cocher",
+  "embedCode": "incorporer Code",
+  "heading1": "en-tête1",
+  "heading2": "en-tête2",
+  "heading3": "en-tête3",
+  "highlight": "mettre en évidence",
+  "image": "l’image",
+  "italic": "italique",
+  "link": "lien",
+  "numberedList": "liste numérotée",
+  "quote": "citation",
+  "strikethrough": "barré",
+  "text": "texte",
+  "underline": "souligner"
+}

@@ -35,7 +35,7 @@ final ToolbarItem paragraphItem = ToolbarItem(
       return tooltipBuilder(
         context,
         _kParagraphItemId,
-        AppFlowyEditorL10n.current.text,
+        aft.text,
         child,
       );
     }

@@ -26,7 +26,7 @@ final ToolbarItem numberedListItem = ToolbarItem(
       return tooltipBuilder(
         context,
         _kNumberedListItemId,
-        AppFlowyEditorL10n.current.numberedList,
+        aft.numberedList,
         child,
       );
     }

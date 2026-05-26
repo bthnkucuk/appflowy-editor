@@ -25,7 +25,7 @@ final ToolbarItem quoteItem = ToolbarItem(
       return tooltipBuilder(
         context,
         _kQuoteItemId,
-        AppFlowyEditorL10n.current.quote,
+        aft.quote,
         child,
       );
     }

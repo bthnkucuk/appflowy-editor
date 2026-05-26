@@ -104,17 +104,17 @@ class _SheetHeadingMenuState extends State<_SheetHeadingMenu> {
   final _headings = [
     HeadingUnit(
       icon: ToolbarIcons.h1,
-      label: AppFlowyEditorL10n.current.mobileHeading1,
+      label: aft.mobileHeading1,
       level: 1,
     ),
     HeadingUnit(
       icon: ToolbarIcons.h2,
-      label: AppFlowyEditorL10n.current.mobileHeading2,
+      label: aft.mobileHeading2,
       level: 2,
     ),
     HeadingUnit(
       icon: ToolbarIcons.h3,
-      label: AppFlowyEditorL10n.current.mobileHeading3,
+      label: aft.mobileHeading3,
       level: 3,
     ),
   ];

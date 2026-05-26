@@ -36,9 +36,9 @@ void main() {
 
     // Show its menu and it has a tabbar to switch between text and background color
     expect(find.byType(MobileToolbarItemMenu), findsOneWidget);
-    expect(find.text(AppFlowyEditorL10n.current.textColor), findsOneWidget);
+    expect(find.text(aft.textColor), findsOneWidget);
     expect(
-      find.text(AppFlowyEditorL10n.current.backgroundColor),
+      find.text(aft.backgroundColor),
       findsOneWidget,
     );
 
@@ -76,7 +76,7 @@ void main() {
 
     // Test background color tab
     await tester.tap(
-      find.widgetWithText(TabBar, AppFlowyEditorL10n.current.backgroundColor),
+      find.widgetWithText(TabBar, aft.backgroundColor),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
     // Tap red color button

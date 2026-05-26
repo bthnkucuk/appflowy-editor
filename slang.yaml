@@ -1,0 +1,13 @@
+base_locale: en
+fallback_strategy: base_locale
+input_directory: assets/i18n
+input_file_pattern: .i18n.json
+output_directory: lib/src/localizations
+output_file_name: strings.g.dart
+lazy: true
+flat_map: false
+namespaces: false
+flutter_integration: true
+class_name: AppFlowyEditorTranslations
+enum_name: AppFlowyEditorLocale
+translate_var: aft

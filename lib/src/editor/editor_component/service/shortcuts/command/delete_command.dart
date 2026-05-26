@@ -10,7 +10,7 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 ///
 final CommandShortcutEvent deleteCommand = CommandShortcutEvent(
   key: 'Delete Key',
-  getDescription: () => AppFlowyEditorL10n.current.cmdDeleteRight,
+  getDescription: () => aft.cmdDeleteRight,
   command: 'delete, shift+delete',
   handler: _deleteCommandHandler,
 );

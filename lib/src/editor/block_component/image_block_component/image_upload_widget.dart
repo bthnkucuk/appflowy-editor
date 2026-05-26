@@ -154,8 +154,8 @@ class _UploadImageMenuState extends State<UploadImageMenu> {
                 height: 36,
                 child: TabBar(
                   tabs: [
-                    Tab(text: AppFlowyEditorL10n.current.uploadImage),
-                    Tab(text: AppFlowyEditorL10n.current.urlImage),
+                    Tab(text: aft.uploadImage),
+                    Tab(text: aft.urlImage),
                   ],
                   labelColor: widget.headerColor,
                   unselectedLabelColor: widget.unselectedLabelColor,
@@ -234,7 +234,7 @@ class _UploadImageMenuState extends State<UploadImageMenu> {
 
   Widget _buildInvalidLinkText() {
     return Text(
-      AppFlowyEditorL10n.current.incorrectLink,
+      aft.incorrectLink,
       style: TextStyle(color: widget.urlInvalidLinkColor, fontSize: 12),
     );
   }
@@ -262,7 +262,7 @@ class _UploadImageMenuState extends State<UploadImageMenu> {
           }
         },
         child: Text(
-          AppFlowyEditorL10n.current.upload,
+          aft.upload,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onPrimary,
             fontSize: 14.0,
@@ -359,7 +359,7 @@ class _UploadImageMenuState extends State<UploadImageMenu> {
                         ),
                         const SizedBox(height: 8.0),
                         Text(
-                          AppFlowyEditorL10n.current.chooseImage,
+                          aft.chooseImage,
                           style: TextStyle(
                             fontSize: 14.0,
                             color: widget.uploadButtonTextColor,

@@ -161,7 +161,7 @@ class _FindMenuState extends State<FindMenu> {
 
   final findTextEditingController = TextEditingController();
 
-  String message = AppFlowyEditorLocalizations.current.emptySearchBoxHint;
+  String message = aft.emptySearchBoxHint;
 
   bool showReplaceMenu = false;
   bool caseSensitive = false;
@@ -240,7 +240,7 @@ class _FindMenuState extends State<FindMenu> {
               });
             },
             decoration: _buildInputDecoration(
-              widget.localizations?.find ?? AppFlowyEditorL10n.current.find,
+              widget.localizations?.find ?? aft.find,
             ),
           ),
         ),
@@ -268,7 +268,7 @@ class _FindMenuState extends State<FindMenu> {
           icon: const Icon(Icons.arrow_upward),
           tooltip:
               widget.localizations?.previousMatch ??
-              AppFlowyEditorL10n.current.previousMatch,
+              aft.previousMatch,
         ),
         // next match button
         FindAndReplaceMenuIconButton(
@@ -284,7 +284,7 @@ class _FindMenuState extends State<FindMenu> {
           icon: const Icon(Icons.arrow_downward),
           tooltip:
               widget.localizations?.nextMatch ??
-              AppFlowyEditorL10n.current.nextMatch,
+              aft.nextMatch,
         ),
         FindAndReplaceMenuIconButton(
           iconButtonKey: const Key('closeButton'),
@@ -292,7 +292,7 @@ class _FindMenuState extends State<FindMenu> {
           icon: const Icon(Icons.close),
           tooltip:
               widget.localizations?.close ??
-              AppFlowyEditorL10n.current.closeFind,
+              aft.closeFind,
         ),
         // regex button
         if (showRegexButton)
@@ -309,7 +309,7 @@ class _FindMenuState extends State<FindMenu> {
               size: 20,
               color: widget.searchService.regex ? Colors.black : Colors.grey,
             ),
-            tooltip: AppFlowyEditorL10n.current.regex,
+            tooltip: aft.regex,
           ),
         // case sensitive button
         if (showCaseSensitiveButton)
@@ -329,7 +329,7 @@ class _FindMenuState extends State<FindMenu> {
                   ? Colors.black
                   : Colors.grey,
             ),
-            tooltip: AppFlowyEditorL10n.current.caseSensitive,
+            tooltip: aft.caseSensitive,
           ),
       ],
     );
@@ -347,15 +347,15 @@ class _FindMenuState extends State<FindMenu> {
 
     switch (error) {
       case 'Regex':
-        message = AppFlowyEditorLocalizations.current.regexError;
+        message = aft.regexError;
 
       case 'Empty':
-        message = AppFlowyEditorLocalizations.current.emptySearchBoxHint;
+        message = aft.emptySearchBoxHint;
 
       default:
         message =
             widget.localizations?.noResult ??
-            AppFlowyEditorLocalizations.current.noFindResult;
+            aft.noFindResult;
     }
 
     _setState();
@@ -423,7 +423,7 @@ class _ReplaceMenuState extends State<ReplaceMenu> {
             },
             decoration: _buildInputDecoration(
               widget.localizations?.replace ??
-                  AppFlowyEditorL10n.current.replace,
+                  aft.replace,
             ),
           ),
         ),
@@ -433,7 +433,7 @@ class _ReplaceMenuState extends State<ReplaceMenu> {
           icon: const Icon(Icons.find_replace),
           tooltip:
               widget.localizations?.replace ??
-              AppFlowyEditorL10n.current.replace,
+              aft.replace,
         ),
         FindAndReplaceMenuIconButton(
           iconButtonKey: const Key('replaceAllButton'),
@@ -443,7 +443,7 @@ class _ReplaceMenuState extends State<ReplaceMenu> {
           icon: const Icon(Icons.change_circle_outlined),
           tooltip:
               widget.localizations?.replaceAll ??
-              AppFlowyEditorL10n.current.replaceAll,
+              aft.replaceAll,
         ),
       ],
     );

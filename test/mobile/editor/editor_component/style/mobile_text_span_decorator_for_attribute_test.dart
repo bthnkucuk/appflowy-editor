@@ -74,16 +74,16 @@ void main() {
         await tester.enterText(find.byKey(const Key('Text TextFormField')), '');
         await tester.enterText(find.byKey(const Key('Url TextFormField')), '');
         await tester.tap(
-          find.widgetWithText(TextButton, AppFlowyEditorL10n.current.done),
+          find.widgetWithText(TextButton, aft.done),
         );
         await tester.pumpAndSettle(const Duration(seconds: 1));
         // show error prompt
         expect(
-          find.text(AppFlowyEditorL10n.current.linkTextHint),
+          find.text(aft.linkTextHint),
           findsOneWidget,
         );
         expect(
-          find.text(AppFlowyEditorL10n.current.linkAddressHint),
+          find.text(aft.linkAddressHint),
           findsOneWidget,
         );
       });
@@ -117,7 +117,7 @@ void main() {
           address2,
         );
         await tester.tap(
-          find.widgetWithText(TextButton, AppFlowyEditorL10n.current.done),
+          find.widgetWithText(TextButton, aft.done),
         );
         await tester.pumpAndSettle(const Duration(seconds: 1));
 
@@ -161,7 +161,7 @@ void main() {
         await tester.tap(
           find.widgetWithText(
             TextButton,
-            AppFlowyEditorL10n.current.removeLink,
+            aft.removeLink,
           ),
         );
         await tester.pumpAndSettle(const Duration(seconds: 1));

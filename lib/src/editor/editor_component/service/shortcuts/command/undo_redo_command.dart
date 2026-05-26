@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 ///
 final CommandShortcutEvent undoCommand = CommandShortcutEvent(
   key: 'undo',
-  getDescription: () => AppFlowyEditorL10n.current.cmdUndo,
+  getDescription: () => aft.cmdUndo,
   command: 'ctrl+z',
   macOSCommand: 'cmd+z',
   handler: _undoCommandHandler,
@@ -29,7 +29,7 @@ CommandShortcutEventHandler _undoCommandHandler = (editorState) {
 ///
 final CommandShortcutEvent redoCommand = CommandShortcutEvent(
   key: 'redo',
-  getDescription: () => AppFlowyEditorL10n.current.cmdRedo,
+  getDescription: () => aft.cmdRedo,
   command: 'ctrl+y,ctrl+shift+z',
   macOSCommand: 'cmd+shift+z',
   handler: _redoCommandHandler,

@@ -31,12 +31,12 @@ class _ListMenuState extends State<_ListMenu> {
   final lists = [
     ListUnit(
       icon: ToolbarIcons.bulletedList,
-      label: AppFlowyEditorL10n.current.bulletedList,
+      label: aft.bulletedList,
       name: 'bulleted_list',
     ),
     ListUnit(
       icon: ToolbarIcons.numberedList,
-      label: AppFlowyEditorL10n.current.numberedList,
+      label: aft.numberedList,
       name: 'numbered_list',
     ),
   ];
