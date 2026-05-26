@@ -153,12 +153,52 @@ Hedef: auto-memory'deki "yavaşla-hızlan" pattern'ini *ölçerek* kapat.
 - [x] **H2.3.d** **`_clearCursorRect` fold** — separate listener silindi, H2.3.a refactor'una gömüldü (yeni paint notifier zaten short-circuit ediyor). → H2.3.a commit'leri içinde.
 - [x] **H2.3.e** **AutoScroller cursor-mode selection ping-pong fix** — `_updateSelectionDuringDrag` cursor mode'da `Selection.collapsed(end)` yazıyor, Strategy ise word-boundary extended; iki path her tick'te birbirini eziyordu. AutoScroller cursor mode'da `return` (sadece scroll, selection'a karışmaz). **Gerçek-cihaz**: per-tick notify 2 → 1, dt ping-pong (30↔1ms) kayboldu. → `edc73051`
 - [x] **H2.3.f** **Android cursor-drag IME spam suppression** — Android stratejisi `onLongPressMoveUpdate`'te `selectionExtraInfoDoNotAttachTextService: dragMode == cursor` flag'i set etmiyordu (iOS pattern'i atlamıştı). Her drag tick'i `showSoftInput` + `requestFocus` platform-channel hop'u → ~20-30ms frame. **Gerçek-cihaz fix sonrası**: frame >16ms tick oranı 6/13 → 2/16, ortalama frame ~17ms → ~9ms. → `9b96c8a0`
-- [ ] **H2.3.g — open**: Kalan frame spike'ları (#9 26ms, #12 31ms drag log'unda) auto-scroll'la yeni viewport'a giren block'ların ilk mount maliyeti (BSA+=4/11/13 o tick'lere denk). Bu farklı bir hot path: **sliver layout + new-block initial paint**. H2.3 zinciri kapsamı dışı; H2.8 olarak ayrı incele.
+- [x] **H2.3.g** Auto-scroll new-block mount spike kovalandı → H2.8 olarak detaylandırılıp shipped (aşağıya bak).
 - [ ] **H2.4** iOS Magnifier'ı `BackdropFilter`'sız variant ile A/B test et; ölçüm darboğazsa default'u değiştir — Çaba: S
 - [ ] **H2.5** `_AndroidDragHandle.onPanUpdate`'teki `HapticFeedback.selectionClick` yalnız selection karakter değiştiğinde tetiklensin — `mobile_basic_handle.dart:344` — Çaba: XS
 - [ ] **H2.6** Her PR sonrası H1.8 benchmark'ı koş ve sonuçları PR'a yapıştır
 - [ ] **H2.7** H1.8 benchmark'ına drag-simulation senaryosu ekle (regresyon koruması)
-- [ ] **H2.8 — Auto-scroll new-block mount spike**: drag sırasında viewport'a yeni block girdiğinde 26-31ms frame spike. Aday hot path'ler: SuperSliverList'in `addPostFrameCallback` chain'i, AppFlowyRichText layout walk, BlockSelectionContainer + BSA + BHA + BlockComponentActionWrapper mount fan-out, sections-cache miss. Önce profile + araştırma. Çaba: M / Risk: Düşük (lokalize).
+
+#### H2.8 — Auto-scroll new-block mount spike (2026-05-26)
+
+**Sorun**: Drag sırasında viewport'a yeni block girince 26-31ms frame spike. İki ajan paralel araştırma + 6 fix denemesi + 2 revert. Test-first methodoloji: synthetic baseline → hipotez doğrula → device test → ship veya revert.
+
+- [x] **H2.8.a** `super_sliver_list` precalc'ını drag boyunca kapat → çift-mount (temp + real) maliyeti iptal. Cihazda marjinal düşüş. → `a53cb343`
+- [x] **H2.8.b** Android `onLongPressStart`'a `selectionExtraInfoDoNotAttachTextService: true` ekle → drag-start IME re-attach spike (31ms) kayboldu. → `b73a03fd`
+- [x] **H2.8.c** `BlockComponentStatefulWidget.cachedLeft` postFrame `setState` skip when `decoration == null` → N+1 forced relayout cycle bitti. **Ana kazanç**: auto-scroll mount 25-30ms → 5ms. → `db860f06`
+- [x] **H2.8.d** `_buildPlaceholderText` empty-delta skip → **REVERTED**. Synthetic %50 düşüş (50→25 RichText) ama cihazda noisy, peak spike azalmadı. Test-first methodoloji devreye girdi.
+- [x] **H2.8.e** BSA/BHA `initState` postFrame skip when path-not-in-selection → 180 → 0 closure schedule per editor mount. Cihazda max frame 18ms → 14ms, sıfır budget aşımı. → `da70df70`
+- [x] **H2.8.f** `confirmContextEnabled` skip when no `textSpanOverlayBuilder` → **REVERTED**. Synthetic 36 → 0 setState ama cihazda 36ms spike çıktı (yeni hot path açıyor). Methodoloji gereği geri alındı.
+
+**Sonuç**: 4 shipped, 2 reverted. Real-device drag stutter görsel olarak smooth — frame budget aşımları %60 → %5'in altı.
+
+**Test-first methodoloji öğrendikleri**:
+- Synthetic-only metrik (widget count, schedule count) cihaz frame time'ına otomatik translate olmuyor.
+- Bazı "subtraktif" görünen değişiklikler beklenmeyen hot path açıyor (H2.8.f: confirmContextEnabled kaldırınca 36ms spike).
+- Per-fix iki-aşamalı verification (synthetic + device) noisy single-sample karşılaştırmaları kırpıyor.
+
+**super_editor research** (2026-05-26):
+
+İki ajan paralelde inceledi. Raporlar: `docs/super_editor_perf_research.md` + `docs/super_editor_arch_research.md`. → `29fb0cfd`
+
+**Tactical patterns** (H3 backlog için aday):
+- **Presenter pipeline + per-node diff** — bizim H2.3.a derived-paint notifier'ın yapısal eşi. Daha geniş scope (sadece selection değil, tüm node attr changes).
+- **`ContentLayers` RenderObjectWidget** — selection/caret layer'ları content rebuild'inden ayrıştırıyor. Bizim 5-widget-per-block BlockSelectionContainer'ın yapısal alternatifi.
+- **`_RebuildOptimizedSuperTextWithSelection`** — SuperText cache, selection ayrı ValueNotifier→CustomPainter. `confirmContextEnabled` + `_buildPlaceholderText` problemlerinin doğru fix shape'i.
+- **`BlinkController.withTimer`** — `Ticker` 60fps force eder (FBH #1253). `_HighlightAreaPaintState` always-on AnimationController için ders.
+- **`LayoutAwareRichText.onMarkNeedsLayout`** — paragraph cache invalidate, painter stale layout okumaz.
+
+**Architectural patterns** (H3 sub-aday):
+- **Selection as style phase + document-level overlay caret** — bizim 5-widget-per-block container'ın yapısal alternatifi.
+- **Editor pipeline (Request → Command → Reaction → Listeners)** — markdown shortcuts, autolink, spellcheck için first-class plug-in point.
+- **`DragHandleAutoScroller` reusable class** — iOS+Android paylaşımlı.
+- **`SuperEditorRobot` testing extension** — `placeCaretInParagraph`, `pressDownOnCollapsedMobileHandle`. **Steal-verbatim aday**.
+
+**Don't copy notları**:
+- super_editor flat node sequence — bizim tree avantajımız (nested toggle/table/callout).
+- super_editor virtualize etmiyor; `super_sliver_list` doğru karar.
+- `BuildOwner.onBuildScheduled` global hook fragile (hot reload/multi-window).
+- `Map<String, dynamic>` metadata — super_editor'da da çözülmemiş; typing kazancı view-model layer'da.
 
 ### Horizon 3 — Mimari refactor (2–4 ay)
 
