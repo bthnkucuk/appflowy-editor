@@ -12,6 +12,12 @@ export 'editor_state/editor_chrome.dart';
 export 'editor_state/selection_drag_mode.dart';
 export 'editor_state/types.dart';
 
+// Internal mixin files. Kept as `part`/`part of` so they can share
+// library-level privacy with EditorState (e.g. `_recordRedoOrUndo`
+// remains a private implementation detail not surfaced on the public
+// API).
+part 'editor_state/history_mixin.dart';
+
 /// The state of the editor.
 ///
 /// The state includes:
@@ -29,13 +35,13 @@ export 'editor_state/types.dart';
 /// all the mutations should be applied through [Transaction].
 ///
 /// Mutating the document with document's API is not recommended.
-class EditorState with EditorChromeMixin {
+class EditorState with EditorChromeMixin, HistoryMixin {
   EditorState({
     required this.document,
     this.minHistoryItemDuration = const Duration(milliseconds: 50),
     int? maxHistoryItemSize,
   }) {
-    undoManager = UndoManager(maxHistoryItemSize ?? 200);
+    _initHistory(maxHistoryItemSize);
     undoManager.state = this;
   }
 
@@ -45,6 +51,8 @@ class EditorState with EditorChromeMixin {
   final Document document;
 
   // the minimum duration for saving the history item.
+  // Satisfies [HistoryMixin.minHistoryItemDuration] abstract getter.
+  @override
   final Duration minHistoryItemDuration;
 
   /// Whether the editor should disable auto scroll.
@@ -195,17 +203,12 @@ class EditorState with EditorChromeMixin {
     _sliceUpcomingAttributes = value;
   }
 
-  late final UndoManager undoManager;
-
   Transaction get transaction {
     final transaction = Transaction(document: document);
     transaction.beforeSelection = selection;
 
     return transaction;
   }
-
-  @visibleForTesting
-  bool disableSealTimer = false;
 
   /// The rules to apply to the document.
   List<DocumentRule> get documentRules => _documentRules;
@@ -284,7 +287,6 @@ class EditorState with EditorChromeMixin {
     this.tap = tap;
   }
 
-  Timer? _debouncedSealHistoryItemTimer;
   final bool _enableCheckIntegrity = false;
 
   // the value of the notifier is meaningless, just for triggering the callbacks.
@@ -297,7 +299,7 @@ class EditorState with EditorChromeMixin {
     isDisposed = true;
     _observer.close();
     _asyncObserver.close();
-    _debouncedSealHistoryItemTimer?.cancel();
+    _disposeHistory();
     onDispose.value += 1;
     onDispose.dispose();
     document.dispose();
@@ -688,40 +690,6 @@ class EditorState with EditorChromeMixin {
       autoScroller = scroller;
       this.scrollableState = scrollableState;
     }
-  }
-
-  void _recordRedoOrUndo(
-    ApplyOptions options,
-    Transaction transaction,
-    bool skipDebounce,
-  ) {
-    final source = options.source;
-    undoManager.record(transaction, source);
-
-    // Only debounce-seal for user edits (grouping consecutive keystrokes).
-    if (source == TransactionSource.userEdit) {
-      if (skipDebounce && undoManager.undoStack.isNonEmpty) {
-        AppFlowyEditorLog.editor.debug('Seal history item');
-        final last = undoManager.undoStack.last;
-        last.seal();
-      } else {
-        _debouncedSealHistoryItem();
-      }
-    }
-  }
-
-  void _debouncedSealHistoryItem() {
-    if (disableSealTimer) {
-      return;
-    }
-    _debouncedSealHistoryItemTimer?.cancel();
-    _debouncedSealHistoryItemTimer = Timer(minHistoryItemDuration, () {
-      if (undoManager.undoStack.isNonEmpty) {
-        AppFlowyEditorLog.editor.debug('Seal history item');
-        final last = undoManager.undoStack.last;
-        last.seal();
-      }
-    });
   }
 
   void _applyTransactionInLocal(Transaction transaction) {
