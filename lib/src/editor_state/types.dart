@@ -5,7 +5,7 @@ library;
 
 import 'package:appflowy_editor/src/core/transform/transaction.dart';
 import 'package:appflowy_editor/src/editor_state/selection_drag_mode.dart';
-import 'package:appflowy_editor/src/history/undo_manager.dart';
+import 'package:appflowy_editor/src/editor_state/undo_manager.dart';
 
 /// The record broadcast by `EditorState.transactionStream`. Pattern-matched
 /// at consumer sites; consumers depend on the field order
