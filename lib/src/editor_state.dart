@@ -17,6 +17,7 @@ export 'editor_state/types.dart';
 // remains a private implementation detail not surfaced on the public
 // API).
 part 'editor_state/history_mixin.dart';
+part 'editor_state/scroll_coordinator_mixin.dart';
 part 'editor_state/selection_style_mixin.dart';
 
 /// The state of the editor.
@@ -36,7 +37,12 @@ part 'editor_state/selection_style_mixin.dart';
 /// all the mutations should be applied through [Transaction].
 ///
 /// Mutating the document with document's API is not recommended.
-class EditorState with EditorChromeMixin, HistoryMixin, SelectionStyleMixin {
+class EditorState
+    with
+        EditorChromeMixin,
+        HistoryMixin,
+        SelectionStyleMixin,
+        ScrollCoordinatorMixin {
   EditorState({
     required this.document,
     this.minHistoryItemDuration = const Duration(milliseconds: 50),
@@ -56,26 +62,18 @@ class EditorState with EditorChromeMixin, HistoryMixin, SelectionStyleMixin {
   @override
   final Duration minHistoryItemDuration;
 
-  /// Whether the editor should disable auto scroll.
-  bool disableAutoScroll = false;
-
-  /// The edge offset of the auto scroll.
-  double autoScrollEdgeOffset = appFlowyEditorAutoScrollEdgeOffset;
-
   // Selection/highlight/tap notifiers + selectionType/selectionUpdateReason
   // + selectionExtraInfo live in [SelectionStyleMixin].
+  //
+  // Scroll config (disableAutoScroll, autoScrollEdgeOffset),
+  // isAutoScrollHighlight, autoScroller, scrollableState,
+  // selectionRects/highlightRects, scrollToHighlight + friends,
+  // updateAutoScroller, renderBox, and the scroll-view listener set
+  // live in [ScrollCoordinatorMixin].
 
-  final ValueNotifier<bool> isAutoScrollHighlightNotifier = ValueNotifier(
-    false,
-  );
-
-  bool get isAutoScrollHighlight => isAutoScrollHighlightNotifier.value;
-
-  set isAutoScrollHighlight(bool value) {
-    isAutoScrollHighlightNotifier.value = value;
-  }
-
-  // Service reference.
+  // Service reference. Satisfies [ScrollCoordinatorMixin.service]
+  // abstract getter.
+  @override
   final service = EditorService();
 
   AppFlowyScrollService? get scrollService => service.scrollService;
@@ -87,10 +85,6 @@ class EditorState with EditorChromeMixin, HistoryMixin, SelectionStyleMixin {
   set renderer(BlockComponentRendererService value) {
     service.rendererService = value;
   }
-
-  /// store the auto scroller instance in here temporarily.
-  AutoScroller? autoScroller;
-  ScrollableState? scrollableState;
 
   /// Configures log output parameters,
   /// such as log level and log output callbacks,
@@ -132,32 +126,11 @@ class EditorState with EditorChromeMixin, HistoryMixin, SelectionStyleMixin {
 
   StreamSubscription? _subscription;
 
-  final Set<VoidCallback> _onScrollViewScrolledListeners = {};
-
-  void addScrollViewScrolledListener(VoidCallback callback) =>
-      _onScrollViewScrolledListeners.add(callback);
-
-  void removeScrollViewScrolledListener(VoidCallback callback) =>
-      _onScrollViewScrolledListeners.remove(callback);
-
-  void _notifyScrollViewScrolledListeners() {
-    for (final listener in Set.of(_onScrollViewScrolledListeners)) {
-      listener.call();
-    }
-  }
-
-  RenderBox? get renderBox {
-    final renderObject = service.scrollServiceKey.currentContext
-        ?.findRenderObject();
-    if (renderObject != null && renderObject is RenderBox) {
-      return renderObject;
-    }
-
-    return null;
-  }
-
   // updateSelectionWithReason / updateHighlight / updateTap live in
   // [SelectionStyleMixin].
+  //
+  // The scroll-view listener set, renderBox, and updateAutoScroller live
+  // in [ScrollCoordinatorMixin].
 
   final bool _enableCheckIntegrity = false;
 
@@ -167,7 +140,7 @@ class EditorState with EditorChromeMixin, HistoryMixin, SelectionStyleMixin {
   bool isDisposed = false;
 
   void dispose() {
-    isAutoScrollHighlightNotifier.dispose();
+    _disposeScrollCoordinator();
     isDisposed = true;
     _observer.close();
     _asyncObserver.close();
@@ -178,7 +151,6 @@ class EditorState with EditorChromeMixin, HistoryMixin, SelectionStyleMixin {
     _disposeSelectionStyle();
     disposeChrome();
     _subscription?.cancel();
-    _onScrollViewScrolledListeners.clear();
   }
 
   /// Apply the transaction to the state.
@@ -260,6 +232,8 @@ class EditorState with EditorChromeMixin, HistoryMixin, SelectionStyleMixin {
   /// if selection is backward, return nodes in order
   /// if selection is forward, return nodes in reverse order
   ///
+  /// Satisfies [ScrollCoordinatorMixin.getNodesInSelection] abstract.
+  @override
   List<Node> getNodesInSelection(Selection selection) {
     // Normalize the selection.
     final normalized = selection.normalized;
@@ -349,215 +323,13 @@ class EditorState with EditorChromeMixin, HistoryMixin, SelectionStyleMixin {
     return document.nodeAtPath(path);
   }
 
-  /// The current selection areas's rect in editor.
-  List<Rect> selectionRects() {
-    final selection = this.selection;
-    if (selection == null) {
-      return [];
-    }
-
-    final nodes = getNodesInSelection(selection);
-    final rects = <Rect>[];
-
-    if (selection.isCollapsed && nodes.length == 1) {
-      final selectable = nodes.first.selectable;
-      if (selectable != null) {
-        final rect = selectable.getCursorRectInPosition(
-          selection.end,
-          shiftWithBaseOffset: true,
-        );
-        if (rect != null) {
-          rects.add(
-            selectable.transformRectToGlobal(rect, shiftWithBaseOffset: true),
-          );
-        }
-      }
-    } else {
-      for (final node in nodes) {
-        final selectable = node.selectable;
-        if (selectable == null) {
-          continue;
-        }
-        final nodeRects = selectable.getRectsInSelection(
-          selection,
-          shiftWithBaseOffset: true,
-        );
-        if (nodeRects.isEmpty) {
-          continue;
-        }
-        final renderBox = node.renderBox;
-        if (renderBox == null) {
-          continue;
-        }
-        for (final rect in nodeRects) {
-          final globalOffset = renderBox.localToGlobal(rect.topLeft);
-          rects.add(globalOffset & rect.size);
-        }
-      }
-    }
-
-    return rects;
-  }
-
-  List<Rect> highlightRects(Selection? selection) {
-    if (selection == null) {
-      return [];
-    }
-
-    final nodes = getNodesInSelection(selection);
-    final rects = <Rect>[];
-
-    if (selection.isCollapsed && nodes.length == 1) {
-      final selectable = nodes.first.selectable;
-      if (selectable != null) {
-        final rect = selectable.getCursorRectInPosition(
-          selection.end,
-          shiftWithBaseOffset: true,
-        );
-        if (rect != null) {
-          rects.add(
-            selectable.transformRectToGlobal(rect, shiftWithBaseOffset: true),
-          );
-        }
-      }
-    } else {
-      for (final node in nodes) {
-        final selectable = node.selectable;
-        if (selectable == null) {
-          continue;
-        }
-        final nodeRects = selectable.getRectsInSelection(
-          selection,
-          shiftWithBaseOffset: true,
-        );
-        if (nodeRects.isEmpty) {
-          continue;
-        }
-        final renderBox = node.renderBox;
-        if (renderBox == null) {
-          continue;
-        }
-        for (final rect in nodeRects) {
-          final globalOffset = renderBox.localToGlobal(rect.topLeft);
-          rects.add(globalOffset & rect.size);
-        }
-      }
-    }
-
-    return rects;
-  }
-
-  void scrollToHighlight(
-    EditorScrollController editorScrollController, {
-    Selection? selection,
-    bool fromInside = false,
-    bool alignToTop = true,
-  }) {
-    final askedSelection = selection ?? highlight;
-    final highlightRects = this.highlightRects(askedSelection);
-
-    final top = highlightRects.firstOrNull?.top;
-
-    if (top != null) {
-      editorScrollController.safeAnimateScroll(
-        offset: top - 300,
-        duration: const Duration(milliseconds: 700),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      if (fromInside) return;
-      final index = askedSelection?.start.path.firstOrNull;
-      if (index != null) {
-        editorScrollController.jumpToIndex(
-          index: index,
-          alignment: alignToTop ? 0 : 1,
-        );
-      }
-
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        Future.delayed(Duration(milliseconds: 0), () {
-          scrollToHighlight(
-            editorScrollController,
-            selection: selection,
-            fromInside: true,
-          );
-        });
-      });
-    }
-  }
-
-  // void jumpToHighlight(EditorScrollController editorScrollController,
-  //     {Selection? selection}) {
-  //   final askedSelection = selection ?? highlight;
-  //   final highlightRects = this.highlightRects(askedSelection);
-
-  //   final top = highlightRects.firstOrNull?.top;
-
-  //   if (top != null) {
-  //     editorScrollController.scrollOffsetController.safeJumpTo(
-  //       offset: top,
-  //     );
-  //   }
-  // }
-
-  void enableAutoScrollHighlight(
-    EditorScrollController editorScrollController,
-  ) {
-    isAutoScrollHighlightNotifier.value = true;
-    highlightChanged(editorScrollController);
-  }
-
-  void disableAutoScrollHighlight() {
-    isAutoScrollHighlightNotifier.value = false;
-  }
-
-  void highlightChanged(EditorScrollController editorScrollController) {
-    if (isAutoScrollHighlightNotifier.value) {
-      scrollToHighlight(editorScrollController);
-    }
-  }
+  // selectionRects, highlightRects, scrollToHighlight,
+  // enableAutoScrollHighlight, disableAutoScrollHighlight,
+  // highlightChanged, updateAutoScroller all live in
+  // [ScrollCoordinatorMixin].
 
   void cancelSubscription() {
     _observer.close();
-  }
-
-  void updateAutoScroller(ScrollableState scrollableState) {
-    if (this.scrollableState != scrollableState) {
-      autoScroller?.stopAutoScroll();
-      final bool isDesktopOrWeb = PlatformExtension.isDesktopOrWeb;
-      late AutoScroller scroller;
-      scroller = AutoScroller(
-        scrollableState,
-        // Framework EdgeDraggingAutoScroller: per-tick duration is
-        // `1000 / velocityScalar` ms, delta per tick is the raw over-drag
-        // (capped to 20 px). 50 ≈ 20ms tick → ~1000 px/s top speed when the
-        // cursor sits hard against the edge. The old fork value 0.15 (with
-        // an 80ms desktop tick) worked out to ~40 px/s, which felt unusably
-        // slow on long documents.
-        velocityScalar: 50,
-        onScrollViewScrolled: () {
-          _notifyScrollViewScrolledListeners();
-          if (!isDesktopOrWeb) {
-            // The field is the untyped `Map?` we publish to the rest of
-            // the editor; cast at the boundary so the typed accessor can
-            // do its work.
-            final info = SelectionExtraInfo.from(
-              selectionExtraInfo?.cast<String, Object?>(),
-            );
-            if (!info.isDraggingSelection) {
-              return;
-            }
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (autoScroller == scroller) {
-                scroller.continueToAutoScroll();
-              }
-            });
-          }
-        },
-      );
-      autoScroller = scroller;
-      this.scrollableState = scrollableState;
-    }
   }
 
   void _applyTransactionInLocal(Transaction transaction) {
