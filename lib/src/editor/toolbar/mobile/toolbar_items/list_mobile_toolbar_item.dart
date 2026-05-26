@@ -54,6 +54,7 @@ class _ListMenuState extends State<_ListMenu> {
         icon: ToolbarIcon(
           afMobileIcons: currentList.icon,
           color: MobileToolbarTheme.of(context).iconColor,
+          selected: isSelected,
         ),
         label: Text(currentList.label),
         isSelected: isSelected,

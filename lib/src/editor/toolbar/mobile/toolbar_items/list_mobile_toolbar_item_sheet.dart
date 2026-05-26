@@ -128,6 +128,7 @@ class _SheetListMenuState extends State<_SheetListMenu> {
             afMobileIcons: currentList.icon,
             size: 20,
             color: MobileToolbarTheme.of(context).iconColor,
+            selected: isSelected,
           ),
           label: Text(currentList.label, maxLines: 2),
           isSelected: isSelected,

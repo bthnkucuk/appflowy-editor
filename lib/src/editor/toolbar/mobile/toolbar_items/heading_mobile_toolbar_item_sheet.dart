@@ -141,6 +141,7 @@ class _SheetHeadingMenuState extends State<_SheetHeadingMenu> {
             afMobileIcons: currentHeading.icon,
             size: 20,
             color: MobileToolbarTheme.of(context).iconColor,
+            selected: isSelected,
           ),
           label: Text(currentHeading.label, maxLines: 2),
           isSelected: isSelected,

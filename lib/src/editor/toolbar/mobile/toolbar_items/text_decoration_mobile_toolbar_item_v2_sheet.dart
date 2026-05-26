@@ -153,6 +153,7 @@ class _SheetTextDecorationV2MenuState
         icon: ToolbarIcon(
           afMobileIcons: currentDecoration.icon,
           color: MobileToolbarTheme.of(context).iconColor,
+          selected: isSelected,
         ),
         label: Text(currentDecoration.label),
         isSelected: isSelected,

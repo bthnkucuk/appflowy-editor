@@ -56,9 +56,10 @@ enum ToolbarIcons {
   // color picker reset/clear actions
   resetTextColor,
   clearHighlightColor,
-  // padding/quote/text/h1/h2/h3/bulletedList/numberedList/checkbox already covered above
 }
 
+/// Phosphor's "regular" weight — the default look for toolbar buttons in
+/// their idle state.
 const Map<ToolbarIcons, IconifyIconData> _phMap = {
   ToolbarIcons.textDecorationBold: PhIcons.textAa,
   ToolbarIcons.bold: PhIcons.textB,
@@ -82,31 +83,24 @@ const Map<ToolbarIcons, IconifyIconData> _phMap = {
   ToolbarIcons.quote: PhIcons.quotes,
   ToolbarIcons.divider: PhIcons.minus,
   ToolbarIcons.close: PhIcons.x,
-  // text/paragraph
   ToolbarIcons.text: PhIcons.textT,
-  // colors
   ToolbarIcons.textColor: PhIcons.textAa,
   ToolbarIcons.highlightColor: PhIcons.paintBrush,
-  // alignment
   ToolbarIcons.alignLeft: PhIcons.textAlignLeft,
   ToolbarIcons.alignCenter: PhIcons.textAlignCenter,
   ToolbarIcons.alignRight: PhIcons.textAlignRight,
-  // text direction
   /// No phosphor "auto" direction icon — using magicWand as a best-guess fit.
   // TODO(icons): better match
   ToolbarIcons.textDirectionAuto: PhIcons.magicWand,
   ToolbarIcons.textDirectionLtr: PhIcons.arrowLineRight,
   ToolbarIcons.textDirectionRtl: PhIcons.arrowLineLeft,
-  // link menu actions
   ToolbarIcons.copy: PhIcons.copy,
   ToolbarIcons.delete: PhIcons.trash,
-  // misc
   ToolbarIcons.clear: PhIcons.xCircle,
   ToolbarIcons.checkmark: PhIcons.check,
   ToolbarIcons.check: PhIcons.checkSquare,
   ToolbarIcons.uncheck: PhIcons.square,
   ToolbarIcons.upload: PhIcons.uploadSimple,
-  // history
   ToolbarIcons.undo: PhIcons.arrowCounterClockwise,
   ToolbarIcons.redo: PhIcons.arrowClockwise,
 
@@ -117,11 +111,44 @@ const Map<ToolbarIcons, IconifyIconData> _phMap = {
   /// No exact "case sensitive" icon — using textAa as a best-guess fit.
   // TODO(icons): better match
   ToolbarIcons.caseSensitive: PhIcons.textAa,
-  // selection menu specific
   ToolbarIcons.selectionMenuImage: PhIcons.image,
-  // color picker reset/clear actions — closest phosphor equivalents
   ToolbarIcons.resetTextColor: PhIcons.arrowCounterClockwise,
   ToolbarIcons.clearHighlightColor: PhIcons.xCircle,
+};
+
+/// Phosphor's "Fill" (solid) variants — used by [ToolbarIcon] when
+/// `selected: true`. Only entries that *toggle* (the user can be in or
+/// out of the state) get filled variants: text decorations, headings,
+/// list types, alignment, link, color, quote. Action icons (copy,
+/// delete, undo, redo, close, divider, upload, etc.) have no
+/// "selected" meaning and stay on the regular map.
+const Map<ToolbarIcons, IconifyIconData> _phMapFilled = {
+  ToolbarIcons.bold: PhIcons.textBFill,
+  ToolbarIcons.italic: PhIcons.textItalicFill,
+  ToolbarIcons.underline: PhIcons.textUnderlineFill,
+  ToolbarIcons.strikethrough: PhIcons.textStrikethroughFill,
+  ToolbarIcons.code: PhIcons.codeFill,
+  ToolbarIcons.color: PhIcons.paletteFill,
+  ToolbarIcons.link: PhIcons.linkFill,
+  ToolbarIcons.heading: PhIcons.textHFill,
+  ToolbarIcons.h1: PhIcons.textHOneFill,
+  ToolbarIcons.h2: PhIcons.textHTwoFill,
+  ToolbarIcons.h3: PhIcons.textHThreeFill,
+  ToolbarIcons.h4: PhIcons.textHFourFill,
+  ToolbarIcons.h5: PhIcons.textHFiveFill,
+  ToolbarIcons.h6: PhIcons.textHSixFill,
+  ToolbarIcons.list: PhIcons.listFill,
+  ToolbarIcons.bulletedList: PhIcons.listBulletsFill,
+  ToolbarIcons.numberedList: PhIcons.listNumbersFill,
+  ToolbarIcons.checkbox: PhIcons.checkSquareFill,
+  ToolbarIcons.quote: PhIcons.quotesFill,
+  ToolbarIcons.text: PhIcons.textTFill,
+  ToolbarIcons.textColor: PhIcons.textAaFill,
+  ToolbarIcons.highlightColor: PhIcons.paintBrushFill,
+  ToolbarIcons.alignLeft: PhIcons.textAlignLeftFill,
+  ToolbarIcons.alignCenter: PhIcons.textAlignCenterFill,
+  ToolbarIcons.alignRight: PhIcons.textAlignRightFill,
+  ToolbarIcons.textDecorationBold: PhIcons.textAaFill,
 };
 
 class ToolbarIcon extends StatelessWidget {
@@ -130,14 +157,25 @@ class ToolbarIcon extends StatelessWidget {
     required this.afMobileIcons,
     this.size = 24,
     this.color,
+    this.selected = false,
   });
 
   final ToolbarIcons afMobileIcons;
   final double? size;
   final Color? color;
 
+  /// When true and a Fill variant exists for [afMobileIcons], renders
+  /// the filled (solid) Phosphor glyph instead of the regular outline.
+  /// Useful for toggle buttons (bold/italic/heading level/alignment/…)
+  /// that should "light up" when the surrounding text already has the
+  /// corresponding attribute applied.
+  final bool selected;
+
   @override
   Widget build(BuildContext context) {
-    return IconifyIcon(_phMap[afMobileIcons]!, size: size, color: color);
+    final data = selected
+        ? (_phMapFilled[afMobileIcons] ?? _phMap[afMobileIcons]!)
+        : _phMap[afMobileIcons]!;
+    return IconifyIcon(data, size: size, color: color);
   }
 }

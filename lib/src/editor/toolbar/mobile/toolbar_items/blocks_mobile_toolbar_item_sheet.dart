@@ -153,6 +153,7 @@ class _SheetBlocksMenuState extends State<_SheetBlocksMenu> {
         icon: ToolbarIcon(
           afMobileIcons: list.icon,
           color: MobileToolbarTheme.of(context).iconColor,
+          selected: isSelected,
         ),
         label: Text(list.label),
         isSelected: isSelected,

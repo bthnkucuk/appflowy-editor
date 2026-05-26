@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 
@@ -69,14 +71,57 @@ class MobileToolbarV2 extends StatefulWidget {
 }
 
 class _MobileToolbarV2State extends State<MobileToolbarV2> {
+  /// Ticks once per transaction so `itemIconBuilder` re-evaluates the
+  /// "is this attribute currently active" check after a toggle.
+  ///
+  /// `selectionNotifier` alone is insufficient: when the user toggles
+  /// e.g. bold on a non-collapsed selection, the document mutates but
+  /// the selection range is identical — and `EditorState.selection`
+  /// short-circuits the notifier on identical writes (see
+  /// `selection_style_mixin.dart` line 70, the H2.1 PropertyValueNotifier
+  /// cascade fix). Without this tick the toolbar icon stays in its
+  /// pre-toggle filled/outlined state until the user moves the caret.
+  final ValueNotifier<int> _docTick = ValueNotifier<int>(0);
+  StreamSubscription<EditorTransactionValue>? _txnSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _txnSub = widget.editorState.transactionStream.listen((_) {
+      _docTick.value++;
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant MobileToolbarV2 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.editorState != widget.editorState) {
+      _txnSub?.cancel();
+      _txnSub = widget.editorState.transactionStream.listen((_) {
+        _docTick.value++;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _txnSub?.cancel();
+    _docTick.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         Expanded(child: widget.child),
-        ValueListenableBuilder<Selection?>(
-          valueListenable: widget.editorState.selectionNotifier,
-          builder: (_, selection, _) {
+        ListenableBuilder(
+          listenable: Listenable.merge([
+            widget.editorState.selectionNotifier,
+            _docTick,
+          ]),
+          builder: (_, _) {
+            final selection = widget.editorState.selection;
             final disabled =
                 widget
                     .editorState

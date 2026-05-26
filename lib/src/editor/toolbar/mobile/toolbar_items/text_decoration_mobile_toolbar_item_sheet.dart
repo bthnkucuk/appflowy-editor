@@ -155,6 +155,7 @@ class _SheetTextDecorationMenuState extends State<_SheetTextDecorationMenu> {
         icon: ToolbarIcon(
           afMobileIcons: decoration.icon,
           color: MobileToolbarTheme.of(context).iconColor,
+          selected: isSelected,
         ),
         label: Text(decoration.label),
         isSelected: isSelected,
