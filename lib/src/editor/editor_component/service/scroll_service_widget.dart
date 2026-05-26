@@ -1,7 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'scroll/desktop_scroll_service.dart';
 import 'scroll/mobile_scroll_service.dart';
-import '../../toolbar/mobile/utils/keyboard_height_observer.dart';
 import '../../util/platform_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -74,6 +73,14 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
     return MobileScrollService(key: _forwardKey, child: widget.child);
   }
 
+  // Soft-keyboard inset read that's safe to call from listener callbacks
+  // and post-frame callbacks where the element may already be deactivated.
+  // Replaces the former `KeyboardHeightObserver.currentKeyboardHeight` lookup,
+  // which was just a snapshot of the same `viewInsets.bottom` value the
+  // platform reports natively.
+  double get _currentKeyboardInset =>
+      WidgetsBinding.instance.platformDispatcher.views.first.viewInsets.bottom;
+
   void _onSelectionChanged() {
     // should auto scroll after the cursor or selection updated.
     final selection = editorState.selection;
@@ -83,7 +90,7 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
       'selection=$selection '
       'reason=${editorState.selectionUpdateReason} '
       'extraInfo=${editorState.selectionExtraInfo} '
-      'kbHeight=${KeyboardHeightObserver.currentKeyboardHeight}',
+      'kbHeight=$_currentKeyboardInset',
     );
     if (selection == null ||
         [
@@ -160,7 +167,7 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
       if (PlatformExtension.isMobile) {
         // soft keyboard
         // workaround: wait for the soft keyboard to show up
-        final keyboardDelay = KeyboardHeightObserver.currentKeyboardHeight == 0
+        final keyboardDelay = _currentKeyboardInset == 0
             ? const Duration(milliseconds: 250)
             : Duration.zero;
         // ignore: avoid_print
