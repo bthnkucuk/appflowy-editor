@@ -66,53 +66,46 @@ class _MobileEditorState extends State<MobileEditor> {
         underlineMobileToolbarItem,
       ],
       editorState: editorState,
-      child: Column(
-        children: [
-          // build appflowy editor
-          Expanded(
-            child: MobileFloatingToolbar(
-              editorState: editorState,
-              editorScrollController: editorScrollController,
-              floatingToolbarHeight: 32,
-              toolbarBuilder: (context, anchor, closeToolbar) {
-                return AdaptiveTextSelectionToolbar.editable(
-                  clipboardStatus: ClipboardStatus.pasteable,
-                  onCopy: () {
-                    copyCommand.execute(editorState);
-                    closeToolbar();
-                  },
-                  onCut: () => cutCommand.execute(editorState),
-                  onPaste: () => pasteCommand.execute(editorState),
-                  onSelectAll: () => selectAllCommand.execute(editorState),
-                  onLiveTextInput: () {},
-                  onLookUp: () {},
-                  onSearchWeb: () {},
-                  onShare: () {},
-                  anchors: TextSelectionToolbarAnchors(
-                    primaryAnchor: anchor,
-                  ),
-                );
-              },
-              child: AppFlowyEditor(
-                editorStyle: editorStyle,
-                editorState: editorState,
-                editorScrollController: editorScrollController,
-                blockComponentBuilders: blockComponentBuilders,
-                showMagnifier: true,
-                // showcase 3: customize the header and footer.
-                header: Padding(
-                  padding: const EdgeInsets.only(bottom: 10.0),
-                  child: Image.asset(
-                    'assets/images/header.png',
-                  ),
-                ),
-                footer: const SizedBox(
-                  height: 100,
-                ),
-              ),
+      child: MobileFloatingToolbar(
+        editorState: editorState,
+        editorScrollController: editorScrollController,
+        floatingToolbarHeight: 32,
+        toolbarBuilder: (context, anchor, closeToolbar) {
+          return AdaptiveTextSelectionToolbar.editable(
+            clipboardStatus: ClipboardStatus.pasteable,
+            onCopy: () {
+              copyCommand.execute(editorState);
+              closeToolbar();
+            },
+            onCut: () => cutCommand.execute(editorState),
+            onPaste: () => pasteCommand.execute(editorState),
+            onSelectAll: () => selectAllCommand.execute(editorState),
+            onLiveTextInput: () {},
+            onLookUp: () {},
+            onSearchWeb: () {},
+            onShare: () {},
+            anchors: TextSelectionToolbarAnchors(
+              primaryAnchor: anchor,
+            ),
+          );
+        },
+        child: AppFlowyEditor(
+          editorStyle: editorStyle,
+          editorState: editorState,
+          editorScrollController: editorScrollController,
+          blockComponentBuilders: blockComponentBuilders,
+          showMagnifier: true,
+          // showcase 3: customize the header and footer.
+          header: Padding(
+            padding: const EdgeInsets.only(bottom: 10.0),
+            child: Image.asset(
+              'assets/images/header.png',
             ),
           ),
-        ],
+          footer: const SizedBox(
+            height: 100,
+          ),
+        ),
       ),
     );
   }

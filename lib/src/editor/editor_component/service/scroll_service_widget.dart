@@ -77,16 +77,28 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
   void _onSelectionChanged() {
     // should auto scroll after the cursor or selection updated.
     final selection = editorState.selection;
+    // ignore: avoid_print
+    print(
+      '[SCROLL-DBG] _onSelectionChanged '
+      'selection=$selection '
+      'reason=${editorState.selectionUpdateReason} '
+      'extraInfo=${editorState.selectionExtraInfo} '
+      'kbHeight=${KeyboardHeightObserver.currentKeyboardHeight}',
+    );
     if (selection == null ||
         [
           SelectionUpdateReason.selectAll,
         ].contains(editorState.selectionUpdateReason)) {
+      // ignore: avoid_print
+      print('[SCROLL-DBG]   → skipped (null or selectAll)');
       return;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final selectionRects = editorState.selectionRects();
       if (selectionRects.isEmpty) {
+        // ignore: avoid_print
+        print('[SCROLL-DBG]   → skipped (empty rects in postFrame)');
         return;
       }
 
@@ -149,11 +161,60 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
         final keyboardDelay = KeyboardHeightObserver.currentKeyboardHeight == 0
             ? const Duration(milliseconds: 250)
             : Duration.zero;
+        // ignore: avoid_print
+        print(
+          '[SCROLL-DBG]   mobile branch: '
+          'dragMode=$dragMode '
+          'targetRect=$targetRect '
+          'endTouchPoint=$endTouchPoint '
+          'direction=$direction '
+          'edgeOffset=${editorState.autoScrollEdgeOffset} '
+          'keyboardDelay=${keyboardDelay.inMilliseconds}ms',
+        );
 
         Future.delayed(keyboardDelay, () {
           if (_forwardKey.currentContext == null) {
             return;
           }
+          // Post-keyboard visibility check for non-drag (programmatic / tap)
+          // selections. By the time this delayed callback runs the keyboard
+          // is up and the viewport has its final size — if the selection
+          // rect is fully visible now, we shouldn't auto-scroll. The old
+          // logic always fired `startAutoScroll` with a 220×220 rect, which
+          // on a keyboard-shrunk viewport clipped the bottom edge zone and
+          // pulled the content up even when the selection was already
+          // visible.
+          if (direction == null) {
+            final scrollBox =
+                _forwardKey.currentContext!.findRenderObject() as RenderBox?;
+            // Re-fetch rects — viewport may have moved during the keyboard
+            // open animation.
+            final freshRects = editorState.selectionRects();
+            if (scrollBox != null && freshRects.isNotEmpty) {
+              final viewportTop = scrollBox.localToGlobal(Offset.zero).dy;
+              final viewportBottom = viewportTop + scrollBox.size.height;
+              final freshTarget = freshRects.last;
+              if (freshTarget.top >= viewportTop &&
+                  freshTarget.bottom <= viewportBottom) {
+                // ignore: avoid_print
+                print(
+                  '[SCROLL-DBG]   post-kb: rect $freshTarget inside viewport '
+                  '[$viewportTop, $viewportBottom] — skipping scroll',
+                );
+                return;
+              }
+              // ignore: avoid_print
+              print(
+                '[SCROLL-DBG]   post-kb: rect $freshTarget OUTSIDE viewport '
+                '[$viewportTop, $viewportBottom] — scrolling',
+              );
+            }
+          }
+          // ignore: avoid_print
+          print(
+            '[SCROLL-DBG]   → startAutoScroll fired '
+            '(endTouchPoint=$endTouchPoint direction=$direction)',
+          );
           // Mobile needs to continuously update scroll position/direction during drag
           // Don't skip even if already scrolling, because direction may have changed
           startAutoScroll(

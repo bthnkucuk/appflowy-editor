@@ -153,6 +153,12 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar>
   }
 
   void _onScrollPositionChanged() {
+    // ignore: avoid_print
+    print(
+      '[FLOAT-DBG] _onScrollPositionChanged '
+      'isShowing=${_portalController.isShowing} '
+      'dy=${widget.editorScrollController.offsetNotifier.value}',
+    );
     // Hide while scrolling, re-show once the scroll comes to rest. Cheaper
     // than continuously re-computing the anchor each scroll tick — and
     // matches the old OverlayEntry-based behavior.
@@ -166,6 +172,8 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar>
   final String _debounceKey = 'show the toolbar';
 
   void _clear() {
+    // ignore: avoid_print
+    print('[FLOAT-DBG] _clear (isShowing=${_portalController.isShowing})');
     Debounce.cancel(_debounceKey);
 
     if (_portalController.isShowing) {
@@ -185,13 +193,22 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar>
   void _showToolbar() {
     final rects = editorState.selectionRects();
     if (rects.isEmpty) {
+      // ignore: avoid_print
+      print('[FLOAT-DBG] _showToolbar skipped (no rects)');
       return;
     }
     final rect = _findSuitableRect(rects);
     // Empty is determined only if there is only one selection area
     if (rects.length <= 1 && rect.isEmpty) {
+      // ignore: avoid_print
+      print('[FLOAT-DBG] _showToolbar skipped (empty single rect)');
       return;
     }
+    // ignore: avoid_print
+    print(
+      '[FLOAT-DBG] _showToolbar SHOW anchor=${rect.topCenter} '
+      'wasShowing=${_portalController.isShowing}',
+    );
     setState(() {
       _anchor = rect.topCenter;
     });
