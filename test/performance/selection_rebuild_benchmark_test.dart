@@ -86,7 +86,8 @@ void main() {
     testWidgets(
       'duplicate selection set 100× (no actual change — should short-circuit)',
       (tester) async {
-        final editor = tester.editor..addParagraph(initialText: 'Sample text here');
+        final editor = tester.editor
+          ..addParagraph(initialText: 'Sample text here');
         await editor.startTesting();
         final editorState = editor.editorState;
 

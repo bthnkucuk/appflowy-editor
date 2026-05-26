@@ -154,9 +154,12 @@ void main() {
       // UpdateOperation.
       final doc = Document.blank();
       for (var i = 0; i < 20; i++) {
-        doc.insert([i], [
-          Node(type: 'paragraph', attributes: {'delta': []}),
-        ]);
+        doc.insert(
+          [i],
+          [
+            Node(type: 'paragraph', attributes: {'delta': []}),
+          ],
+        );
       }
       final editorState = EditorState(document: doc);
 

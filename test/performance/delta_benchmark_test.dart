@@ -26,11 +26,14 @@ Delta _buildLongDelta(int runs) {
   // 100-char-ish delta with `runs` mixed attribute runs.
   final d = Delta();
   for (var i = 0; i < runs; i++) {
-    d.insert('chunk_${i.toString().padLeft(2, '0')}_', attributes: {
-      if (i.isEven) 'bold': true,
-      if (i % 3 == 0) 'italic': true,
-      if (i % 4 == 0) 'href': 'https://x.example/$i',
-    });
+    d.insert(
+      'chunk_${i.toString().padLeft(2, '0')}_',
+      attributes: {
+        if (i.isEven) 'bold': true,
+        if (i % 3 == 0) 'italic': true,
+        if (i % 4 == 0) 'href': 'https://x.example/$i',
+      },
+    );
   }
   return d;
 }
@@ -79,27 +82,29 @@ void main() {
       _report('Delta.slice(10,60) (5 runs)', sw, iterations);
     });
 
-    test('Delta.slice(i-1, i+1) — appflowy sliceAttributes hot path — 100k ops',
-        () {
-      // Mimics how `appflowyEditorSliceAttributes` calls slice twice per
-      // index — this is the hot path during selection toggles.
-      final d = _buildMixedDelta();
+    test(
+      'Delta.slice(i-1, i+1) — appflowy sliceAttributes hot path — 100k ops',
+      () {
+        // Mimics how `appflowyEditorSliceAttributes` calls slice twice per
+        // index — this is the hot path during selection toggles.
+        final d = _buildMixedDelta();
 
-      for (var i = 0; i < 1000; i++) {
-        d.slice(5, 6);
-        d.slice(4, 5);
-      }
+        for (var i = 0; i < 1000; i++) {
+          d.slice(5, 6);
+          d.slice(4, 5);
+        }
 
-      final sw = Stopwatch()..start();
-      const iterations = 100000;
-      for (var i = 0; i < iterations; i++) {
-        d.slice(5, 6);
-        d.slice(4, 5);
-      }
-      sw.stop();
+        final sw = Stopwatch()..start();
+        const iterations = 100000;
+        for (var i = 0; i < iterations; i++) {
+          d.slice(5, 6);
+          d.slice(4, 5);
+        }
+        sw.stop();
 
-      _report('Delta.slice(short) x2 (appflowy slice-attrs)', sw, iterations);
-    });
+        _report('Delta.slice(short) x2 (appflowy slice-attrs)', sw, iterations);
+      },
+    );
 
     test('Delta.diff — small change — 5k ops', () {
       // diff_match_patch is the most expensive method by far. Lower iter

@@ -93,12 +93,10 @@ void main() async {
 
         final floatingToolbar = find.byType(FloatingToolbarWidget);
         final bulletListItem = find.byWidgetPredicate(
-          (w) =>
-              w is SVGIconItemWidget && w.icon == ToolbarIcons.bulletedList,
+          (w) => w is SVGIconItemWidget && w.icon == ToolbarIcons.bulletedList,
         );
         final numberListItem = find.byWidgetPredicate(
-          (w) =>
-              w is SVGIconItemWidget && w.icon == ToolbarIcons.numberedList,
+          (w) => w is SVGIconItemWidget && w.icon == ToolbarIcons.numberedList,
         );
         expect(floatingToolbar, findsOneWidget);
         expect(bulletListItem, findsOneWidget);

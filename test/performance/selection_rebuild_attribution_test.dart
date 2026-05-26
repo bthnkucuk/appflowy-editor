@@ -13,7 +13,9 @@ import 'package:flutter_test/flutter_test.dart';
 import '../new/infra/testable_editor.dart';
 
 void main() {
-  testWidgets('attribution: tester.pump() with no changes (50×)', (tester) async {
+  testWidgets('attribution: tester.pump() with no changes (50×)', (
+    tester,
+  ) async {
     final editor = tester.editor..addParagraph(initialText: 'X');
     await editor.startTesting();
 
@@ -26,13 +28,17 @@ void main() {
       await tester.pump();
     }
     sw.stop();
-    debugPrint('[ATTR] pure tester.pump() no-op: '
-        '${(sw.elapsedMicroseconds / 50).toStringAsFixed(1)}μs/pump');
+    debugPrint(
+      '[ATTR] pure tester.pump() no-op: '
+      '${(sw.elapsedMicroseconds / 50).toStringAsFixed(1)}μs/pump',
+    );
 
     await editor.dispose();
   });
 
-  testWidgets('attribution: selection setter only (no pump) 5000×', (tester) async {
+  testWidgets('attribution: selection setter only (no pump) 5000×', (
+    tester,
+  ) async {
     final editor = tester.editor..addParagraph(initialText: 'Sample text here');
     await editor.startTesting();
     final editorState = editor.editorState;
@@ -54,8 +60,10 @@ void main() {
       );
     }
     sw.stop();
-    debugPrint('[ATTR] selection setter (no pump): '
-        '${(sw.elapsedMicroseconds * 1000 / 5000).toStringAsFixed(1)}ns/set');
+    debugPrint(
+      '[ATTR] selection setter (no pump): '
+      '${(sw.elapsedMicroseconds * 1000 / 5000).toStringAsFixed(1)}ns/set',
+    );
 
     // One final pump to flush.
     await tester.pump();
@@ -86,8 +94,10 @@ void main() {
       await tester.pump();
     }
     sw.stop();
-    debugPrint('[ATTR] setter + pump: '
-        '${(sw.elapsedMicroseconds / 100).toStringAsFixed(1)}μs/iter');
+    debugPrint(
+      '[ATTR] setter + pump: '
+      '${(sw.elapsedMicroseconds / 100).toStringAsFixed(1)}μs/iter',
+    );
 
     await editor.dispose();
   });

@@ -103,9 +103,11 @@ const Map<ToolbarIcons, IconifyIconData> _phMap = {
   ToolbarIcons.check: PhIcons.checkSquare,
   ToolbarIcons.uncheck: PhIcons.square,
   ToolbarIcons.upload: PhIcons.uploadSimple,
+
   /// No exact "regex" icon — `code` is the closest semantic.
   // TODO(icons): better match
   ToolbarIcons.regex: PhIcons.code,
+
   /// No exact "case sensitive" icon — using textAa as a best-guess fit.
   // TODO(icons): better match
   ToolbarIcons.caseSensitive: PhIcons.textAa,

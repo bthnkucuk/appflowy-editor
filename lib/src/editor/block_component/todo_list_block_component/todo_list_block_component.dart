@@ -293,7 +293,9 @@ class _TodoListIcon extends StatelessWidget {
             padding: const EdgeInsets.only(right: 4.0),
             child: ToolbarIcon(
               size: 22,
-              afMobileIcons: checked ? ToolbarIcons.check : ToolbarIcons.uncheck,
+              afMobileIcons: checked
+                  ? ToolbarIcons.check
+                  : ToolbarIcons.uncheck,
             ),
           ),
         ),
