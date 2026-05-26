@@ -32,12 +32,8 @@ final textDecorationMobileToolbarItemV2Sheet = MobileToolbarItem(
             barrierColor: Colors.transparent,
             originateAboveBottomViewInset: true,
             child: MobileToolbarTheme(
-              child: MobileToolbarItemMenu(
-                editorState: editorState,
-                itemMenuBuilder: () => Padding(
-                  padding: EdgeInsets.only(bottom: kBottomNavigationBarHeight),
-                  child: _SheetTextDecorationV2Menu(editorState, selection),
-                ),
+              child: EditorToolbarSheetScaffold(
+                child: _SheetTextDecorationV2Menu(editorState, selection),
               ),
             ),
           ),
@@ -132,53 +128,66 @@ class _SheetTextDecorationV2MenuState
 
   @override
   Widget build(BuildContext context) {
-    final style = MobileToolbarTheme.of(context);
-    final btnList = _textDecorations.map((currentDecoration) {
-      final selection = widget.selection;
-      final nodes = widget.editorState.getNodesInSelection(selection);
-      final bool isSelected;
-      if (selection.isCollapsed) {
-        isSelected = widget.editorState.toggledStyle.containsKey(
-          currentDecoration.name,
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          shape: const RoundedSuperellipseBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+          ),
+          color: theme.scaffoldBackgroundColor,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final decoration in _textDecorations)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: _buildButton(decoration),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton(TextDecorationUnit decoration) {
+    final selection = widget.selection;
+    final nodes = widget.editorState.getNodesInSelection(selection);
+    final bool isSelected;
+    if (selection.isCollapsed) {
+      isSelected = widget.editorState.toggledStyle.containsKey(decoration.name);
+    } else {
+      isSelected = nodes.allSatisfyInSelection(selection, (delta) {
+        return delta.everyAttributes(
+          (attributes) => attributes[decoration.name] == true,
         );
-      } else {
-        isSelected = nodes.allSatisfyInSelection(selection, (delta) {
-          return delta.everyAttributes(
-            (attributes) => attributes[currentDecoration.name] == true,
+      });
+    }
+    return EditorToolbarMenuButton(
+      backgroundColor: Theme.of(context).cardColor,
+      isSelected: isSelected,
+      icon: ToolbarIcon(
+        icon: decoration.icon,
+        selected: isSelected,
+        color: Theme.of(context).textTheme.bodyLarge?.color,
+      ),
+      iconPadding: const EdgeInsets.symmetric(vertical: 12),
+      onTap: () {
+        setState(() {
+          widget.editorState.toggleAttribute(
+            decoration.name,
+            selection: widget.selection,
+            selectionExtraInfo: {
+              selectionExtraInfoDoNotAttachTextService: true,
+            },
           );
         });
-      }
-
-      return MobileToolbarItemMenuBtn(
-        icon: ToolbarIcon(
-          icon: currentDecoration.icon,
-          color: MobileToolbarTheme.of(context).iconColor,
-          selected: isSelected,
-        ),
-        label: Text(currentDecoration.label),
-        isSelected: isSelected,
-        onPressed: () {
-          setState(() {
-            widget.editorState.toggleAttribute(
-              currentDecoration.name,
-              selection: widget.selection,
-              selectionExtraInfo: {
-                selectionExtraInfoDoNotAttachTextService: true,
-              },
-            );
-          });
-        },
-      );
-    }).toList();
-
-    return GridView(
-      shrinkWrap: true,
-      padding: EdgeInsets.zero,
-      gridDelegate: buildMobileToolbarMenuGridDelegate(
-        mobileToolbarStyle: style,
-        crossAxisCount: 2,
-      ),
-      children: btnList,
+      },
     );
   }
 }
