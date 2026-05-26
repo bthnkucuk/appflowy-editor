@@ -63,6 +63,10 @@ class BlockHighlightArea extends StatefulWidget {
   /// highlight path independently.
   static int debugBuilderCallCount = 0;
 
+  /// H2.8.e diagnostic: incremented when `initState` schedules a
+  /// post-frame `_updateSelectionIfNeeded` call.
+  static int debugInitStateScheduleCount = 0;
+
   @override
   State<BlockHighlightArea> createState() => _BlockSelectionAreaState();
 }
@@ -140,6 +144,16 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
     super.initState();
 
     widget.listenable.addListener(_scheduleUpdate);
+
+    // H2.8.e: skip the initial postFrame when this block's path isn't
+    // in the current selection — same rationale as
+    // `BlockSelectionArea.initState`.
+    final selection = widget.listenable.value?.normalized;
+    if (selection == null || !widget.node.path.inSelection(selection)) {
+      return;
+    }
+
+    BlockHighlightArea.debugInitStateScheduleCount++;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateSelectionIfNeeded();
     });

@@ -154,6 +154,60 @@ void main() {
     );
 
     testWidgets(
+      'H2.8.e baseline: BSA/BHA initState postFrame schedule count on mount '
+      '(200 paragraphs, no selection)',
+      (tester) async {
+        // Hypothesis: BSA + BHA `initState` always schedules a
+        // post-frame `_updateSelectionIfNeeded` call, even when this
+        // block's path is nowhere near the current selection. For the
+        // ~25 paragraphs in the test viewport that's 25 × (3 BSA + 1
+        // BHA) = ~100 closure schedules + postFrame fires every time
+        // the editor mounts a batch of new blocks (auto-scroll).
+        //
+        // After H2.8.e the schedule is gated on `path.inSelection`, so
+        // with no active selection at mount time the count drops to ~0.
+        //
+        // Selection is left UNSET on purpose — `editorState.selection`
+        // stays null after the editor mounts, so every block's
+        // `path.inSelection(null)` is false. Pre-fix every BSA/BHA
+        // still scheduled; post-fix none should.
+        BlockSelectionArea.debugInitStateScheduleCount = 0;
+        BlockHighlightArea.debugInitStateScheduleCount = 0;
+        final editor = await setupEditor(tester, paragraphCount: 200);
+
+        final bsaSchedules = BlockSelectionArea.debugInitStateScheduleCount;
+        final bhaSchedules = BlockHighlightArea.debugInitStateScheduleCount;
+        final total = bsaSchedules + bhaSchedules;
+
+        debugPrint('\n${'=' * 60}');
+        debugPrint('H2.8.e — initState postFrame schedule count');
+        debugPrint('=' * 60);
+        debugPrint('Document: 200 paragraphs, no active selection');
+        debugPrint('BSA initState schedules: $bsaSchedules');
+        debugPrint('BHA initState schedules: $bhaSchedules');
+        debugPrint('Total: $total');
+        debugPrint('Pre-H2.8.e: 180  Post-H2.8.e: 0');
+        debugPrint('${'=' * 60}\n');
+
+        // Regression gate. Pre-fix value was 180 (36 visible blocks × 5
+        // widgets). Post-fix should be 0 because no block intersects
+        // null selection. Allow a small slack (≤ 10) for future
+        // changes that might tweak supportTypes / container layout.
+        expect(
+          total,
+          lessThanOrEqualTo(10),
+          reason:
+              'BSA/BHA initState should NOT schedule a postFrame when '
+              'this block path is outside the current selection (H2.8.e). '
+              'Regression would push this back to ~180 on a 200-paragraph '
+              'doc with no active selection.',
+        );
+
+        await editor.dispose();
+      },
+    );
+
+    testWidgets(
       'frame settling: pump count to stabilize after a single selection set '
       '(200 paragraphs)',
       (tester) async {

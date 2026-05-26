@@ -105,6 +105,13 @@ class BlockSelectionArea extends StatefulWidget {
   /// runtime stutter logger without an analyzer escape hatch.
   static int debugBuilderCallCount = 0;
 
+  /// H2.8.e diagnostic: incremented when `initState` schedules a
+  /// post-frame `_updateSelectionIfNeeded` call. Pre-fix this happens
+  /// for every mounted BSA regardless of whether the block is in the
+  /// current selection; post-fix it only happens for blocks whose
+  /// path intersects the current selection.
+  static int debugInitStateScheduleCount = 0;
+
   @override
   State<BlockSelectionArea> createState() => _BlockSelectionAreaState();
 }
@@ -143,6 +150,22 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
     super.initState();
 
     widget.listenable.addListener(_scheduleUpdate);
+
+    // H2.8.e: only schedule the initial paint-state computation when
+    // this block's path actually intersects the current selection.
+    // For the common case (selection is collapsed elsewhere or null),
+    // the paint state would be `null` after computation anyway — the
+    // notifier short-circuits, no rebuild happens, but the closure
+    // schedule + `getRectsInSelection`-style queries cost real time on
+    // every newly-mounted block. Future selection changes still fire
+    // `_scheduleUpdate` via the listener, so this is a pure
+    // mount-time optimization.
+    final selection = widget.listenable.value?.normalized;
+    if (selection == null || !widget.node.path.inSelection(selection)) {
+      return;
+    }
+
+    BlockSelectionArea.debugInitStateScheduleCount++;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateSelectionIfNeeded();
     });
