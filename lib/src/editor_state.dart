@@ -32,47 +32,18 @@ const _selectionDragModeKey = 'selection_drag_mode';
 
 class ApplyOptions {
   const ApplyOptions({
-    this.recordUndo = true,
-    this.recordRedo = false,
-    this.source,
+    this.source = TransactionSource.userEdit,
     this.inMemoryUpdate = false,
   });
 
-  /// Whether the transaction should be recorded into the undo stack.
-  @Deprecated('Use [source] instead')
-  final bool recordUndo;
-
-  @Deprecated('Use [source] instead')
-  final bool recordRedo;
-
-  /// The source of the transaction. When set, takes precedence over
-  /// the legacy `recordUndo` and `recordRedo` flags for determining
-  /// how the transaction is recorded in the undo/redo history.
-  final TransactionSource? source;
+  /// The source of the transaction. Determines how it's recorded in the
+  /// undo/redo history. Defaults to [TransactionSource.userEdit] which
+  /// pushes the transaction onto the undo stack.
+  final TransactionSource source;
 
   /// This flag used to determine whether the transaction is in-memory update.
   final bool inMemoryUpdate;
-
-  /// Returns the resolved [TransactionSource].
-  /// Prefers explicit [source], falls back to legacy boolean flags.
-  ///
-  /// Legacy mapping (for backward compatibility):
-  /// - `recordRedo: true` → [TransactionSource.undo] (records *to* redo stack)
-  /// - `recordUndo: true` → [TransactionSource.userEdit]
-  /// - both false → [TransactionSource.none]
-  TransactionSource get resolvedSource {
-    if (source != null) return source!;
-    // ignore: deprecated_member_use_from_same_package
-    if (recordRedo) return TransactionSource.undo;
-    // ignore: deprecated_member_use_from_same_package
-    if (recordUndo) return TransactionSource.userEdit;
-
-    return TransactionSource.none;
-  }
 }
-
-@Deprecated('use SelectionUpdateReason instead')
-enum CursorUpdateReason { uiEvent, others }
 
 enum SelectionUpdateReason {
   uiEvent, // like mouse click, keyboard event
@@ -112,9 +83,6 @@ class EditorState {
     undoManager = UndoManager(maxHistoryItemSize ?? 200);
     undoManager.state = this;
   }
-
-  @Deprecated('use EditorState.blank() instead')
-  EditorState.empty() : this(document: Document.blank());
 
   EditorState.blank({bool withInitialText = true})
     : this(document: Document.blank(withInitialText: withInitialText));
@@ -255,10 +223,6 @@ class EditorState {
   /// Stores the selection menu items.
   List<SelectionMenuItem> selectionMenuItems = [];
 
-  /// Stores the toolbar items.
-  @Deprecated('use floating toolbar or mobile toolbar instead')
-  List<ToolbarItem> toolbarItems = [];
-
   /// listen to this stream to get notified when the transaction applies.
   Stream<EditorTransactionValue> get transactionStream => _observer.stream;
   final StreamController<EditorTransactionValue> _observer =
@@ -314,7 +278,7 @@ class EditorState {
   bool enableAutoComplete = false;
   AppFlowyAutoCompleteTextProvider? autoCompleteTextProvider;
 
-  // only used for testing
+  @visibleForTesting
   bool disableSealTimer = false;
 
   /// The rules to apply to the document.
@@ -335,14 +299,6 @@ class EditorState {
   }
 
   StreamSubscription? _subscription;
-
-  @Deprecated('use editorState.selection instead')
-  Selection? _cursorSelection;
-
-  @Deprecated('use editorState.selection instead')
-  Selection? get cursorSelection {
-    return _cursorSelection;
-  }
 
   final Set<VoidCallback> _onScrollViewScrolledListeners = {};
 
@@ -402,26 +358,6 @@ class EditorState {
     this.tap = tap;
   }
 
-  @Deprecated('use updateSelectionWithReason or editorState.selection instead')
-  Future<void> updateCursorSelection(
-    Selection? cursorSelection, [
-    CursorUpdateReason reason = CursorUpdateReason.others,
-  ]) {
-    final completer = Completer<void>();
-
-    // broadcast to other users here
-    if (reason != CursorUpdateReason.uiEvent) {
-      service.selectionService.updateSelection(cursorSelection);
-    }
-    _cursorSelection = cursorSelection;
-    selection = cursorSelection;
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      completer.complete();
-    });
-
-    return completer.future;
-  }
-
   Timer? _debouncedSealHistoryItemTimer;
   final bool _enableCheckIntegrity = false;
 
@@ -461,7 +397,7 @@ class EditorState {
   Future<void> apply(
     Transaction transaction, {
     bool isRemote = false,
-    ApplyOptions options = const ApplyOptions(recordUndo: true),
+    ApplyOptions options = const ApplyOptions(),
     bool withUpdateSelection = true,
     bool skipHistoryDebounce = false,
   }) async {
@@ -831,7 +767,7 @@ class EditorState {
     Transaction transaction,
     bool skipDebounce,
   ) {
-    final source = options.resolvedSource;
+    final source = options.source;
     undoManager.record(transaction, source);
 
     // Only debounce-seal for user edits (grouping consecutive keystrokes).

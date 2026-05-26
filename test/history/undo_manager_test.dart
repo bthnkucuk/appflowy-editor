@@ -365,10 +365,7 @@ void main() async {
     transaction.insertText(editorState.document.nodeAtPath([0])!, 0, 'A');
     editorState.apply(
       transaction,
-      options: const ApplyOptions(
-        recordUndo: false,
-        source: TransactionSource.none,
-      ),
+      options: const ApplyOptions(source: TransactionSource.none),
     );
 
     // Document is modified but neither stack is affected
