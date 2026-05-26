@@ -48,6 +48,9 @@ enum ToolbarIcons {
   upload,
   regex,
   caseSensitive,
+  // history
+  undo,
+  redo,
   // selection menu items
   selectionMenuImage,
   // color picker reset/clear actions
@@ -103,6 +106,9 @@ const Map<ToolbarIcons, IconifyIconData> _phMap = {
   ToolbarIcons.check: PhIcons.checkSquare,
   ToolbarIcons.uncheck: PhIcons.square,
   ToolbarIcons.upload: PhIcons.uploadSimple,
+  // history
+  ToolbarIcons.undo: PhIcons.arrowCounterClockwise,
+  ToolbarIcons.redo: PhIcons.arrowClockwise,
 
   /// No exact "regex" icon — `code` is the closest semantic.
   // TODO(icons): better match
