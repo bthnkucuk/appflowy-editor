@@ -83,6 +83,7 @@ final class ApplyOptions {
   final bool inMemoryUpdate;
 }
 
+///TODO(mobile): Debug info for the editor state. Its meaning is same as [EditorChrome.debugInfo]. clear this class later and use [EditorChrome.debugInfo] instead.
 final class EditorStateDebugInfo {
   EditorStateDebugInfo({this.debugPaintSizeEnabled = false});
 
