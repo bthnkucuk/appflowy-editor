@@ -172,6 +172,27 @@ void main() {
                 'Press was inside "world" (offset 6) — collapsed '
                 'cursor should land in the same character bucket.',
           );
+
+          // H2.9.b probe: an earlier agent report claimed iOS does NOT
+          // publish `selectionDragModeKey` to `selectionExtraInfo` the
+          // way Android does — but iOS routes through the wrapper
+          // `_MobileSelectionServiceWidgetState.updateSelection`
+          // (mobile_selection_service.dart:189-216), which DOES include
+          // the dragMode in its extraInfo. Lock that in here so the
+          // scroll-service / IME-skip paths can rely on the same
+          // contract on both platforms.
+          final dragMode = editor
+              .editorState
+              .selectionExtraInfo?[selectionDragModeKey];
+          expect(
+            dragMode,
+            equals(MobileSelectionDragMode.cursor),
+            reason:
+                'iOS onLongPressStart must publish dragMode=cursor '
+                'so the scroll-service auto-scroll path and the '
+                'keyboard-service IME-skip gate can branch on the '
+                'same key Android uses.',
+          );
         } finally {
           await tester.releaseLongPress(gesture);
         }
