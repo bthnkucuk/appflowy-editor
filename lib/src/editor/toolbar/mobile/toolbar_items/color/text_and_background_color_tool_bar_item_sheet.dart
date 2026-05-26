@@ -19,7 +19,7 @@ MobileToolbarItem buildTextAndBackgroundColorMobileToolbarItemSheet({
       final selection = editorState.selection;
       if (selection == null) return;
 
-      editorState.service.keyboardService?.closeKeyboard();
+      editorState.keyboardService?.closeKeyboard();
       editorState.updateSelectionWithReason(
         selection,
         extraInfo: {
@@ -61,7 +61,7 @@ MobileToolbarItem buildTextAndBackgroundColorMobileToolbarItemSheet({
               selection,
               extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
             );
-            editorState.service.keyboardService?.enableKeyBoard(selection);
+            editorState.keyboardService?.enableKeyBoard(selection);
           });
     },
   );

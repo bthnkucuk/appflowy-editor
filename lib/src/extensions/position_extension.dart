@@ -93,7 +93,7 @@ extension PositionExtension on Position {
         ? caretRect.topLeft
         : caretRect.bottomLeft;
 
-    final nodeConfig = editorState.service.rendererService
+    final nodeConfig = editorState.rendererService
         .blockComponentBuilder(node.type)
         ?.configuration;
     if (nodeConfig == null) {
@@ -139,7 +139,7 @@ extension PositionExtension on Position {
     ) {
       newOffset = caretOffset.translate(0, upwards ? -y : y);
 
-      newPosition = editorState.service.selectionService.getPositionInOffset(
+      newPosition = editorState.selectionService.getPositionInOffset(
         newOffset,
       );
 
@@ -185,7 +185,7 @@ extension PositionExtension on Position {
       math.min(newOffset.dy, nodeHeightOffset.dy),
     );
 
-    newPosition = editorState.service.selectionService.getPositionInOffset(
+    newPosition = editorState.selectionService.getPositionInOffset(
       newOffset,
     );
 

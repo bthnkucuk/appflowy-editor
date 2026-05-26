@@ -60,7 +60,7 @@ class MobileSelectionAutoScroller {
       return;
     }
 
-    final double? dy = editorState.service.scrollService?.dy;
+    final double? dy = editorState.scrollService?.dy;
     final Offset panStartOffset;
     if (dy == null || pan.panStartScrollDy == null) {
       panStartOffset = pan.panStartOffset!;

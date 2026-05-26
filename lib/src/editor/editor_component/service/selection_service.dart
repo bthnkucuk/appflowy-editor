@@ -22,7 +22,7 @@ typedef DragTargetNodeInterceptor =
 ///
 /// Usually, this service can be obtained by the following code.
 /// ```dart
-/// final selectionService = editorState.service.selectionService;
+/// final selectionService = editorState.selectionService;
 ///
 /// /** get current selection value*/
 /// final selection = selectionService.currentSelection.value;

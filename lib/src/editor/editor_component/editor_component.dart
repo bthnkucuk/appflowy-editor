@@ -5,7 +5,6 @@ export '../toolbar/mobile/mobile.dart';
 // entry
 export 'entry/page_block_component.dart';
 export 'service/editor.dart';
-export 'service/editor_service.dart';
 // ime
 export 'service/ime/delta_input_service.dart';
 export 'service/keyboard_service.dart';

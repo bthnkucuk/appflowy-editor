@@ -19,7 +19,7 @@ final textDecorationMobileToolbarItemSheet = MobileToolbarItem.action(
     // null editorState.selection a frame or two later — the menu's State
     // below installs a watcher that pins the selection back to `selection`
     // for the sheet's lifetime so the selection visual survives.
-    editorState.service.keyboardService?.closeKeyboard();
+    editorState.keyboardService?.closeKeyboard();
     editorState.updateSelectionWithReason(
       selection,
       extraInfo: {
@@ -53,7 +53,7 @@ final textDecorationMobileToolbarItemSheet = MobileToolbarItem.action(
             selection,
             extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
           );
-          editorState.service.keyboardService?.enableKeyBoard(selection);
+          editorState.keyboardService?.enableKeyBoard(selection);
         });
   },
 );

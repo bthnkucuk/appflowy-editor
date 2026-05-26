@@ -297,7 +297,10 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
     _updateValues();
 
-    if (editorState.service != oldWidget.editorState.service) {
+    // EditorState now embeds the service-locator surface directly (via
+    // EditorServiceMixin); rebind the renderer when the editor state
+    // instance itself changes.
+    if (editorState != oldWidget.editorState) {
       editorState.renderer = _renderer;
     }
 
@@ -339,10 +342,10 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
     if (widget.highlightable) {
       return ScrollServiceWidget(
-        key: editorState.service.scrollServiceKey,
+        key: editorState.scrollServiceKey,
         editorScrollController: editorScrollController,
         child: HighlightServiceWidget(
-          key: editorState.service.selectionServiceKey,
+          key: editorState.selectionServiceKey,
           highlightColor: widget.editorStyle.highlightColor,
           child: child,
         ),
@@ -351,7 +354,7 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
     if (!widget.disableKeyboardService) {
       child = KeyboardServiceWidget(
-        key: editorState.service.keyboardServiceKey,
+        key: editorState.keyboardServiceKey,
         // disable all the shortcuts when the editor is not editable
         characterShortcutEvents: widget.editable
             ? widget.characterShortcutEvents
@@ -367,7 +370,7 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
     if (!widget.disableSelectionService) {
       // dev.log('SelectionServiceWidget');
       child = SelectionServiceWidget(
-        key: editorState.service.selectionServiceKey,
+        key: editorState.selectionServiceKey,
         cursorColor: widget.editorStyle.cursorColor,
         selectionColor: widget.editorStyle.selectionColor,
         showMagnifier: widget.showMagnifier,
@@ -379,7 +382,7 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
     if (!widget.disableScrollService) {
       child = ScrollServiceWidget(
-        key: editorState.service.scrollServiceKey,
+        key: editorState.scrollServiceKey,
         editorScrollController: editorScrollController,
         child: child,
       );

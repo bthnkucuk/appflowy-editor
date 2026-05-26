@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 ///
 /// Usually, this service can be obtained by the following code.
 /// ```dart
-/// final keyboardService = editorState.service.keyboardService;
+/// final keyboardService = editorState.keyboardService;
 ///
 /// /** Simulates shortcut key input*/
 /// keyboardService?.onKey(...);

@@ -162,7 +162,7 @@ class _DragToReorderActionState extends State<DragToReorderAction>
   void initState() {
     super.initState();
 
-    editorState.service.selectionService.registerGestureInterceptor(
+    editorState.selectionService.registerGestureInterceptor(
       gestureInterceptor,
     );
 
@@ -176,7 +176,7 @@ class _DragToReorderActionState extends State<DragToReorderAction>
 
   @override
   void dispose() {
-    editorState.service.selectionService.unregisterGestureInterceptor(
+    editorState.selectionService.unregisterGestureInterceptor(
       _interceptorKey,
     );
 

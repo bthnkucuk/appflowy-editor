@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 export 'editor_state/editor_chrome.dart';
+export 'editor_state/editor_service.dart';
 export 'editor_state/selection_drag_mode.dart';
 export 'editor_state/types.dart';
 
@@ -19,6 +20,7 @@ export 'editor_state/types.dart';
 part 'editor_state/history_mixin.dart';
 part 'editor_state/scroll_coordinator_mixin.dart';
 part 'editor_state/selection_style_mixin.dart';
+part 'editor_state/transaction_pipeline_mixin.dart';
 
 /// The state of the editor.
 ///
@@ -40,9 +42,11 @@ part 'editor_state/selection_style_mixin.dart';
 class EditorState
     with
         EditorChromeMixin,
+        EditorServiceMixin,
         HistoryMixin,
         SelectionStyleMixin,
-        ScrollCoordinatorMixin {
+        ScrollCoordinatorMixin,
+        TransactionPipelineMixin {
   EditorState({
     required this.document,
     this.minHistoryItemDuration = const Duration(milliseconds: 50),
@@ -71,33 +75,19 @@ class EditorState
   // updateAutoScroller, renderBox, and the scroll-view listener set
   // live in [ScrollCoordinatorMixin].
 
-  // Service reference. Satisfies [ScrollCoordinatorMixin.service]
-  // abstract getter.
-  @override
-  final service = EditorService();
-
-  AppFlowyScrollService? get scrollService => service.scrollService;
-
-  AppFlowySelectionService get selectionService => service.selectionService;
-
-  BlockComponentRendererService get renderer => service.rendererService;
-
-  set renderer(BlockComponentRendererService value) {
-    service.rendererService = value;
-  }
+  // Service-locator surface (selectionService / keyboardService /
+  // scrollService / rendererService + their GlobalKeys) lives in
+  // [EditorServiceMixin]. Consumers read them as direct members of
+  // EditorState (no `.service.` middleman).
 
   /// Configures log output parameters,
   /// such as log level and log output callbacks,
   /// with this variable.
   AppFlowyLogConfiguration get logConfiguration => AppFlowyLogConfiguration();
 
-  /// listen to this stream to get notified when the transaction applies.
-  Stream<EditorTransactionValue> get transactionStream => _observer.stream;
-  final StreamController<EditorTransactionValue> _observer =
-      StreamController.broadcast(sync: true);
-  final StreamController<EditorTransactionValue> _asyncObserver =
-      StreamController.broadcast();
-
+  // transactionStream + _observer + _asyncObserver +
+  // _broadcastTransaction + cancelSubscription live in
+  // [TransactionPipelineMixin].
   // toggledStyle / sliceUpcomingAttributes live in [SelectionStyleMixin].
 
   Transaction get transaction {
@@ -142,8 +132,7 @@ class EditorState
   void dispose() {
     _disposeScrollCoordinator();
     isDisposed = true;
-    _observer.close();
-    _asyncObserver.close();
+    _disposeTransactionPipeline();
     _disposeHistory();
     onDispose.value += 1;
     onDispose.dispose();
@@ -185,24 +174,12 @@ class EditorState
       selection = _applyTransactionFromRemote(transaction);
     } else {
       // broadcast to other users here, before applying the transaction
-      if (!_observer.isClosed) {
-        _observer.add((TransactionTime.before, transaction, options));
-      }
-
-      if (!_asyncObserver.isClosed) {
-        _asyncObserver.add((TransactionTime.before, transaction, options));
-      }
+      _broadcastTransaction(TransactionTime.before, transaction, options);
 
       _applyTransactionInLocal(transaction);
 
       // broadcast to other users here, after applying the transaction
-      if (!_observer.isClosed) {
-        _observer.add((TransactionTime.after, transaction, options));
-      }
-
-      if (!_asyncObserver.isClosed) {
-        _asyncObserver.add((TransactionTime.after, transaction, options));
-      }
+      _broadcastTransaction(TransactionTime.after, transaction, options);
 
       _recordRedoOrUndo(options, transaction, skipHistoryDebounce);
 
@@ -328,9 +305,7 @@ class EditorState
   // highlightChanged, updateAutoScroller all live in
   // [ScrollCoordinatorMixin].
 
-  void cancelSubscription() {
-    _observer.close();
-  }
+  // cancelSubscription lives in [TransactionPipelineMixin].
 
   void _applyTransactionInLocal(Transaction transaction) {
     for (final op in transaction.operations) {

@@ -17,7 +17,7 @@ void main() async {
       await editor.startTesting();
       await editor.updateSelection(Selection.single(path: [0], startOffset: 0));
 
-      final scrollService = editor.editorState.service.scrollService!;
+      final scrollService = editor.editorState.scrollService!;
       final onePageHeight = scrollService.onePageHeight!;
       expect(onePageHeight, greaterThan(0));
 

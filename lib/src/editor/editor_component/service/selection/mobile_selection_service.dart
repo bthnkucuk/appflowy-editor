@@ -296,7 +296,7 @@ class _MobileSelectionServiceWidgetState
     MobileSelectionDragMode mode,
   ) {
     _pan.panStartOffset = details.globalPosition.translate(-3.0, 0);
-    _pan.panStartScrollDy = editorState.service.scrollService?.dy;
+    _pan.panStartScrollDy = editorState.scrollService?.dy;
 
     final selection = editorState.selection;
     _pan.panStartSelection = selection;
@@ -323,7 +323,7 @@ class _MobileSelectionServiceWidgetState
 
     final panEndOffset = details.globalPosition;
 
-    final dy = editorState.service.scrollService?.dy;
+    final dy = editorState.scrollService?.dy;
     final panStartOffset = dy == null
         ? _pan.panStartOffset!
         : _pan.panStartOffset!.translate(0, _pan.panStartScrollDy! - dy);

@@ -1,7 +1,15 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 
-class EditorService {
+/// Service-locator surface mixed into [EditorState]. Owns the
+/// `GlobalKey`s that point at the live service widgets (selection,
+/// keyboard, scroll) and the late-bound `rendererService` plug-in.
+///
+/// Implemented as a mixin so consumers read `editorState.selectionService`
+/// directly — the `editorState.service.X` middleman is gone. The
+/// `_Key` fields and the `_service` getters are now first-class members
+/// of EditorState.
+mixin EditorServiceMixin {
   // selection service
   final selectionServiceKey = GlobalKey(
     debugLabel: 'appflowy_editor_selection_service',
@@ -31,8 +39,12 @@ class EditorService {
   }
 
   // render plugin service
-  // late AppFlowyRenderPlugin renderPluginService;
   late BlockComponentRendererService rendererService;
+
+  /// Convenience alias of [rendererService] — kept because the existing
+  /// `editorState.renderer` accessor predated the mixin extraction.
+  BlockComponentRendererService get renderer => rendererService;
+  set renderer(BlockComponentRendererService value) => rendererService = value;
 
   // scroll service
   final scrollServiceKey = GlobalKey(

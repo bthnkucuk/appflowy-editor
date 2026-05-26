@@ -48,8 +48,8 @@ class SelectionMenu extends SelectionMenuService {
   @override
   void dismiss() {
     if (_selectionMenuEntry != null) {
-      editorState.service.keyboardService?.enable();
-      editorState.service.scrollService?.enable();
+      editorState.keyboardService?.enable();
+      editorState.scrollService?.enable();
     }
 
     _selectionMenuEntry?.remove();
@@ -57,9 +57,9 @@ class SelectionMenu extends SelectionMenuService {
 
     // workaround: SelectionService has been released after hot reload.
     final isSelectionDisposed =
-        editorState.service.selectionServiceKey.currentState == null;
+        editorState.selectionServiceKey.currentState == null;
     if (!isSelectionDisposed) {
-      final selectionService = editorState.service.selectionService;
+      final selectionService = editorState.selectionService;
       // focus to reload the selection after the menu dismissed.
       editorState.selection = editorState.selection;
       selectionService.currentSelection.removeListener(_onSelectionChange);
@@ -80,7 +80,7 @@ class SelectionMenu extends SelectionMenuService {
   void _show() {
     dismiss();
 
-    final selectionService = editorState.service.selectionService;
+    final selectionService = editorState.selectionService;
     final selectionRects = selectionService.selectionRects;
     if (selectionRects.isEmpty) {
       return;
@@ -145,8 +145,8 @@ class SelectionMenu extends SelectionMenuService {
 
     Overlay.of(context, rootOverlay: true).insert(_selectionMenuEntry!);
 
-    editorState.service.keyboardService?.disable(showCursor: true);
-    editorState.service.scrollService?.disable();
+    editorState.keyboardService?.disable(showCursor: true);
+    editorState.scrollService?.disable();
     selectionService.currentSelection.addListener(_onSelectionChange);
   }
 
@@ -163,9 +163,9 @@ class SelectionMenu extends SelectionMenuService {
   void _onSelectionChange() {
     // workaround: SelectionService has been released after hot reload.
     final isSelectionDisposed =
-        editorState.service.selectionServiceKey.currentState == null;
+        editorState.selectionServiceKey.currentState == null;
     if (!isSelectionDisposed) {
-      final selectionService = editorState.service.selectionService;
+      final selectionService = editorState.selectionService;
       if (selectionService.currentSelection.value == null) {
         return;
       }

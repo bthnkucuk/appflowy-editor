@@ -53,7 +53,7 @@ final linkMobileToolbarItemSheet = MobileToolbarItem.action(
             selection,
             extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
           );
-          editorState.service.keyboardService?.enableKeyBoard(selection);
+          editorState.keyboardService?.enableKeyBoard(selection);
         });
   },
 );
@@ -157,14 +157,14 @@ class _MobileLinkMenuState extends State<MobileLinkMenu> {
   @override
   void initState() {
     super.initState();
-    widget.editorState.service.keyboardService?.disable();
+    widget.editorState.keyboardService?.disable();
     _textEditingController = TextEditingController(text: widget.linkText ?? '');
   }
 
   @override
   void dispose() {
     _textEditingController.dispose();
-    widget.editorState.service.keyboardService?.enable();
+    widget.editorState.keyboardService?.enable();
     super.dispose();
   }
 
@@ -243,7 +243,7 @@ class _MobileLinkMenuState extends State<MobileLinkMenu> {
                   child: ElevatedButton(
                     onPressed: () {
                       widget.onSubmitted.call(_textEditingController.text);
-                      widget.editorState.service.keyboardService
+                      widget.editorState.keyboardService
                           ?.closeKeyboard();
                     },
                     style: ButtonStyle(

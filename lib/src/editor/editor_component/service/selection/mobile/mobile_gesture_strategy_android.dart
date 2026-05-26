@@ -37,7 +37,7 @@ class AndroidGestureStrategy extends MobileGestureStrategy {
   void onLongPressStart(LongPressStartDetails details) {
     final offset = details.globalPosition;
     pan.panStartOffset = offset;
-    pan.panStartScrollDy = editorState.service.scrollService?.dy;
+    pan.panStartScrollDy = editorState.scrollService?.dy;
     final node = getNodeInOffset(offset);
     // select word boundary closest to offset
     final selection = node?.selectable?.getWordBoundaryInOffset(offset);
@@ -146,7 +146,7 @@ class AndroidGestureStrategy extends MobileGestureStrategy {
     final offset = details.globalPosition;
     if (pan.panStartOffset == null || pan.panStartScrollDy == null) {
       pan.panStartOffset = offset;
-      pan.panStartScrollDy = editorState.service.scrollService?.dy;
+      pan.panStartScrollDy = editorState.scrollService?.dy;
       pan.dragMode = MobileSelectionDragMode.cursor;
     }
 

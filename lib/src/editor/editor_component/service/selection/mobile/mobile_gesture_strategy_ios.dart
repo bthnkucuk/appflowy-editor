@@ -63,7 +63,7 @@ class IOSGestureStrategy extends MobileGestureStrategy {
   void onLongPressStart(LongPressStartDetails details) {
     final offset = details.globalPosition;
     pan.panStartOffset = offset;
-    pan.panStartScrollDy = editorState.service.scrollService?.dy;
+    pan.panStartScrollDy = editorState.scrollService?.dy;
     pan.dragMode = MobileSelectionDragMode.cursor;
 
     // make a collapsed selection at offset with magnifier

@@ -220,21 +220,21 @@ class _IOSDragHandle extends _IDragHandle {
       behavior: HitTestBehavior.opaque,
       dragStartBehavior: DragStartBehavior.down,
       onPanStart: (details) {
-        editorState.service.selectionService.onPanStart(
+        editorState.selectionService.onPanStart(
           details.translate(0, offset),
           handleType.dragMode,
         );
         onDragging?.call(true);
       },
       onPanUpdate: (details) {
-        editorState.service.selectionService.onPanUpdate(
+        editorState.selectionService.onPanUpdate(
           details.translate(0, offset),
           handleType.dragMode,
         );
         onDragging?.call(true);
       },
       onPanEnd: (details) {
-        editorState.service.selectionService.onPanEnd(
+        editorState.selectionService.onPanEnd(
           details,
           handleType.dragMode,
         );
@@ -329,14 +329,14 @@ class _AndroidDragHandle extends _IDragHandle {
       behavior: HitTestBehavior.opaque,
       dragStartBehavior: DragStartBehavior.down,
       onPanStart: (details) {
-        selection = editorState.service.selectionService.onPanStart(
+        selection = editorState.selectionService.onPanStart(
           details.translate(0, -ballWidth),
           handleType.dragMode,
         );
         onDragging?.call(true);
       },
       onPanUpdate: (details) {
-        final selection = editorState.service.selectionService.onPanUpdate(
+        final selection = editorState.selectionService.onPanUpdate(
           details.translate(0, -ballWidth),
           handleType.dragMode,
         );
@@ -347,7 +347,7 @@ class _AndroidDragHandle extends _IDragHandle {
         onDragging?.call(true);
       },
       onPanEnd: (details) {
-        editorState.service.selectionService.onPanEnd(
+        editorState.selectionService.onPanEnd(
           details,
           handleType.dragMode,
         );

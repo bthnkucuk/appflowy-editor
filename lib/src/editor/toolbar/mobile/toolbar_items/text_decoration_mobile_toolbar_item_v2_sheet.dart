@@ -15,7 +15,7 @@ final textDecorationMobileToolbarItemV2Sheet = MobileToolbarItem.action(
     final selection = editorState.selection;
     if (selection == null) return;
 
-    editorState.service.keyboardService?.closeKeyboard();
+    editorState.keyboardService?.closeKeyboard();
     editorState.updateSelectionWithReason(
       selection,
       extraInfo: {
@@ -47,7 +47,7 @@ final textDecorationMobileToolbarItemV2Sheet = MobileToolbarItem.action(
             selection,
             extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
           );
-          editorState.service.keyboardService?.enableKeyBoard(selection);
+          editorState.keyboardService?.enableKeyBoard(selection);
         });
   },
 );

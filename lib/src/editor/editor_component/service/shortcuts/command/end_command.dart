@@ -16,7 +16,7 @@ final CommandShortcutEvent endCommand = CommandShortcutEvent(
 );
 
 CommandShortcutEventHandler _endCommandHandler = (editorState) {
-  final scrollService = editorState.service.scrollService;
+  final scrollService = editorState.scrollService;
   if (scrollService == null) {
     return KeyEventResult.ignored;
   }

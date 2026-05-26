@@ -17,9 +17,9 @@ mixin ScrollCoordinatorMixin {
   // Abstract dependencies (provided by EditorState + other mixins)
   // ---------------------------------------------------------------------------
 
-  /// Provided by EditorState — the editor's service container, used to
-  /// reach the scrollable's render box.
-  EditorService get service;
+  /// Provided by [EditorServiceMixin] — used by [renderBox] to reach
+  /// the scrollable's render object.
+  GlobalKey get scrollServiceKey;
 
   /// Provided by [SelectionStyleMixin] — the active selection.
   Selection? get selection;
@@ -90,8 +90,7 @@ mixin ScrollCoordinatorMixin {
   /// Render box of the scrollable that hosts the editor. Used by
   /// floating toolbars, overlays, and selection-handle positioning.
   RenderBox? get renderBox {
-    final renderObject = service.scrollServiceKey.currentContext
-        ?.findRenderObject();
+    final renderObject = scrollServiceKey.currentContext?.findRenderObject();
     if (renderObject != null && renderObject is RenderBox) {
       return renderObject;
     }

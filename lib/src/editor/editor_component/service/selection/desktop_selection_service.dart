@@ -175,14 +175,14 @@ class _DesktopSelectionServiceWidgetState
       ..clear();
 
     if (_keyboardInterceptor != null) {
-      editorState.service.keyboardService?.unregisterInterceptor(
+      editorState.keyboardService?.unregisterInterceptor(
         _keyboardInterceptor!,
       );
       _keyboardInterceptor = null;
     }
 
-    editorState.service.keyboardService?.enableShortcuts();
-    editorState.service.keyboardService?.enable();
+    editorState.keyboardService?.enableShortcuts();
+    editorState.keyboardService?.enable();
 
     final selection = editorState.selectionNotifier.value;
     if (selection != null) {
@@ -393,7 +393,7 @@ class _DesktopSelectionServiceWidgetState
     }
 
     _panStartOffset = details.globalPosition;
-    _panStartScrollDy = editorState.service.scrollService?.dy;
+    _panStartScrollDy = editorState.scrollService?.dy;
 
     _panStartPosition = getNodeInOffset(
       _panStartOffset!,
@@ -426,7 +426,7 @@ class _DesktopSelectionServiceWidgetState
     _lastPanOffset = details.globalPosition;
     _updateSelectionDuringDrag(_lastPanOffset!);
 
-    editorState.service.scrollService?.startAutoScroll(
+    editorState.scrollService?.startAutoScroll(
       _lastPanOffset!,
       edgeOffset: 200,
     );
@@ -441,7 +441,7 @@ class _DesktopSelectionServiceWidgetState
       return;
     }
 
-    editorState.service.scrollService?.stopAutoScroll();
+    editorState.scrollService?.stopAutoScroll();
     _resetPanState();
   }
 
@@ -452,7 +452,7 @@ class _DesktopSelectionServiceWidgetState
       return;
     }
 
-    final double? currentDy = editorState.service.scrollService?.dy;
+    final double? currentDy = editorState.scrollService?.dy;
     final Offset panStartOffset = currentDy == null || _panStartScrollDy == null
         ? _panStartOffset!
         : _panStartOffset!.translate(0, _panStartScrollDy! - currentDy);
@@ -543,12 +543,12 @@ class _DesktopSelectionServiceWidgetState
     Overlay.of(context, rootOverlay: true).insert(contextMenu);
 
     _keyboardInterceptor = _ContextMenuKeyboardInterceptor();
-    editorState.service.keyboardService?.registerInterceptor(
+    editorState.keyboardService?.registerInterceptor(
       _keyboardInterceptor!,
     );
 
-    editorState.service.keyboardService?.disableShortcuts();
-    editorState.service.keyboardService?.disable();
+    editorState.keyboardService?.disableShortcuts();
+    editorState.keyboardService?.disable();
   }
 
   @override

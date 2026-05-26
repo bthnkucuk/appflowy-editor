@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 ///
 /// Usually, this service can be obtained by the following code.
 /// ```dart
-/// final keyboardService = editorState.service.scrollService;
+/// final keyboardService = editorState.scrollService;
 /// ```
 ///
 abstract class AppFlowyScrollService implements AutoScrollerService {

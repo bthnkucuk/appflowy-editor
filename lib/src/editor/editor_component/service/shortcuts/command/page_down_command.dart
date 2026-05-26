@@ -17,7 +17,7 @@ final CommandShortcutEvent pageDownCommand = CommandShortcutEvent(
 );
 
 CommandShortcutEventHandler _pageUpCommandHandler = (editorState) {
-  final scrollService = editorState.service.scrollService;
+  final scrollService = editorState.scrollService;
   if (scrollService == null) {
     return KeyEventResult.ignored;
   }

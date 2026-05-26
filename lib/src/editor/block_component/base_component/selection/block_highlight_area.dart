@@ -157,7 +157,7 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
               prevBlockRect == null) {
             return sizedBox;
           }
-          final builder = editorState.service.rendererService
+          final builder = editorState.rendererService
               .blockComponentBuilder(widget.node.type);
           final padding = builder?.configuration.blockSelectionAreaMargin(
             widget.node,

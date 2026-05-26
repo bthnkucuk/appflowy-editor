@@ -20,7 +20,7 @@ Future<void> onFloatingCursorUpdate(
     return;
   }
 
-  final selectionService = editorState.service.selectionService;
+  final selectionService = editorState.selectionService;
 
   switch (point.state) {
     case FloatingCursorDragState.Start:

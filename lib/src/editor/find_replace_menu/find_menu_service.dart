@@ -37,8 +37,8 @@ class FindReplaceMenu implements FindReplaceService {
   @override
   void dismiss() {
     if (_findReplaceMenuEntry != null) {
-      editorState.service.keyboardService?.enable();
-      editorState.service.scrollService?.enable();
+      editorState.keyboardService?.enable();
+      editorState.scrollService?.enable();
     }
 
     editorState.onDispose.removeListener(dismiss);
@@ -47,9 +47,9 @@ class FindReplaceMenu implements FindReplaceService {
     _findReplaceMenuEntry = null;
 
     final isSelectionDisposed =
-        editorState.service.selectionServiceKey.currentState == null;
+        editorState.selectionServiceKey.currentState == null;
     if (!isSelectionDisposed) {
-      final selectionService = editorState.service.selectionService;
+      final selectionService = editorState.selectionService;
       selectionService.currentSelection.removeListener(_onSelectionChange);
     }
   }
@@ -60,7 +60,7 @@ class FindReplaceMenu implements FindReplaceService {
       dismiss();
     }
 
-    final selectionService = editorState.service.selectionService;
+    final selectionService = editorState.selectionService;
     final selectionRects = selectionService.selectionRects;
     if (selectionRects.isEmpty) {
       return;
@@ -117,9 +117,9 @@ class FindReplaceMenu implements FindReplaceService {
   void _onSelectionChange() {
     // workaround: SelectionService has been released after hot reload.
     final isSelectionDisposed =
-        editorState.service.selectionServiceKey.currentState == null;
+        editorState.selectionServiceKey.currentState == null;
     if (!isSelectionDisposed) {
-      final selectionService = editorState.service.selectionService;
+      final selectionService = editorState.selectionService;
       if (selectionService.currentSelection.value == null) {
         return;
       }

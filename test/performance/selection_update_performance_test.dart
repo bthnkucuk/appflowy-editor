@@ -199,7 +199,7 @@ void main() {
       await editor.startTesting();
 
       final editorState = editor.editorState;
-      final scrollService = editorState.service.scrollService;
+      final scrollService = editorState.scrollService;
 
       // Scroll to the bottom to bring last child into view
       if (scrollService != null) {
