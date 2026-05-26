@@ -234,6 +234,10 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
             if (rects.length == 1 && rects.first.width == 0) {
               return const SizedBox.shrink();
             }
+            // H2.3.b: HighlightAreaPaint auto-snaps when the previous
+            // tween is still running (see its didUpdateWidget), so
+            // drag/TTS-style continuous updates don't pay the 150 ms
+            // easeOut burn. No explicit signal needed from here.
             return Stack(
               children: [
                 RepaintBoundary(
@@ -389,10 +393,23 @@ class _HighlightAreaPaintState extends State<HighlightAreaPaint>
     super.didUpdateWidget(oldWidget);
 
     if (!_rectListEq(widget.rects, oldWidget.rects)) {
-      _oldRects = oldWidget.rects;
-      _newRects = widget.rects;
-      _controller.reset();
-      _forward();
+      // H2.3.b: snap to the new geometry when the previous tween is
+      // still in flight. Updates arriving faster than the 150 ms
+      // animation can complete — drag, TTS word-by-word advance — were
+      // re-arming the controller every tick, burning CPU+GPU on a
+      // tween the user can't see anyway because the next tick stomps
+      // it. The first update from idle still runs the easeOut for
+      // one-shot search/programmatic-highlight cases.
+      if (_controller.isAnimating) {
+        _oldRects = widget.rects;
+        _newRects = widget.rects;
+        _controller.value = 1.0;
+      } else {
+        _oldRects = oldWidget.rects;
+        _newRects = widget.rects;
+        _controller.reset();
+        _forward();
+      }
     }
   }
 
