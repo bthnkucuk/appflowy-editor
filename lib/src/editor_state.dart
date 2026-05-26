@@ -8,54 +8,9 @@ import 'package:appflowy_editor/src/history/undo_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-typedef EditorTransactionValue = (
-  TransactionTime time,
-  Transaction transaction,
-  ApplyOptions options,
-);
+export 'editor_state/types.dart';
 
-class EditorStateDebugInfo {
-  EditorStateDebugInfo({this.debugPaintSizeEnabled = false});
-
-  /// Enable the debug paint size for selection handle.
-  ///
-  /// It only available on mobile.
-  bool debugPaintSizeEnabled;
-}
-
-/// the type of this value is bool.
-///
-/// set true to this key to prevent attaching the text service when selection is changed.
-const selectionExtraInfoDoNotAttachTextService =
-    'selectionExtraInfoDoNotAttachTextService';
 const _selectionDragModeKey = 'selection_drag_mode';
-
-class ApplyOptions {
-  const ApplyOptions({
-    this.source = TransactionSource.userEdit,
-    this.inMemoryUpdate = false,
-  });
-
-  /// The source of the transaction. Determines how it's recorded in the
-  /// undo/redo history. Defaults to [TransactionSource.userEdit] which
-  /// pushes the transaction onto the undo stack.
-  final TransactionSource source;
-
-  /// This flag used to determine whether the transaction is in-memory update.
-  final bool inMemoryUpdate;
-}
-
-enum SelectionUpdateReason {
-  uiEvent, // like mouse click, keyboard event
-  transaction, // like insert, delete, format
-  remote, // like remote selection
-  selectAll,
-  searchHighlight, // Highlighting search results
-}
-
-enum SelectionType { inline, block }
-
-enum TransactionTime { before, after }
 
 /// The state of the editor.
 ///
