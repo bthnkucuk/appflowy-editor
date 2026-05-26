@@ -1,7 +1,7 @@
 # AppFlowy Editor — Konsolide Durum & Roadmap
 
 > İlerledikçe `- [ ]` → `- [x]` yap (render'da otomatik üstü çizilir).
-> Tarih: 2026-05-20 — Branch: `feat/super-sliver-list-and-mobile-keyboard-fix`
+> Tarih: 2026-05-26 — Branch: `feat/super-sliver-list-and-mobile-keyboard-fix`
 
 ## Tek Cümle Özet
 
@@ -13,7 +13,7 @@
 |---|---|---|
 | Mimari temeller | 8/10 | Transaction, registry, Selectable interface güçlü |
 | Test kapsamı | 7/10 | 210 dosya / ~910 case — sayısal iyi, image block / selection drag / mobile integration boş |
-| CI güvenilirliği | 3/10 | 4 kritik adım `continue-on-error: true` |
+| CI güvenilirliği | 6/10 | analyze/format gerçek gate (H1.1), example APK build gate (H1.4), leak gate notDisposed-only; iOS build + emulator integration test hâlâ yok, codecov upload informational |
 | Public API kalitesi | 4/10 | `src/...` 157 yerde sızıntı, 14+ deprecated, barrel'da iç dosyalar |
 | Mobile UX | 5/10 | Bilinen drag stutter, 985-satır tek dosya, global mutable flag'ler |
 | Performans | 6/10 | Sliver var, table'da yok, selection notify cascade baseline'ı yükseltiyor |
@@ -40,9 +40,9 @@
 
 ### P0 — Hemen düzeltilmeli
 
-- CI gerçek bir kapı değil — `analyze`/`format`/`custom_lint`/codecov'de `continue-on-error: true`
-- README pub.dev'de patlamış — `README.md:146` sonrası ~520 satırlık markdown-it lorem-ipsum fixture
-- Tek Flutter sürümü (3.44.0), iOS/Android emulator CI job yok
+- ~~CI gerçek bir kapı değil — `analyze`/`format`/`custom_lint`/codecov'de `continue-on-error: true`~~ → çözüldü: `26dc3bde` (analyze/format gerçek gate), `339c2997` (custom_lint/awesome_lints kaldırıldı), codecov upload bilerek informational
+- ~~README pub.dev'de patlamış — `README.md:146` sonrası ~520 satırlık markdown-it lorem-ipsum fixture~~ → çözüldü: `052934b5`
+- Tek Flutter sürümü (3.44.0), iOS/Android emulator CI job yok (H1.6 defer — integration_test stub'a bağlı), iOS APK example_build da disabled (`65d1e6db` — device_info_plus iOS 17 selector sorunu, Podfile deployment target bump'ı gerek)
 
 ### P1 — Yapısal risk
 
@@ -92,10 +92,10 @@
 
 Hedef: yalancı sinyalleri kapat, ilk izlenimi düzelt, ölçüm altyapısını kur.
 
-- [x] **H1.1** CI'da `continue-on-error: true` flag'lerini düşür (analyze/format/custom_lint) — `.github/workflows/test.yml:50,54,58,65` — Etki: Yüksek / Çaba: XS (codecov upload'unda flag korundu — upload hatası gate değil)
-- [x] **H1.2** `README.md:146` sonrasını sil; gerçek "Getting Started" + "Examples" bölümü yaz — Etki: Yüksek / Çaba: XS (minimum müdahale: mevcut Getting Started/Customizing/Migration satırları korundu, sadece 520 satırlık markdown-it fixture silindi)
-- [x] **H1.3** `CONTRIBUTING.md` ve `.github/PULL_REQUEST_TEMPLATE.md` yaz — Etki: Orta / Çaba: XS
-- [x] **H1.4** `example/` uygulamasını CI'da `flutter build apk --debug` + `flutter build ios --no-codesign` ile derle — Etki: Orta / Çaba: S
+- [x] **H1.1** CI'da `continue-on-error: true` flag'lerini düşür (analyze/format/custom_lint) — `.github/workflows/test.yml:50,54,58,65` — Etki: Yüksek / Çaba: XS → `26dc3bde` (codecov upload'unda flag korundu — upload hatası gate değil)
+- [x] **H1.2** `README.md:146` sonrasını sil; gerçek "Getting Started" + "Examples" bölümü yaz — Etki: Yüksek / Çaba: XS → `052934b5` (minimum müdahale: mevcut Getting Started/Customizing/Migration satırları korundu, sadece 520 satırlık markdown-it fixture silindi)
+- [x] **H1.3** `CONTRIBUTING.md` ve `.github/PULL_REQUEST_TEMPLATE.md` yaz — Etki: Orta / Çaba: XS → `89cb3337`
+- [x] **H1.4** `example/` uygulamasını CI'da `flutter build apk --debug` ile derle — Etki: Orta / Çaba: S → `89cb3337` (APK gate aktif). iOS build matrix'ten düşürüldü → `65d1e6db` — device_info_plus 12.4.0 iOS 17+ selector'ları (`isiOSAppOnVision`) `@available` guard'sız kullanıyor, `example/ios` deployment target 13.0. Çözüm: `IPHONEOS_DEPLOYMENT_TARGET` bump'ı + Podfile/Runner.xcodeproj güncellemesi sonrası geri ekle.
 - [x] ~~**H1.5** `awesome_lints`'i `ref: <commit-sha>`'ya pinle~~ → Tamamen kaldırıldı (awesome_lints + custom_lint pubspec'ten, custom_lint adımı CI'dan, custom_lint bloğu analysis_options'tan)
 - [ ] **H1.10** `very_good_analysis`'e aşamalı geçiş (denendi: 6589 issue + 100+ error patlıyor, strict-casts/inference/raw-types yüzünden). Plan:
   1. `dart fix --apply` ile auto-fix (prefer_single_quotes ~1582, prefer_final_locals ~149, omit_local_variable_types ~327)
@@ -109,6 +109,13 @@ Hedef: yalancı sinyalleri kapat, ilk izlenimi düzelt, ölçüm altyapısını 
 - [ ] **H1.7** `test/legacy/`'i `new/` ile birleştir ya da sil — Etki: Düşük / Çaba: S
 - [x] **H1.8** **Selection-cascade benchmark testi**: 200 paragraph dokümanda bir selection set'inin kaç `notifyListeners` + `build` tetiklediğini sayan widget testi (H2'nin regresyon kapısı, ölçüm) — Etki: Yüksek / Çaba: S → `5f667148`
 - [ ] **H1.9** 31 branch'ten eski release/feature dallarını arşivle (tag bırak, sil)
+
+#### Bonus CI işleri (roadmap dışı, yapıldı)
+
+- [x] CI tetikleyicileri genişletildi: `feat/**` push + `workflow_dispatch` → `d4161fa8`
+- [x] `actions/checkout@v4` (Node 20 deprecation fix) → `50328a6c`
+- [x] Commitlint sadece HEAD commit + informational (history rewrite gerektirmesin diye) → `0d4dad06`
+- [x] Leak test gate stabilizasyonu: `gcedLate` timing-noise düşürüldü, untrackable upstream/singleton leak'leri ignore'a alındı → `d7c43bf9`, `550e2099` (sonraki adım: gerçek leak'leri tek tek kapat, ignore list'i daralt)
 
 ### Horizon 2 — Selection stutter kök neden (2–6 hafta)
 
