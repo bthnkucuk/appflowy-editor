@@ -57,6 +57,16 @@ class BlockSelectionArea extends StatefulWidget {
 
   final List<BlockSelectionType> supportTypes;
 
+  /// Diagnostic counter for the H2.3 stutter investigation. Incremented
+  /// inside the `ValueListenableBuilder` body — i.e. once per
+  /// `selectionNotifier` fire per mounted area. Used by
+  /// `test/performance/selection_notification_cascade_test.dart` to lock
+  /// in the "3N → ~9" rebuild reduction once H2.3.a (derived listenable)
+  /// lands. One integer increment per build; production cost is
+  /// negligible.
+  @visibleForTesting
+  static int debugBuilderCallCount = 0;
+
   @override
   State<BlockSelectionArea> createState() => _BlockSelectionAreaState();
 }
@@ -137,6 +147,7 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
       key: ValueKey(widget.node.id + _supportTypesSuffix),
       valueListenable: widget.listenable,
       builder: ((context, value, child) {
+        BlockSelectionArea.debugBuilderCallCount++;
         final sizedBox = child ?? const SizedBox.shrink();
         final selection = value?.normalized;
 

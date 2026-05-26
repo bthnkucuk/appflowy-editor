@@ -1,4 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:appflowy_editor/src/editor/block_component/base_component/selection/block_highlight_area.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -99,6 +100,58 @@ void main() {
       editorState.selectionNotifier.removeListener(counter);
       await editor.dispose();
     });
+
+    testWidgets(
+      'H2.3 baseline: per-block builder fan-out on a single selection set '
+      '(200 paragraphs)',
+      (tester) async {
+        // Counts BlockSelectionArea + BlockHighlightArea
+        // ValueListenableBuilder invocations triggered by a single
+        // selection assignment on a 200-block document. Establishes the
+        // pre-H2.3.a baseline so the derived-listenable refactor can
+        // prove its impact (~3N → ~9 expected).
+        final editor = await setupEditor(tester, paragraphCount: 200);
+        final editorState = editor.editorState;
+
+        // Set + settle an initial selection so warm-up builds don't
+        // pollute the measurement.
+        editorState.selection = Selection.single(path: [0], startOffset: 0);
+        await tester.pump();
+        BlockSelectionArea.debugBuilderCallCount = 0;
+        BlockHighlightArea.debugBuilderCallCount = 0;
+
+        editorState.selection = Selection.single(path: [50], startOffset: 0);
+        await tester.pump();
+
+        final selBuilds = BlockSelectionArea.debugBuilderCallCount;
+        final highlightBuilds = BlockHighlightArea.debugBuilderCallCount;
+
+        debugPrint('\n${'=' * 60}');
+        debugPrint('H2.3 BASELINE — per-block builder fan-out');
+        debugPrint('=' * 60);
+        debugPrint('Document: 200 paragraphs');
+        debugPrint('Action: set selection ONCE on path [50]');
+        debugPrint('BlockSelectionArea builder calls:  $selBuilds');
+        debugPrint('BlockHighlightArea builder calls:  $highlightBuilds');
+        debugPrint('Total leaf builds: ${selBuilds + highlightBuilds}');
+        debugPrint('Expected pre-H2.3.a: ~3N + N = ~800 on 200 blocks');
+        debugPrint('Expected post-H2.3.a: ~9 (only blocks at old + new '
+            'selection paths transition)');
+        debugPrint('${'=' * 60}\n');
+
+        // No assertion yet — this is a diagnostic baseline. Once H2.3.a
+        // lands, replace with:
+        //   expect(selBuilds + highlightBuilds, lessThanOrEqualTo(20));
+        // to lock in the fix as a regression gate.
+        expect(
+          selBuilds + highlightBuilds,
+          greaterThan(0),
+          reason: 'Sanity: at least one area must have rebuilt.',
+        );
+
+        await editor.dispose();
+      },
+    );
 
     testWidgets(
       'frame settling: pump count to stabilize after a single selection set '

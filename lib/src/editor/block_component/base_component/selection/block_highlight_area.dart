@@ -57,6 +57,13 @@ class BlockHighlightArea extends StatefulWidget {
 
   final List<BlockSelectionType> supportTypes;
 
+  /// Diagnostic counter for the H2.3 stutter investigation. See
+  /// `BlockSelectionArea.debugBuilderCallCount` for rationale — same
+  /// pattern, separate counter so a test can attribute calls to the
+  /// highlight path independently.
+  @visibleForTesting
+  static int debugBuilderCallCount = 0;
+
   @override
   State<BlockHighlightArea> createState() => _BlockSelectionAreaState();
 }
@@ -137,6 +144,7 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
       key: ValueKey(widget.node.id + _supportTypesSuffix),
       valueListenable: widget.listenable,
       builder: ((context, value, child) {
+        BlockHighlightArea.debugBuilderCallCount++;
         final sizedBox = child ?? const SizedBox.shrink();
         final selection = value?.normalized;
 

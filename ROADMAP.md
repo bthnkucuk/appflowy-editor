@@ -46,12 +46,33 @@
 
 ### P1 — Yapısal risk
 
-- **Selection drag stutter'ın muhtemel kök zinciri (henüz ölçülmedi):**
-  - `PropertyValueNotifier.value` setter **her zaman** broadcast (aynı değerde bile) — `lib/src/property_notifier.dart:24-27`
-  - Drag başına ~60 selection update → N block × 2 widget (`BlockSelectionArea` + `BlockHighlightArea`) rebuild
-  - Her area kendini her frame `addPostFrameCallback` ile **yeniden zamanlıyor** — `lib/src/editor/block_component/base_component/widget/block_selection_area.dart:230-232` + `block_highlight_area.dart:267-269`
-  - `mobile_selection_service._updateSelectionDuringDrag` zaten 2-3 post-frame derinliğinde — `mobile_selection_service.dart:415-428, 518-537`
-  - **Coalesce neden yetmedi:** darboğaz event sıklığı değil, tek update'in N rebuild + per-block self-rescheduling üretmesi
+- **Selection drag stutter — 2026-05-26 iki ajanlı incelemesi sonrası revize:**
+
+  Önceki zincir 5 maddeydi; doğrulamada **3'ü stale, 1'i non-issue, 1'i verified-and-amplified** çıktı. Yeni framework:
+
+  - ~~PVN setter always-broadcast~~ → **Non-issue for drag.** PVN sınıfı evet hâlâ unconditional notify ediyor (`lib/src/editor/util/property_notifier.dart:24-27`, path roadmap'te yanlıştı), AMA H2.1 guard `selection_style_mixin.dart`'da call-site'da çalışıyor. Drag'de her tick unique selection üretiyor → guard zaten by-pass. Sınıfa equality guard koymak başka path'leri (paragraph_block_component, word_counter) korur ama drag'i çözmez.
+  - ~~N block × 2 widget rebuild~~ → **Yanlış sayı: 3N + 1N.** `BlockSelectionContainer` her text node için **3× `BlockSelectionArea` (selection + cursor + selection-with-cursor) + 1× `BlockHighlightArea`** mount ediyor. Per-block 12 callback + 4 widget rebuild per notify.
+  - ~~Per-frame self-reschedule~~ → **STALE — H2.2 fixledi.** `block_selection_area.dart` ve `block_highlight_area.dart` `_scheduleUpdate`'i `_updatePending` flag ile coalesce ediyor; self-reschedule yok. Roadmap satır numaraları H2.2 öncesinden.
+  - ~~`_updateSelectionDuringDrag` 2-3 post-frame deep~~ → **STALE.** Method `mobile/mobile_selection_auto_scroller.dart:58-107`'e taşınmış, sadece autoscroll tick'inde fire. Pan-tick hot path **post-frame-flat** (1 deep), 2-3 değil.
+  - **VERIFIED ve daha kötü — gerçek kök neden:** Her selection notify, dokümandaki **her** bloğu uyandırıyor (root sliver virtualization sadece görünür range'i çiziyor ama element tree tam mount). 200-bloklu doc'ta:
+    - **3N = ~600 `ValueListenableBuilder` invocation per notify**
+    - Builder içinde `selection.normalized` **iki kez** çağrılıyor (her seferinde allocation), `path.inSelection(selection)` çalışıyor
+    - 60 fps drag → **~36k builder invocation + ~72k Selection allocation/sec** → GC pressure → "fast then stutter" pattern tam olarak bu
+
+  **İkincil burner'lar:**
+  - `HighlightAreaPaint`, rect değiştiğinde 150ms easing animasyonunu `_controller.reset() + _forward()` ile yeniden başlatıyor → drag boyunca sürekli CPU/GPU burn (`block_highlight_area.dart:370-379`).
+  - `updateSelectionWithReason` her uiEvent çağrısında `Completer<void>` + `addPostFrameCallback` allocate ediyor; mobile drag path'i await etmiyor → pure waste (`selection_style_mixin.dart:118-124`).
+  - Her area iki ayrı listener kaydediyor (`_scheduleUpdate` + `_clearCursorRect`); `_clearCursorRect` her notify'da `prevCursorRect = null` yapıp kendi short-circuit'ini defeat ediyor (correctness bug + 2× listener call).
+  - `mobile_selection_service.updateSelection` per drag-tick iki kez notify ediyor (`currentSelection.value =` + `selectionNotifier`).
+  - Android `onLongPressMoveUpdate` her tick `HapticFeedback.lightImpact()` çağırıyor (platform-channel hop).
+
+  **Fix sırası (azalan etki — H2.3 olarak konuşlanıyor):**
+  1. **Derived listenable per area** — state'te `(bool inSelection, List<Rect>? rects, Rect? cursor)` cache; builder local notifier'ı dinlesin. Out-of-selection bloklar transition-out frame'i hariç hiç rebuild olmasın. Hedef: **3N → ~9 builder/notify (~%95 düşüş)**, allocation pressure aynı oranda azalır.
+  2. **`HighlightAreaPaint` drag-gate** — `selectionExtraInfo[selectionDragModeKey] != none` ise 150ms easing'i skip et, snap'le.
+  3. **`updateSelectionWithReason` completer skip** — `awaitLayout: false` parametresi ekle, mobile gesture strategy'ler drag tick'inde set etsin.
+  4. **`_clearCursorRect` fold** — separate listener'ı sil, `_updateSelectionIfNeeded` içine fold et (sadece path değiştiğinde clear). Hem perf hem correctness fix.
+
+  Önce H1.8 cascade test'ini extend et (3N → 9 ölçümünü regression gate olarak yakala), sonra fix #1 → #2 → ölçüm, fix #3 + #4 ayrı session.
 - ~~`EditorState` god-object (~915 satır)~~ → 425 satıra indi (H3.1 mixin split büyük ölçüde tamam). Kalan: apply pipeline + documentRules + query helpers facade'de duruyor — H3.1 backlog'una bak.
 - `lib/src/service/` (eski) ve `lib/src/editor/editor_component/service/` (yeni) çakışıyor — hangisi canonical belirsiz
 - `package:appflowy_editor/src/...` 157 yerde içeriden — refactor'da sessizce kırılır
@@ -124,7 +145,12 @@ Hedef: auto-memory'deki "yavaşla-hızlan" pattern'ini *ölçerek* kapat.
 - [ ] **H2.0** Profil al — Android profile build, 200+ paragraph doc, `flutter run --profile --trace-skia` + DevTools Timeline. PostFrameCallback yoğunluğu + ValueListenableBuilder rebuild sayısı (baseline)
 - [x] **H2.1** `PropertyValueNotifier`'ı opt-in `alwaysNotify`'a çevir; `selectionNotifier` için eşitlik kontrolü ekle — `lib/src/property_notifier.dart` — Etki: Yüksek / Çaba: S / Risk: Orta (bazı listener'lar layout-dirty broadcast'ine bel bağlamış olabilir) → `dc84c0bb`
 - [x] **H2.2** `BlockSelectionArea._updateSelectionIfNeeded` self-reschedule chain'ini kır; layout-dirty sinyaline bağla — `block_selection_area.dart:230-232` + `block_highlight_area.dart:267-269` — Etki: Yüksek / Çaba: M → `cae7d87b`
-- [ ] **H2.3** `mobile_selection_service._updateSelectionDuringDrag` içindeki nested post-frame'leri tek frame'e indir — Çaba: S
+- [ ] ~~**H2.3** `mobile_selection_service._updateSelectionDuringDrag` içindeki nested post-frame'leri tek frame'e indir~~ → **STALE.** Method auto-scroller'a taşınmış, pan-tick hot path zaten post-frame-flat. Yerine aşağıdaki H2.3.a-d kalemleri (P1 stutter notlarındaki ajan bulguları). 2026-05-26.
+- [ ] **H2.3.0** H1.8 cascade test'ini 200-block doc'a extend et: tek selection notify'ın kaç `BlockSelectionArea`/`BlockHighlightArea` build tetiklediğini say. Şu an ~3N (= ~600 @ 200 block) bekleniyor. Çaba: S / Etki: ölçüm gate'i.
+- [ ] **H2.3.a** **Derived listenable per BlockSelectionArea/BlockHighlightArea.** State'te `(bool inSelection, List<Rect>? rects, Rect? cursor)` cache et; builder local notifier'ı dinlesin. Out-of-selection bloklar transition-out frame'i hariç hiç rebuild etmesin. **Hedef: 3N → ~9 builder/notify**, ~%95 düşüş. Çaba: M / Risk: Orta (transition-out frame'ini kaçırmamak; selection_rebuild_benchmark coverage var).
+- [ ] **H2.3.b** **`HighlightAreaPaint` drag-gate** — `selectionExtraInfo[selectionDragModeKey] != none` ise `_controller.reset() + _forward()` 150ms easing'i skip et, rect'leri snap'le — `block_highlight_area.dart:370-379`. Çaba: XS / Risk: Düşük.
+- [ ] **H2.3.c** **`updateSelectionWithReason` completer skip** — `awaitLayout: false` parametresi ekle, mobile gesture strategy'ler drag tick'inde geçsin. Per-tick `Completer` + `addPostFrameCallback` allocation'ı kalkar — `selection_style_mixin.dart:118-124`. Çaba: S / Risk: Düşük (3 awaiter caller per-call flag ile kalır).
+- [ ] **H2.3.d** **`_clearCursorRect` fold** — separate listener'ı sil, `_updateSelectionIfNeeded` içinde sadece path değiştiğinde clear et — `block_selection_area.dart:96-97, 119-120` + `block_highlight_area.dart` aynı. Hem listener sayısını yarıya indirir hem `prevCursorRect != rect` short-circuit'i gerçekten çalışır (correctness fix). Çaba: XS / Risk: Düşük (cursor blink test edilmeli).
 - [ ] **H2.4** iOS Magnifier'ı `BackdropFilter`'sız variant ile A/B test et; ölçüm darboğazsa default'u değiştir — Çaba: S
 - [ ] **H2.5** `_AndroidDragHandle.onPanUpdate`'teki `HapticFeedback.selectionClick` yalnız selection karakter değiştiğinde tetiklensin — `mobile_basic_handle.dart:344` — Çaba: XS
 - [ ] **H2.6** Her PR sonrası H1.8 benchmark'ı koş ve sonuçları PR'a yapıştır
