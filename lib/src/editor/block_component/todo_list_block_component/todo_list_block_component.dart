@@ -273,29 +273,48 @@ class _TodoListIcon extends StatelessWidget {
   final VoidCallback onTap;
   final bool checked;
 
+  // The icon used to be a hardcoded 22-px square with min constraints
+  // multiplied by `textScaleFactor`. That worked when the text style was
+  // also tied to `textScaleFactor` but ignores per-document body font
+  // sizes set via `textStyleConfiguration.text.fontSize`. Now the icon
+  // scales off the body font size directly — visually the checkmark
+  // tracks the surrounding paragraph at any size.
+  //
+  // Ratio chosen from the pre-existing 22 / 14 (icon / default body) ≈
+  // 1.57. `_iconLineHeight` matches the line height of the first text
+  // line so the icon visually centers with that line instead of
+  // floating above larger text.
+  static const double _iconToFontRatio = 1.4;
+  static const double _lineHeight = 1.5;
+
   @override
   Widget build(BuildContext context) {
-    final textScaleFactor = context
-        .read<EditorState>()
-        .editorStyle
-        .textScaleFactor;
+    final style = context.read<EditorState>().editorStyle;
+    final baseFontSize =
+        style.textStyleConfiguration.text.fontSize ?? 14.0;
+    final scaled = baseFontSize * style.textScaleFactor;
+    final iconSize = scaled * _iconToFontRatio;
+    final lineHeight = scaled * _lineHeight;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(minWidth: 26, minHeight: 22) *
-              textScaleFactor,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 4.0),
-            child: ToolbarIcon(
-              size: 22,
-              afMobileIcons: checked
-                  ? ToolbarIcons.check
-                  : ToolbarIcons.uncheck,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 4.0),
+          child: SizedBox(
+            // Box height matches the surrounding text's first-line
+            // height; `Center` then vertically aligns the icon with the
+            // text baseline rather than the top-of-line.
+            height: lineHeight,
+            child: Center(
+              child: ToolbarIcon(
+                size: iconSize,
+                afMobileIcons: checked
+                    ? ToolbarIcons.check
+                    : ToolbarIcons.uncheck,
+              ),
             ),
           ),
         ),

@@ -215,20 +215,30 @@ class _BulletedListIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textScaleFactor = context
-        .read<EditorState>()
-        .editorStyle
-        .textScaleFactor;
+    // Marker box height tracks the body's first-line height so the glyph
+    // visually centers with the surrounding text at any font size — the
+    // hardcoded 22×textScaleFactor used to lag behind when the user
+    // changed `textStyleConfiguration.text.fontSize` via the appearance
+    // sheet. The glyph itself is rendered at 0.5× the body size, same
+    // ratio as before.
+    final style = context.read<EditorState>().editorStyle;
+    final baseFontSize =
+        style.textStyleConfiguration.text.fontSize ?? 14.0;
+    final scaled = baseFontSize * style.textScaleFactor;
+    const lineHeightFactor = 1.5;
+    final lineHeight = scaled * lineHeightFactor;
 
-    return Container(
-      constraints:
-          const BoxConstraints(minWidth: 26, minHeight: 22) * textScaleFactor,
-      padding: const EdgeInsets.only(right: 4.0),
-      child: Center(
-        child: Text(
-          icon,
-          style: textStyle,
-          textScaler: TextScaler.linear(0.5 * textScaleFactor),
+    return SizedBox(
+      width: lineHeight,
+      height: lineHeight,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 4.0),
+        child: Center(
+          child: Text(
+            icon,
+            style: textStyle,
+            textScaler: TextScaler.linear(0.5 * style.textScaleFactor),
+          ),
         ),
       ),
     );

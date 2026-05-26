@@ -219,19 +219,30 @@ class _NumberedListIcon extends StatelessWidget {
     final text = editorState.editorStyle.textStyleConfiguration.text;
     final textScaleFactor = editorState.editorStyle.textScaleFactor;
 
-    return Container(
-      constraints:
-          const BoxConstraints(minWidth: 26, minHeight: 22) * textScaleFactor,
-      padding: const EdgeInsets.only(right: 4.0),
-      child: Center(
-        child: Text.rich(
-          textScaler: TextScaler.linear(textScaleFactor),
-          textHeightBehavior: const TextHeightBehavior(
-            applyHeightToFirstAscent: false,
-            applyHeightToLastDescent: false,
+    // Marker box height matches the body's first-line height so the
+    // "1." / "2." / etc. visually centers with the surrounding text at
+    // any font size — the hardcoded 22×textScaleFactor used to drift out
+    // of alignment when `textStyleConfiguration.text.fontSize` changed
+    // via the appearance sheet.
+    final baseFontSize = text.fontSize ?? 14.0;
+    final scaled = baseFontSize * textScaleFactor;
+    const lineHeightFactor = 1.5;
+    final lineHeight = scaled * lineHeightFactor;
+
+    return SizedBox(
+      height: lineHeight,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 4.0),
+        child: Center(
+          child: Text.rich(
+            textScaler: TextScaler.linear(textScaleFactor),
+            textHeightBehavior: const TextHeightBehavior(
+              applyHeightToFirstAscent: false,
+              applyHeightToLastDescent: false,
+            ),
+            TextSpan(text: node.levelString, style: text.combine(textStyle)),
+            textDirection: direction,
           ),
-          TextSpan(text: node.levelString, style: text.combine(textStyle)),
-          textDirection: direction,
         ),
       ),
     );
