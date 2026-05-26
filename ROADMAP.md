@@ -159,6 +159,14 @@ Hedef: auto-memory'deki "yavaşla-hızlan" pattern'ini *ölçerek* kapat.
 - [ ] **H2.6** Her PR sonrası H1.8 benchmark'ı koş ve sonuçları PR'a yapıştır
 - [ ] **H2.7** H1.8 benchmark'ına drag-simulation senaryosu ekle (regresyon koruması)
 
+#### H2.9 — Mobile gesture / handle hygiene (2026-05-26 ajan bulguları)
+
+EditorRobot test-infra genişlemesi sırasında (`d7cfb070`) iki ajan paralel inceleme yaptı, mobile gesture path'inde 3 pre-existing risk surface'i tespit etti. Hiçbiri shipped fix bug değil — birikmiş hijyen.
+
+- [ ] **H2.9.a** `mobile_basic_handle.dart:10-12` — `_leftHandleKey` / `_rightHandleKey` / `_collapsedHandleKey` **top-level mutable GlobalKey**. İki editor instance side-by-side mount edilirse duplicate-GlobalKey hatası veya reparent. Multi-pane layout veya hızlı remount senaryosunda kırılır. **Fix**: GlobalKey'leri `_AndroidDragHandle` State'inde tut veya constructor parameter olarak al. Çaba: S / Risk: Orta (handle widget contract'i değişir).
+- [ ] **H2.9.b** `mobile_gesture_strategy_ios.dart:67` — iOS `onLongPressStart` `pan.dragMode = cursor` set ediyor ama `selectionExtraInfoDragModeKey`'i `extraInfo`'ya **publish etmiyor** (Android'de line 60-62'de var). Scroll-service ve IME-skip code'unun iOS'ta farklı davranma riski. **Fix**: iOS strategy'sinde extraInfo'ya dragMode ekle. Çaba: XS / Risk: Düşük.
+- [ ] **H2.9.c** `mobile_gesture_strategy_ios.dart:80-93` — iOS `onLongPressMoveUpdate` `pan.panStartOffset` guard'ı okuyor ama `details.globalPosition`'ı doğrudan kullanıyor (Android'in delta-math'ı yok). Erken-return path'i `panStartScrollDy` set + `dragMode` unset bırakabilir → inconsistent state. **Fix**: Symmetry restore. Çaba: S / Risk: Orta (iOS gesture davranışı incelenmeli, AppFlowy mobil prod testi gerek).
+
 #### H2.8 — Auto-scroll new-block mount spike (2026-05-26)
 
 **Sorun**: Drag sırasında viewport'a yeni block girince 26-31ms frame spike. İki ajan paralel araştırma + 6 fix denemesi + 2 revert. Test-first methodoloji: synthetic baseline → hipotez doğrula → device test → ship veya revert.
