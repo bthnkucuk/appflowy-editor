@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/mobile_selection_auto_scroller.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile/pan_drag_state.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_magnifier.dart';
 import 'package:appflowy_editor/src/editor/editor_component/service/selection/shared.dart';
@@ -82,6 +83,8 @@ class _MobileSelectionServiceWidgetState
 
   final PanDragState _pan = PanDragState();
 
+  late final MobileSelectionAutoScroller _autoScroller;
+
   bool updateSelectionByTapUp = false;
 
   late EditorState editorState = Provider.of<EditorState>(
@@ -98,8 +101,15 @@ class _MobileSelectionServiceWidgetState
     super.initState();
 
     WidgetsBinding.instance.addObserver(this);
+    _autoScroller = MobileSelectionAutoScroller(
+      pan: _pan,
+      editorState: editorState,
+      isMounted: () => mounted,
+      getNodeInOffset: getNodeInOffset,
+      commitSelection: updateSelection,
+    );
     editorState.selectionNotifier.addListener(_updateSelection);
-    editorState.addScrollViewScrolledListener(_handleAutoScrollWhileDragging);
+    editorState.addScrollViewScrolledListener(_autoScroller.onScroll);
   }
 
   @override
@@ -110,9 +120,7 @@ class _MobileSelectionServiceWidgetState
     WidgetsBinding.instance.removeObserver(this);
     selectionNotifierAfterLayout.dispose();
     editorState.selectionNotifier.removeListener(_updateSelection);
-    editorState.removeScrollViewScrolledListener(
-      _handleAutoScrollWhileDragging,
-    );
+    editorState.removeScrollViewScrolledListener(_autoScroller.onScroll);
     collapsedHandleTimer?.cancel();
 
     super.dispose();
@@ -387,79 +395,6 @@ class _MobileSelectionServiceWidgetState
 
   void _clearSelection() {
     selectionRects.clear();
-  }
-
-  void _handleAutoScrollWhileDragging() {
-    if (!mounted || _pan.dragMode == MobileSelectionDragMode.none) {
-      return;
-    }
-    if (_pan.panStartOffset == null ||
-        _pan.panStartSelection == null ||
-        _pan.lastPanOffset.value == null) {
-      return;
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted ||
-          _pan.dragMode == MobileSelectionDragMode.none ||
-          _pan.panStartOffset == null ||
-          _pan.panStartSelection == null) {
-        return;
-      }
-      final offset = _pan.lastPanOffset.value;
-      if (offset == null) {
-        return;
-      }
-      _updateSelectionDuringDrag(offset);
-    });
-  }
-
-  void _updateSelectionDuringDrag(Offset panEndOffset) {
-    if (_pan.panStartOffset == null || _pan.panStartSelection == null) {
-      return;
-    }
-
-    final double? dy = editorState.service.scrollService?.dy;
-    final Offset panStartOffset;
-    if (dy == null || _pan.panStartScrollDy == null) {
-      panStartOffset = _pan.panStartOffset!;
-    } else {
-      panStartOffset = _pan.panStartOffset!.translate(0, _pan.panStartScrollDy! - dy);
-    }
-
-    final selectionInRange = getNodeInOffset(
-      panEndOffset,
-    )?.selectable?.getSelectionInRange(panStartOffset, panEndOffset);
-    final end = selectionInRange?.end;
-    if (end == null) {
-      return;
-    }
-
-    late final Selection newSelection;
-    switch (_pan.dragMode) {
-      case MobileSelectionDragMode.leftSelectionHandle:
-        newSelection = Selection(
-          start: _pan.panStartSelection!.normalized.end,
-          end: end,
-        ).normalized;
-        break;
-
-      case MobileSelectionDragMode.rightSelectionHandle:
-        newSelection = Selection(
-          start: _pan.panStartSelection!.normalized.start,
-          end: end,
-        ).normalized;
-        break;
-
-      case MobileSelectionDragMode.cursor:
-        newSelection = Selection.collapsed(end);
-        break;
-
-      case MobileSelectionDragMode.none:
-        return;
-    }
-
-    updateSelection(newSelection);
   }
 
   @override
