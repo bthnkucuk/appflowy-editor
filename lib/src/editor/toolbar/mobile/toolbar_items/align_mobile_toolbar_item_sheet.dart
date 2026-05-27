@@ -1,6 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
-import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 
 /// Mobile toolbar item that opens a sheet with the four block-alignment
 /// options (left, center, right, justify). Tap a cell to toggle the
@@ -11,47 +10,13 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 /// row of squircle cells, icon + label per cell, the active option
 /// renders selected via the Phosphor Fill swap inside
 /// [EditorToolbarMenuButton].
-final alignMobileToolbarItemSheet = MobileToolbarItem(
+final MobileToolbarItem alignMobileToolbarItemSheet = MobileToolbarItem.sheet(
   itemIconBuilder: (context, _) => ToolbarIcon(
     icon: ToolbarIcons.alignLeft,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
-  actionHandler: (context, editorState) {
-    final selection = editorState.selection;
-    if (selection == null) return;
-
-    editorState.keyboardService?.closeKeyboard();
-    editorState.updateSelectionWithReason(
-      selection,
-      extraInfo: {
-        selectionExtraInfoDisableMobileToolbarKey: true,
-        selectionExtraInfoDisableFloatingToolbar: true,
-        selectionExtraInfoDoNotAttachTextService: true,
-      },
-    );
-    editorState.keepFocusNotifier.increase();
-
-    Navigator.of(context)
-        .push(
-          StupidSimpleSheetRoute<void>(
-            barrierColor: Colors.transparent,
-            originateAboveBottomViewInset: true,
-            child: MobileToolbarTheme(
-              child: EditorToolbarSheetScaffold(
-                child: _SheetAlignMenu(editorState, selection),
-              ),
-            ),
-          ),
-        )
-        .then((_) {
-          editorState.keepFocusNotifier.decrease();
-          editorState.updateSelectionWithReason(
-            selection,
-            extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
-          );
-          editorState.keyboardService?.enableKeyBoard(selection);
-        });
-  },
+  sheetBodyBuilder: (context, editorState, selection) =>
+      _SheetAlignMenu(editorState, selection),
 );
 
 class _SheetAlignMenu extends StatefulWidget {
@@ -177,9 +142,7 @@ class _SheetAlignMenuState extends State<_SheetAlignMenu> {
         }
         return node.copyWith(attributes: attrs);
       },
-      selectionExtraInfo: {
-        selectionExtraInfoDoNotAttachTextService: true,
-      },
+      selectionExtraInfo: {selectionExtraInfoDoNotAttachTextService: true},
     );
   }
 }

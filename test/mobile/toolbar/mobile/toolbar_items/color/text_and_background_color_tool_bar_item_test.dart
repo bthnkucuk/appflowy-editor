@@ -34,8 +34,8 @@ void main() {
     await tester.tap(find.byType(IconButton).first);
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
-    // Show its menu and it has a tabbar to switch between text and background color
-    expect(find.byType(MobileToolbarItemMenu), findsOneWidget);
+    // Sheet hosts a tabbar to switch between text and background color
+    expect(find.byType(EditorToolbarSheetScaffold), findsOneWidget);
     expect(find.text(aft.textColor), findsOneWidget);
     expect(
       find.text(aft.backgroundColor),

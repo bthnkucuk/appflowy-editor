@@ -2,7 +2,8 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
+import 'package:stupid_simple_sheet/stupid_simple_sheet.dart'
+    show StupidSimpleSheetRoute;
 
 /// Callback shape passed to `buildExtrasMobileToolbarItemSheet` to wire
 /// up the export cell. Mirrors [AppFlowyEditorExportCallback] — the
@@ -26,54 +27,19 @@ MobileToolbarItem buildExtrasMobileToolbarItemSheet({
   Future<List<pw.Font>> Function()? pdfFontFallback,
   List<AppFlowyExportFormat> exportFormats = AppFlowyExportFormat.values,
 }) {
-  return MobileToolbarItem(
+  return MobileToolbarItem.sheet(
     itemIconBuilder: (context, _) => ToolbarIcon(
       icon: ToolbarIcons.more,
       color: MobileToolbarTheme.of(context).iconColor,
     ),
-    actionHandler: (context, editorState) {
-      final selection = editorState.selection;
-      if (selection == null) return;
-
-      editorState.keyboardService?.closeKeyboard();
-      editorState.updateSelectionWithReason(
-        selection,
-        extraInfo: {
-          selectionExtraInfoDisableMobileToolbarKey: true,
-          selectionExtraInfoDisableFloatingToolbar: true,
-          selectionExtraInfoDoNotAttachTextService: true,
-        },
-      );
-      editorState.keepFocusNotifier.increase();
-
-      Navigator.of(context)
-          .push(
-            StupidSimpleSheetRoute<void>(
-              barrierColor: Colors.transparent,
-              originateAboveBottomViewInset: true,
-              child: MobileToolbarTheme(
-                child: EditorToolbarSheetScaffold(
-                  child: _ExtrasMenu(
-                    editorState: editorState,
-                    onExport: onExport,
-                    exportFileName: exportFileName,
-                    pdfFont: pdfFont,
-                    pdfFontFallback: pdfFontFallback,
-                    exportFormats: exportFormats,
-                  ),
-                ),
-              ),
-            ),
-          )
-          .then((_) {
-            editorState.keepFocusNotifier.decrease();
-            editorState.updateSelectionWithReason(
-              selection,
-              extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
-            );
-            editorState.keyboardService?.enableKeyBoard(selection);
-          });
-    },
+    sheetBodyBuilder: (context, editorState, _) => _ExtrasMenu(
+      editorState: editorState,
+      onExport: onExport,
+      exportFileName: exportFileName,
+      pdfFont: pdfFont,
+      pdfFontFallback: pdfFontFallback,
+      exportFormats: exportFormats,
+    ),
   );
 }
 

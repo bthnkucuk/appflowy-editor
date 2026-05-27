@@ -33,17 +33,14 @@ void main() {
     await tester.tap(find.byType(IconButton).first);
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
-    // Show its menu and it has 2 buttons
-    expect(find.byType(MobileToolbarItemMenu), findsOneWidget);
+    // Sheet renders the curated cells; Bulleted + Numbered are among them.
+    expect(find.byType(EditorToolbarSheetScaffold), findsOneWidget);
     expect(find.text(aft.bulletedList), findsOneWidget);
     expect(find.text(aft.numberedList), findsOneWidget);
 
     // Test Bulleted List button
     await tester.tap(
-      find.widgetWithText(
-        MobileToolbarItemMenuBtn,
-        aft.bulletedList,
-      ),
+      find.widgetWithText(EditorToolbarMenuButton, aft.bulletedList),
     );
     var node = editor.editorState.getNodeAtPath([1]);
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
@@ -51,10 +48,7 @@ void main() {
 
     // Test Numbered List button
     await tester.tap(
-      find.widgetWithText(
-        MobileToolbarItemMenuBtn,
-        aft.numberedList,
-      ),
+      find.widgetWithText(EditorToolbarMenuButton, aft.numberedList),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
     //Get updated node

@@ -1,6 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
-import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 
 /// Sheet-based variant of [buildTextAndBackgroundColorMobileToolbarItem].
 /// Opens the same text/background color tabbed grid in a
@@ -10,53 +9,18 @@ MobileToolbarItem buildTextAndBackgroundColorMobileToolbarItemSheet({
   List<ColorOption>? textColorOptions,
   List<ColorOption>? backgroundColorOptions,
 }) {
-  return MobileToolbarItem(
+  return MobileToolbarItem.sheet(
     itemIconBuilder: (context, _) => ToolbarIcon(
       icon: ToolbarIcons.color,
       color: MobileToolbarTheme.of(context).iconColor,
     ),
-    actionHandler: (context, editorState) {
-      final selection = editorState.selection;
-      if (selection == null) return;
-
-      editorState.keyboardService?.closeKeyboard();
-      editorState.updateSelectionWithReason(
-        selection,
-        extraInfo: {
-          selectionExtraInfoDisableMobileToolbarKey: true,
-          selectionExtraInfoDisableFloatingToolbar: true,
-          selectionExtraInfoDoNotAttachTextService: true,
-        },
-      );
-      editorState.keepFocusNotifier.increase();
-
-      Navigator.of(context)
-          .push(
-            StupidSimpleSheetRoute<void>(
-              barrierColor: Colors.transparent,
-              originateAboveBottomViewInset: true,
-              child: MobileToolbarTheme(
-                child: EditorToolbarSheetScaffold(
-                  child: _SheetTextAndBackgroundColorMenu(
-                    editorState,
-                    selection,
-                    textColorOptions: textColorOptions,
-                    backgroundColorOptions: backgroundColorOptions,
-                  ),
-                ),
-              ),
-            ),
-          )
-          .then((_) {
-            // Pair the .increase() above the .push (cf. heading sheet).
-            editorState.keepFocusNotifier.decrease();
-            editorState.updateSelectionWithReason(
-              selection,
-              extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
-            );
-            editorState.keyboardService?.enableKeyBoard(selection);
-          });
-    },
+    sheetBodyBuilder: (context, editorState, selection) =>
+        _SheetTextAndBackgroundColorMenu(
+      editorState,
+      selection,
+      textColorOptions: textColorOptions,
+      backgroundColorOptions: backgroundColorOptions,
+    ),
   );
 }
 

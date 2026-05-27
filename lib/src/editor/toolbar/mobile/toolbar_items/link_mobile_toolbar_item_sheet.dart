@@ -1,64 +1,27 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
-import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 
 /// Sheet-based variant of [linkMobileToolbarItem]. Opens the URL input in a
 /// [StupidSimpleSheetRoute] instead of the inline keyboard-height menu used
 /// by MobileToolbarV2. Unlike the other sheet variants, this one keeps the
-/// soft keyboard open — the TextField inside [MobileLinkMenu] needs it.
-final linkMobileToolbarItemSheet = MobileToolbarItem(
+/// soft keyboard open via `closeKeyboard: false` — the TextField inside
+/// [MobileLinkMenu] autofocuses and needs the IME.
+final linkMobileToolbarItemSheet = MobileToolbarItem.sheet(
+  closeKeyboard: false,
   itemIconBuilder: (context, _) => ToolbarIcon(
     icon: ToolbarIcons.link,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
-  actionHandler: (context, editorState) {
-    final selection = editorState.selection;
-    if (selection == null) return;
-
-    // Don't close the keyboard — the TextField in the link menu autofocuses
-    // and needs it. Just hide V2's toolbar so it doesn't stack on top of the
-    // sheet, and stop the editor from re-attaching its own IME to the
-    // selection (which would fight the TextField's IME).
-    editorState.updateSelectionWithReason(
-      selection,
-      extraInfo: {
-        selectionExtraInfoDisableMobileToolbarKey: true,
-        selectionExtraInfoDisableFloatingToolbar: true,
-        selectionExtraInfoDoNotAttachTextService: true,
-      },
-    );
-    editorState.keepFocusNotifier.increase();
-
-    final String? linkText = editorState.getDeltaAttributeValueInSelection(
+  sheetBodyBuilder: (context, editorState, selection) {
+    final linkText = editorState.getDeltaAttributeValueInSelection(
       AppFlowyRichTextKeys.href,
       selection,
     );
-
-    Navigator.of(context)
-        .push(
-          StupidSimpleSheetRoute<void>(
-            barrierColor: Colors.transparent,
-            originateAboveBottomViewInset: true,
-            child: MobileToolbarTheme(
-              child: EditorToolbarSheetScaffold(
-                child: _SheetLinkMenuHost(
-                  editorState: editorState,
-                  selection: selection,
-                  linkText: linkText,
-                ),
-              ),
-            ),
-          ),
-        )
-        .then((_) {
-          // Pair the .increase() above the .push (cf. heading sheet).
-          editorState.keepFocusNotifier.decrease();
-          editorState.updateSelectionWithReason(
-            selection,
-            extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
-          );
-          editorState.keyboardService?.enableKeyBoard(selection);
-        });
+    return _SheetLinkMenuHost(
+      editorState: editorState,
+      selection: selection,
+      linkText: linkText,
+    );
   },
 );
 

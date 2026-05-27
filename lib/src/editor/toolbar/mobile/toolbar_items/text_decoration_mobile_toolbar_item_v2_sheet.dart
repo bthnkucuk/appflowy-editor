@@ -1,54 +1,17 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
-import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 
 /// Sheet-based variant of [textDecorationMobileToolbarItemV2]. Opens the
 /// bold/italic/underline/strikethrough/code grid in a
 /// [StupidSimpleSheetRoute] instead of the inline keyboard-height menu used
 /// by MobileToolbarV2.
-final textDecorationMobileToolbarItemV2Sheet = MobileToolbarItem(
+final textDecorationMobileToolbarItemV2Sheet = MobileToolbarItem.sheet(
   itemIconBuilder: (context, _) => ToolbarIcon(
     icon: ToolbarIcons.textDecorationBold,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
-  actionHandler: (context, editorState) {
-    final selection = editorState.selection;
-    if (selection == null) return;
-
-    editorState.keyboardService?.closeKeyboard();
-    editorState.updateSelectionWithReason(
-      selection,
-      extraInfo: {
-        selectionExtraInfoDisableMobileToolbarKey: true,
-        selectionExtraInfoDisableFloatingToolbar: true,
-        selectionExtraInfoDoNotAttachTextService: true,
-      },
-    );
-    editorState.keepFocusNotifier.increase();
-
-    Navigator.of(context)
-        .push(
-          StupidSimpleSheetRoute<void>(
-            barrierColor: Colors.transparent,
-            originateAboveBottomViewInset: true,
-            child: MobileToolbarTheme(
-              child: EditorToolbarSheetScaffold(
-                child: _SheetTextDecorationV2Menu(editorState, selection),
-              ),
-            ),
-          ),
-        )
-        .then((_) {
-          // Pair the .increase() above the .push — without this every
-          // sheet open leaks +1 on the counter (cf. heading sheet).
-          editorState.keepFocusNotifier.decrease();
-          editorState.updateSelectionWithReason(
-            selection,
-            extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
-          );
-          editorState.keyboardService?.enableKeyBoard(selection);
-        });
-  },
+  sheetBodyBuilder: (context, editorState, selection) =>
+      _SheetTextDecorationV2Menu(editorState, selection),
 );
 
 class _SheetTextDecorationV2Menu extends StatefulWidget {

@@ -1,52 +1,16 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
-import 'package:stupid_simple_sheet/stupid_simple_sheet.dart';
 
 /// Sheet-based variant of [blocksMobileToolbarItem]. Opens the heading/list/
 /// todo/quote grid in a [StupidSimpleSheetRoute] instead of the inline
 /// keyboard-height menu used by MobileToolbarV2.
-final blocksMobileToolbarItemSheet = MobileToolbarItem(
+final blocksMobileToolbarItemSheet = MobileToolbarItem.sheet(
   itemIconBuilder: (context, _) => ToolbarIcon(
     icon: ToolbarIcons.list,
     color: MobileToolbarTheme.of(context).iconColor,
   ),
-  actionHandler: (context, editorState) {
-    final selection = editorState.selection;
-    if (selection == null) return;
-
-    editorState.keyboardService?.closeKeyboard();
-    editorState.updateSelectionWithReason(
-      selection,
-      extraInfo: {
-        selectionExtraInfoDisableMobileToolbarKey: true,
-        selectionExtraInfoDisableFloatingToolbar: true,
-        selectionExtraInfoDoNotAttachTextService: true,
-      },
-    );
-    editorState.keepFocusNotifier.increase();
-
-    Navigator.of(context)
-        .push(
-          StupidSimpleSheetRoute<void>(
-            barrierColor: Colors.transparent,
-            originateAboveBottomViewInset: true,
-            child: MobileToolbarTheme(
-              child: EditorToolbarSheetScaffold(
-                child: _SheetBlocksMenu(editorState, selection),
-              ),
-            ),
-          ),
-        )
-        .then((_) {
-          // Pair the .increase() above the .push (cf. heading sheet).
-          editorState.keepFocusNotifier.decrease();
-          editorState.updateSelectionWithReason(
-            selection,
-            extraInfo: {selectionExtraInfoDisableFloatingToolbar: true},
-          );
-          editorState.keyboardService?.enableKeyBoard(selection);
-        });
-  },
+  sheetBodyBuilder: (context, editorState, selection) =>
+      _SheetBlocksMenu(editorState, selection),
 );
 
 class _SheetBlocksMenu extends StatefulWidget {
