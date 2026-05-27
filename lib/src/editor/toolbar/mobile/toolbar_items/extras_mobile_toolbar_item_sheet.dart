@@ -6,7 +6,7 @@ import 'package:stupid_simple_sheet/stupid_simple_sheet.dart'
     show StupidSimpleSheetRoute;
 
 /// Callback shape passed to `buildExtrasMobileToolbarItemSheet` to wire
-/// up the export cell. Mirrors [AppFlowyEditorExportCallback] — the
+/// up the export cell. Mirrors [EditorExportCallback] — the
 /// sheet hands back an [XFile] for the consumer to forward to
 /// share_plus / file_picker / etc.
 typedef ExtrasOnExportCallback =
@@ -25,7 +25,7 @@ MobileToolbarItem buildExtrasMobileToolbarItemSheet({
   String exportFileName = 'document',
   Future<pw.Font> Function()? pdfFont,
   Future<List<pw.Font>> Function()? pdfFontFallback,
-  List<AppFlowyExportFormat> exportFormats = AppFlowyExportFormat.values,
+  List<EditorExportFormat> exportFormats = EditorExportFormat.values,
 }) {
   return MobileToolbarItem.sheet(
     itemIconBuilder: (context, _) => ToolbarIcon(
@@ -62,7 +62,7 @@ class _ExtrasMenu extends StatelessWidget {
   final String exportFileName;
   final Future<pw.Font> Function()? pdfFont;
   final Future<List<pw.Font>> Function()? pdfFontFallback;
-  final List<AppFlowyExportFormat> exportFormats;
+  final List<EditorExportFormat> exportFormats;
 
   @override
   Widget build(BuildContext context) {

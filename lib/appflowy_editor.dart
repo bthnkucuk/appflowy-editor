@@ -27,6 +27,7 @@ export 'src/editor/selection_menu/selection_menu.dart';
 
 // EditorState and friends
 export 'src/editor_state.dart';
+export 'src/editor_state/editor_export_extension.dart';
 export 'src/editor_state/undo_manager.dart' show TransactionSource;
 
 // ---------------------------------------------------------------------------

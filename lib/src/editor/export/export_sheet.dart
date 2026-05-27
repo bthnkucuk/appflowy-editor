@@ -1,22 +1,7 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:cross_file/cross_file.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/widgets.dart' as pw;
-
-/// Supported export targets for [AppFlowyEditorExportSheet].
-enum AppFlowyExportFormat {
-  json('json', 'application/json'),
-  markdown('md', 'text/markdown'),
-  pdf('pdf', 'application/pdf');
-
-  const AppFlowyExportFormat(this.fileExtension, this.mimeType);
-  final String fileExtension;
-  final String mimeType;
-}
 
 /// Callback invoked once an export has been produced.
 ///
@@ -30,79 +15,54 @@ enum AppFlowyExportFormat {
 /// Ownership of the temp file belongs to the caller — move/copy it with
 /// `file_picker`'s save dialog or `share_plus`, or delete it once you're
 /// done. Large PDF exports otherwise sit in temp until the OS reclaims it.
-typedef AppFlowyEditorExportCallback =
-    Future<void> Function(BuildContext context, XFile file);
+typedef EditorExportCallback = Future<void> Function(BuildContext context, XFile file);
 
-/// A drop-in export panel that runs against an [EditorState] — parallel to
-/// [AppFlowyEditor]. Shows one row per requested [AppFlowyExportFormat]; on
-/// tap, encodes the document with the package's built-in encoders
-/// ([documentToMarkdown], [PdfHTMLEncoder]), writes the result to a temp
-/// file, and hands the path to [onExport]. Writing to disk (rather than
-/// passing bytes around) keeps large PDF exports from being pinned in heap
-/// after the callback returns.
+/// A drop-in export panel that runs against an [EditorState]. Each row
+/// just forwards to the matching [EditorExport] extension method
+/// (`exportAsJson` / `exportAsMarkdown` / `exportAsPdf`), then hands the
+/// produced [XFile] to [onExport]. The sheet itself owns no encoding
+/// logic — that lives on `EditorState` so consumers can reuse it from
+/// a button, an AppBar action, or a CLI tool without mounting the
+/// sheet UI.
 ///
 /// Layout matches the mobile toolbar sheet system (cf.
-/// `EditorToolbarSheetScaffold`, `EditorToolbarMenuButton`) — squircle
-/// rows with icon + label. Open via `StupidSimpleSheetRoute` for the
-/// frosted-glass shell or `showModalBottomSheet` for the classic look:
-///
-/// ```dart
-/// Navigator.of(context).push(
-///   StupidSimpleSheetRoute<void>(
-///     child: EditorToolbarSheetScaffold(
-///       child: AppFlowyEditorExportSheet(
-///         editorState: editorState,
-///         fileName: 'my-doc',
-///         onExport: (context, file) async {
-///           // hand `file` to share_plus / file_picker / etc.
-///         },
-///       ),
-///     ),
-///   ),
-/// );
-/// ```
+/// `EditorToolbarSheetScaffold`, `EditorToolbarMenuButton`).
 class AppFlowyEditorExportSheet extends StatefulWidget {
   const AppFlowyEditorExportSheet({
     super.key,
     required this.editorState,
     required this.onExport,
     this.fileName = 'document',
-    this.formats = AppFlowyExportFormat.values,
+    this.formats = EditorExportFormat.values,
     this.pdfFont,
     this.pdfFontFallback,
   });
 
   final EditorState editorState;
-  final AppFlowyEditorExportCallback onExport;
+  final EditorExportCallback onExport;
 
   /// Base name (no extension) used for the temp file. The sheet appends the
   /// correct extension per format.
   final String fileName;
 
   /// Which formats to offer, in display order. Defaults to all formats.
-  final List<AppFlowyExportFormat> formats;
+  final List<EditorExportFormat> formats;
 
-  /// Primary font forwarded to [PdfHTMLEncoder]. Strongly recommended for
-  /// non-ASCII documents: when this is null the pdf package falls back to
-  /// built-in Helvetica, which *claims* to cover WinAnsi codepoints like
-  /// U+2019 (curly apostrophe) but renders them as wrong glyphs — and since
-  /// Helvetica reports the glyph as "present", [pdfFontFallback] is never
-  /// consulted for them. Supply e.g. `PdfGoogleFonts.notoSansRegular()` to
-  /// route every glyph through a real TTF.
+  /// Primary font forwarded to [EditorExport.exportAsPdf]. See that
+  /// method's doc comment for why supplying a real TTF matters when
+  /// the document has non-ASCII codepoints.
   final Future<pw.Font> Function()? pdfFont;
 
-  /// Fonts consulted when [pdfFont] doesn't cover a codepoint (e.g. emoji,
-  /// CJK). Order matters — earlier entries are tried first. Only consulted
-  /// for [AppFlowyExportFormat.pdf].
+  /// Fonts consulted when [pdfFont] doesn't cover a codepoint (e.g.
+  /// emoji, CJK). Only forwarded for [EditorExportFormat.pdf].
   final Future<List<pw.Font>> Function()? pdfFontFallback;
 
   @override
-  State<AppFlowyEditorExportSheet> createState() =>
-      _AppFlowyEditorExportSheetState();
+  State<AppFlowyEditorExportSheet> createState() => _AppFlowyEditorExportSheetState();
 }
 
 class _AppFlowyEditorExportSheetState extends State<AppFlowyEditorExportSheet> {
-  AppFlowyExportFormat? _exporting;
+  EditorExportFormat? _exporting;
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +84,7 @@ class _AppFlowyEditorExportSheetState extends State<AppFlowyEditorExportSheet> {
     );
   }
 
-  Widget _buildRow(AppFlowyExportFormat format) {
+  Widget _buildRow(EditorExportFormat format) {
     final busy = _exporting == format;
     final disabled = _exporting != null && !busy;
     return Opacity(
@@ -136,72 +96,63 @@ class _AppFlowyEditorExportSheetState extends State<AppFlowyEditorExportSheet> {
         iconPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(
           children: [
-            ToolbarIcon(
-              icon: _iconFor(format),
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-            ),
+            ToolbarIcon(icon: _iconFor(format), color: Theme.of(context).textTheme.bodyLarge?.color),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    _labelFor(format),
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
+                  Text(_labelFor(format), style: Theme.of(context).textTheme.bodyMedium),
                   Text(
                     '.${format.fileExtension}',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.outline),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
             if (busy)
-              const SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+              const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
             else
-              Icon(
-                Icons.chevron_right,
-                color: Theme.of(context).colorScheme.outline,
-              ),
+              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outline),
           ],
         ),
       ),
     );
   }
 
-  ToolbarIcons _iconFor(AppFlowyExportFormat format) {
+  ToolbarIcons _iconFor(EditorExportFormat format) {
     switch (format) {
-      case AppFlowyExportFormat.json:
+      case EditorExportFormat.json:
         return ToolbarIcons.code;
-      case AppFlowyExportFormat.markdown:
+      case EditorExportFormat.markdown:
         return ToolbarIcons.text;
-      case AppFlowyExportFormat.pdf:
+      case EditorExportFormat.pdf:
         return ToolbarIcons.export;
     }
   }
 
-  String _labelFor(AppFlowyExportFormat format) {
+  String _labelFor(EditorExportFormat format) {
     switch (format) {
-      case AppFlowyExportFormat.json:
+      case EditorExportFormat.json:
         return 'Export as JSON';
-      case AppFlowyExportFormat.markdown:
+      case EditorExportFormat.markdown:
         return 'Export as Markdown';
-      case AppFlowyExportFormat.pdf:
+      case EditorExportFormat.pdf:
         return 'Export as PDF';
     }
   }
 
-  Future<void> _run(AppFlowyExportFormat format) async {
+  Future<void> _run(EditorExportFormat format) async {
     setState(() => _exporting = format);
     try {
-      final file = await _encode(format);
+      final file = await widget.editorState.exportAs(
+        format,
+        fileName: widget.fileName,
+        pdfFont: widget.pdfFont,
+        pdfFontFallback: widget.pdfFontFallback,
+      );
       if (!mounted) return;
       await widget.onExport(context, file);
       if (!mounted) return;
@@ -209,92 +160,5 @@ class _AppFlowyEditorExportSheetState extends State<AppFlowyEditorExportSheet> {
     } finally {
       if (mounted) setState(() => _exporting = null);
     }
-  }
-
-  Future<XFile> _encode(AppFlowyExportFormat format) async {
-    final document = widget.editorState.document;
-    final name = '${widget.fileName}.${format.fileExtension}';
-    switch (format) {
-      case AppFlowyExportFormat.json:
-        return _writeString(
-          jsonEncode(document.toJson()),
-          name: name,
-          mimeType: format.mimeType,
-        );
-      case AppFlowyExportFormat.markdown:
-        return _writeString(
-          documentToMarkdown(document),
-          name: name,
-          mimeType: format.mimeType,
-        );
-      case AppFlowyExportFormat.pdf:
-        final markdown = documentToMarkdown(document);
-        final font = await widget.pdfFont?.call();
-        final fontFallback =
-            await widget.pdfFontFallback?.call() ?? const <pw.Font>[];
-        final pdf = await PdfHTMLEncoder(
-          font: font,
-          fontFallback: fontFallback,
-        ).convert(markdown);
-        // Stage on disk and drop the byte buffer immediately so the
-        // returned XFile only retains a path, not the whole document.
-        return _writeBytes(
-          await pdf.save(),
-          name: name,
-          mimeType: format.mimeType,
-        );
-    }
-  }
-
-  Future<XFile> _writeString(
-    String contents, {
-    required String name,
-    required String mimeType,
-  }) async {
-    if (kIsWeb) {
-      final bytes = Uint8List.fromList(utf8.encode(contents));
-      return XFile.fromData(
-        bytes,
-        name: name,
-        mimeType: mimeType,
-        length: bytes.length,
-      );
-    }
-    final file = await _newCacheFile(name);
-    await file.writeAsString(contents, flush: true);
-    return XFile(
-      file.path,
-      name: name,
-      mimeType: mimeType,
-      length: await file.length(),
-    );
-  }
-
-  Future<XFile> _writeBytes(
-    Uint8List bytes, {
-    required String name,
-    required String mimeType,
-  }) async {
-    if (kIsWeb) {
-      return XFile.fromData(
-        bytes,
-        name: name,
-        mimeType: mimeType,
-        length: bytes.length,
-      );
-    }
-    final file = await _newCacheFile(name);
-    await file.writeAsBytes(bytes, flush: true);
-    return XFile(
-      file.path,
-      name: name,
-      mimeType: mimeType,
-      length: await file.length(),
-    );
-  }
-
-  Future<File> _newCacheFile(String name) async {
-    final dir = await Directory.systemTemp.createTemp('appflowy_export_');
-    return File('${dir.path}${Platform.pathSeparator}$name');
   }
 }
