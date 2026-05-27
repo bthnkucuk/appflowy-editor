@@ -102,6 +102,21 @@ class _ExtrasMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final cells = <_ExtrasCell>[
       _ExtrasCell(
+        icon: ToolbarIcons.outline,
+        label: 'Outline',
+        onTap: () => _openOutline(context),
+      ),
+      _ExtrasCell(
+        icon: ToolbarIcons.appearance,
+        label: 'Appearance',
+        onTap: () => _openAppearance(context),
+      ),
+      _ExtrasCell(
+        icon: ToolbarIcons.font,
+        label: 'Font',
+        onTap: () => _openFonts(context),
+      ),
+      _ExtrasCell(
         icon: ToolbarIcons.stats,
         label: 'Statistics',
         onTap: () => _openStats(context),
@@ -160,12 +175,28 @@ class _ExtrasMenu extends StatelessWidget {
   }
 
   void _openStats(BuildContext context) {
+    _pushSubSheet(context, _StatsSheet(editorState));
+  }
+
+  void _openOutline(BuildContext context) {
+    _pushSubSheet(context, OutlineMobileSheet(editorState: editorState));
+  }
+
+  void _openAppearance(BuildContext context) {
+    _pushSubSheet(context, AppearanceMobileSheet(editorState: editorState));
+  }
+
+  void _openFonts(BuildContext context) {
+    _pushSubSheet(context, FontsMobileSheet(editorState: editorState));
+  }
+
+  void _pushSubSheet(BuildContext context, Widget body) {
     Navigator.of(context).push(
       StupidSimpleSheetRoute<void>(
         barrierColor: Colors.transparent,
         originateAboveBottomViewInset: true,
         child: MobileToolbarTheme(
-          child: EditorToolbarSheetScaffold(child: _StatsSheet(editorState)),
+          child: EditorToolbarSheetScaffold(child: body),
         ),
       ),
     );

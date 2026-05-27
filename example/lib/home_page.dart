@@ -4,7 +4,6 @@ import 'dart:io' if (dart.library.html) 'package:example/file_io_stub.dart';
 import 'dart:math';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:example/appearance/appearance_sheet.dart';
 import 'package:example/pages/animated_markdown_page.dart';
 import 'package:example/pages/auto_complete_editor.dart';
 import 'package:example/pages/auto_expand_editor.dart';
@@ -147,9 +146,12 @@ class _HomePageState extends State<HomePage> {
                   IconButton(
                     tooltip: 'Appearance',
                     icon: const Icon(Icons.text_format),
-                    onPressed: () => openAppearanceSheet(
+                    onPressed: () => showModalBottomSheet<void>(
                       context: context,
-                      editorState: editorState,
+                      showDragHandle: true,
+                      isScrollControlled: true,
+                      builder: (_) =>
+                          AppearanceMobileSheet(editorState: editorState),
                     ),
                   ),
                   IconButton(
@@ -450,7 +452,7 @@ class _HomePageState extends State<HomePage> {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (sheetContext) => _TocSheet(editorState: editorState),
+      builder: (sheetContext) => OutlineMobileSheet(editorState: editorState),
     );
   }
 
@@ -670,114 +672,3 @@ class _DirtyIndicator extends StatelessWidget {
   }
 }
 
-/// Bottom-sheet outline view. Subscribes to [EditorState.tableOfContents]
-/// so the list refreshes if the user edits the document while the sheet
-/// is open (rare but cheap). Indentation mimics Microsoft Word's
-/// navigation pane — each level shifts ~16 px right.
-class _TocSheet extends StatelessWidget {
-  const _TocSheet({required this.editorState});
-
-  final EditorState editorState;
-
-  static const double _indentStep = 16;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.6,
-      minChildSize: 0.3,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-              child: Row(
-                children: [
-                  Text(
-                    'Table of contents',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ValueListenableBuilder<List<TocEntry>>(
-                valueListenable: editorState.tableOfContents,
-                builder: (context, entries, _) {
-                  if (entries.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          'No headings yet — add an H1/H2/H3 to populate '
-                          'the outline.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.hintColor,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  return ListView.builder(
-                    controller: scrollController,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: entries.length,
-                    itemBuilder: (context, i) {
-                      final entry = entries[i];
-                      final indent = (entry.level - 1) * _indentStep;
-                      // H1 sets the visual baseline — bold + 16 px.
-                      // Each level below trims 1 px and softens weight.
-                      final fontSize = (16 - (entry.level - 1)).clamp(12, 16);
-                      final weight = entry.level <= 2
-                          ? FontWeight.w600
-                          : FontWeight.w400;
-                      return InkWell(
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          await editorState.jumpToTocEntry(entry);
-                        },
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            20 + indent,
-                            10,
-                            20,
-                            10,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  entry.text,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: fontSize.toDouble(),
-                                    fontWeight: weight,
-                                    color: entry.isNested
-                                        ? theme.hintColor
-                                        : null,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}

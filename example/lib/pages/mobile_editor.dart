@@ -1,5 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:example/appearance/appearance_sheet.dart' show appearanceTick;
+// Use editorAppearanceTick from appflowy_editor.
 import 'package:example/util/stutter_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -137,12 +137,12 @@ class _MobileEditorState extends State<MobileEditor> {
           );
         },
         // Rebuild AppFlowyEditor whenever the appearance sheet bumps
-        // [appearanceTick]. Without this the cached editor widget in
+        // [editorAppearanceTick]. Without this the cached editor widget in
         // home_page doesn't get rebuilt by setState, so heading
         // textStyleBuilder closures and body fontWeight changes wouldn't
         // reach the editor subtree.
         child: ValueListenableBuilder<int>(
-          valueListenable: appearanceTick,
+          valueListenable: editorAppearanceTick,
           builder: (context, _, __) => AppFlowyEditor(
             editorStyle: editorStyle,
             editorState: editorState,

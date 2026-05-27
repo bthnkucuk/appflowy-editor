@@ -60,6 +60,9 @@ enum ToolbarIcons {
   more,
   stats,
   export,
+  outline,
+  appearance,
+  font,
 }
 
 /// Phosphor's "regular" weight — the default look for toolbar buttons in
@@ -122,6 +125,9 @@ const Map<ToolbarIcons, IconifyIconData> _phMap = {
   ToolbarIcons.more: PhIcons.dotsThree,
   ToolbarIcons.stats: PhIcons.chartBar,
   ToolbarIcons.export: PhIcons.export_,
+  ToolbarIcons.outline: PhIcons.treeStructure,
+  ToolbarIcons.appearance: PhIcons.gear,
+  ToolbarIcons.font: PhIcons.textAUnderline,
 };
 
 /// Phosphor's "Fill" (solid) variants — used by [ToolbarIcon] when
@@ -160,6 +166,9 @@ const Map<ToolbarIcons, IconifyIconData> _phMapFilled = {
   ToolbarIcons.more: PhIcons.dotsThreeFill,
   ToolbarIcons.stats: PhIcons.chartBarFill,
   ToolbarIcons.export: PhIcons.exportFill,
+  ToolbarIcons.outline: PhIcons.treeStructureFill,
+  ToolbarIcons.appearance: PhIcons.gearFill,
+  ToolbarIcons.font: PhIcons.textAUnderlineFill,
 };
 
 class ToolbarIcon extends StatelessWidget {

@@ -16,6 +16,7 @@ description: A highly customizable rich-text editor for Flutter. The AppFlowy
 dependencies:
   super_sliver_list: ^0.4.1
   fractional_indexing_dart: ^1.0.7
+  google_fonts: ^8.1.0
   collection: "^1.19.1"
   cross_file: ^0.3.5+2
   device_info_plus: 12.4.0

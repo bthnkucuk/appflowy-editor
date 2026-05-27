@@ -1,5 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:example/appearance/appearance_sheet.dart' show appearanceTick;
+// Use editorAppearanceTick from appflowy_editor.
 import 'package:example/pages/drag_to_reorder_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -93,7 +93,7 @@ class _DesktopEditorState extends State<DesktopEditor> {
         // Rebuild on appearance-sheet mutations — see mobile_editor for
         // the rationale (cached editor widget upstream).
         child: ValueListenableBuilder<int>(
-          valueListenable: appearanceTick,
+          valueListenable: editorAppearanceTick,
           builder: (context, _, __) => AppFlowyEditor(
             editorState: editorState,
             editorScrollController: editorScrollController,
