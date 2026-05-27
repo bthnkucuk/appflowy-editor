@@ -37,6 +37,9 @@ export 'image_block_component/resizable_image.dart';
 // numbered list
 export 'numbered_list_block_component/numbered_list_block_component.dart';
 export 'numbered_list_block_component/numbered_list_character_shortcut.dart';
+// outline (auto table-of-contents block)
+export 'outline_block_component/outline_block_component.dart';
+export 'outline_block_component/outline_list_view.dart';
 export 'paragraph_block_component/paragraph_block_component.dart';
 // quote
 export 'quote_block_component/quote_block_component.dart';

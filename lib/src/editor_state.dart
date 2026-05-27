@@ -6,7 +6,6 @@ import 'editor/editor_component/service/scroll/auto_scroller.dart';
 import 'editor/util/platform_extension.dart';
 import 'editor_state/undo_manager.dart';
 import 'package:collection/collection.dart';
-import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -24,7 +23,6 @@ part 'editor_state/editor_service.dart';
 part 'editor_state/history_mixin.dart';
 part 'editor_state/scroll_coordinator_mixin.dart';
 part 'editor_state/selection_style_mixin.dart';
-part 'editor_state/table_of_contents.dart';
 part 'editor_state/transaction_pipeline_mixin.dart';
 
 /// The state of the editor.
@@ -59,7 +57,6 @@ abstract class _EditorStateBase
         _ScrollCoordinatorMixin,
         _DocumentQueryMixin,
         _TransactionPipelineMixin,
-        _TableOfContentsMixin,
         _DocumentRulesMixin {}
 
 class EditorState extends _EditorStateBase {
@@ -71,7 +68,6 @@ class EditorState extends _EditorStateBase {
     _initHistory(maxHistoryItemSize);
     undoManager.state = this;
     _initDirtyTracking();
-    _initTableOfContents();
   }
 
   EditorState.blank({bool withInitialText = true}) : this(document: Document.blank(withInitialText: withInitialText));
@@ -134,9 +130,6 @@ class EditorState extends _EditorStateBase {
   void dispose() {
     _disposeScrollCoordinator();
     isDisposed = true;
-    // ToC listens to the transaction stream — cancel before the stream
-    // closes to keep dispose order clean.
-    _disposeTableOfContents();
     _disposeTransactionPipeline();
     _disposeHistory();
     onDispose.value += 1;
@@ -283,16 +276,16 @@ class EditorState extends _EditorStateBase {
   }
 
   /// Scroll the document to the heading represented by [entry] and place
-  /// the caret at the heading's start. Resolves [TocEntry.nodeId] to the
-  /// current path; falls back to the cached [TocEntry.path] if the node
-  /// was deleted between TOC compute and click.
+  /// the caret at the heading's start. Resolves [OutlineEntry.nodeId] to
+  /// the current path; falls back to the cached [OutlineEntry.path] if
+  /// the node was deleted between outline compute and click.
   ///
   /// Uses [scrollService.jumpTo] internally so the call site doesn't need
   /// to thread an `EditorScrollController` through. [scrollService.jumpTo]
   /// addresses top-level children — a nested heading scrolls to its
   /// containing top-level block, which is the best the editor's scroll
   /// API can do today.
-  Future<void> jumpToTocEntry(TocEntry entry) async {
+  Future<void> jumpToOutlineEntry(OutlineEntry entry) async {
     Path? target;
     final iter = NodeIterator(document: document, startNode: document.root);
     while (iter.moveNext()) {

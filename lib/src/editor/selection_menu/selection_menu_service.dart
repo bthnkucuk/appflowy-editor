@@ -357,7 +357,23 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
   ),
   dividerMenuItem,
   tableMenuItem,
+  outlineMenuItem,
 ];
+
+/// Slash-menu entry that inserts an [outlineBlockNode] (auto
+/// table-of-contents) after the current selection.
+final SelectionMenuItem outlineMenuItem = SelectionMenuItem(
+  getName: () => 'Outline',
+  icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
+    name: ToolbarIcons.outline,
+    isSelected: isSelected,
+    style: style,
+  ),
+  keywords: ['outline', 'toc', 'table of contents'],
+  handler: (editorState, _, _) {
+    insertNodeAfterSelection(editorState, outlineBlockNode());
+  },
+);
 
 final List<SelectionMenuItem> singleColumnVisibleMenuItems = [
   SelectionMenuItem(

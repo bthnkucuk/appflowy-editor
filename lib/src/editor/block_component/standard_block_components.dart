@@ -54,6 +54,7 @@ final Map<String, BlockComponentBuilder> standardBlockComponentBuilderMap = {
   ),
   TableBlockKeys.type: TableBlockComponentBuilder(),
   TableCellBlockKeys.type: TableCellBlockComponentBuilder(),
+  OutlineBlockKeys.type: OutlineBlockComponentBuilder(),
 };
 
 final List<CharacterShortcutEvent> standardCharacterShortcutEvents = [
