@@ -40,10 +40,12 @@ final linkMobileToolbarItemSheet = MobileToolbarItem(
             barrierColor: Colors.transparent,
             originateAboveBottomViewInset: true,
             child: MobileToolbarTheme(
-              child: _SheetLinkMenuHost(
-                editorState: editorState,
-                selection: selection,
-                linkText: linkText,
+              child: EditorToolbarSheetScaffold(
+                child: _SheetLinkMenuHost(
+                  editorState: editorState,
+                  selection: selection,
+                  linkText: linkText,
+                ),
               ),
             ),
           ),

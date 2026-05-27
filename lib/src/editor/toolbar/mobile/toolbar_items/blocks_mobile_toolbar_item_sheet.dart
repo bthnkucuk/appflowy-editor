@@ -31,12 +31,8 @@ final blocksMobileToolbarItemSheet = MobileToolbarItem(
             barrierColor: Colors.transparent,
             originateAboveBottomViewInset: true,
             child: MobileToolbarTheme(
-              child: MobileToolbarItemMenu(
-                editorState: editorState,
-                itemMenuBuilder: () => Padding(
-                  padding: EdgeInsets.only(bottom: kBottomNavigationBarHeight),
-                  child: _SheetBlocksMenu(editorState, selection),
-                ),
+              child: EditorToolbarSheetScaffold(
+                child: _SheetBlocksMenu(editorState, selection),
               ),
             ),
           ),
@@ -132,58 +128,78 @@ class _SheetBlocksMenuState extends State<_SheetBlocksMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final style = MobileToolbarTheme.of(context);
-    final children = _lists.map((list) {
-      final node = widget.editorState.getNodeAtPath(
-        widget.selection.start.path,
-      )!;
-
-      final isSelected =
-          node.type == list.name &&
-          (list.level == null ||
-              node.attributes[HeadingBlockKeys.level] == list.level);
-
-      return MobileToolbarItemMenuBtn(
-        icon: ToolbarIcon(
-          icon: list.icon,
-          color: MobileToolbarTheme.of(context).iconColor,
-          selected: isSelected,
-        ),
-        label: Text(list.label),
-        isSelected: isSelected,
-        onPressed: () {
-          setState(() {
-            widget.editorState.formatNode(
-              widget.selection,
-              (node) => node.copyWith(
-                type: isSelected ? ParagraphBlockKeys.type : list.name,
-                attributes: {
-                  ParagraphBlockKeys.delta: (node.delta ?? Delta()).toJson(),
-                  blockComponentBackgroundColor:
-                      node.attributes[blockComponentBackgroundColor],
-                  if (!isSelected && list.name == TodoListBlockKeys.type)
-                    TodoListBlockKeys.checked: false,
-                  if (!isSelected && list.name == HeadingBlockKeys.type)
-                    HeadingBlockKeys.level: list.level,
-                },
-              ),
-              selectionExtraInfo: {
-                selectionExtraInfoDoNotAttachTextService: true,
-              },
-            );
-          });
-        },
-      );
-    }).toList();
-
-    return GridView(
-      shrinkWrap: true,
-      padding: EdgeInsets.zero,
-      gridDelegate: buildMobileToolbarMenuGridDelegate(
-        mobileToolbarStyle: style,
-        crossAxisCount: 2,
+    final node = widget.editorState.getNodeAtPath(widget.selection.start.path)!;
+    // _lists has 7 fixed entries; SingleChildScrollView + Row is enough
+    // (no virtualization needed — never enough items to warrant a
+    // ListView).
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: Row(
+        children: [
+          for (var i = 0; i < _lists.length; i++) ...[
+            if (i > 0) const SizedBox(width: 12),
+            _buildCell(_lists[i], node),
+          ],
+        ],
       ),
-      children: children,
+    );
+  }
+
+  Widget _buildCell(_SheetListUnit list, Node node) {
+    final isSelected =
+        node.type == list.name &&
+        (list.level == null ||
+            node.attributes[HeadingBlockKeys.level] == list.level);
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 76,
+      child: EditorToolbarMenuButton(
+        isSelected: isSelected,
+        backgroundColor: Colors.transparent,
+        iconPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        onTap: () => setState(() => _toggle(list, isSelected)),
+        // Border wraps both the icon and the label below it as one unit.
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          spacing: 6,
+          children: [
+            ToolbarIcon(
+              icon: list.icon,
+              selected: isSelected,
+              color: theme.textTheme.bodyLarge?.color,
+            ),
+            Text(
+              list.label,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _toggle(_SheetListUnit list, bool isSelected) {
+    widget.editorState.formatNode(
+      widget.selection,
+      (node) => node.copyWith(
+        type: isSelected ? ParagraphBlockKeys.type : list.name,
+        attributes: {
+          ParagraphBlockKeys.delta: (node.delta ?? Delta()).toJson(),
+          blockComponentBackgroundColor:
+              node.attributes[blockComponentBackgroundColor],
+          if (!isSelected && list.name == TodoListBlockKeys.type)
+            TodoListBlockKeys.checked: false,
+          if (!isSelected && list.name == HeadingBlockKeys.type)
+            HeadingBlockKeys.level: list.level,
+        },
+      ),
+      selectionExtraInfo: {selectionExtraInfoDoNotAttachTextService: true},
     );
   }
 }

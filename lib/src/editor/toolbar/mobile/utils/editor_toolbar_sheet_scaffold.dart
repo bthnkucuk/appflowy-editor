@@ -118,23 +118,31 @@ class EditorToolbarMenuButton extends StatelessWidget {
     required this.isSelected,
     this.icon,
     this.text,
+    this.child,
     this.enabled = true,
     this.backgroundColor,
     this.fontFamily,
     this.textPadding = EdgeInsets.zero,
   }) : assert(
-         (icon == null) != (text == null),
-         'Provide exactly one of icon or text',
+         (icon != null ? 1 : 0) + (text != null ? 1 : 0) + (child != null ? 1 : 0) == 1,
+         'Provide exactly one of icon, text, or child',
        );
 
   final bool enabled;
   final VoidCallback onTap;
 
-  /// Icon widget — typically `ToolbarIcon(icon: ToolbarIcons.X)` so the
-  /// Phosphor outline ↔ Fill swap stays consistent with the rest of the
-  /// toolbar. Pass any Widget that paints at the requested size.
+  /// Icon — internally rendered as `ToolbarIcon(icon: …, selected: isSelected)`
+  /// so the Phosphor outline ↔ Fill swap stays consistent with the rest
+  /// of the toolbar.
   final ToolbarIcons? icon;
   final String? text;
+
+  /// Arbitrary content (e.g. an icon + label column for the blocks
+  /// sheet). When set, [icon] and [text] must be null. The button still
+  /// applies the same squircle background + selection highlight around
+  /// whatever is passed here.
+  final Widget? child;
+
   final Color? backgroundColor;
   final String? fontFamily;
   final EdgeInsets iconPadding;
@@ -146,15 +154,15 @@ class EditorToolbarMenuButton extends StatelessWidget {
     final theme = Theme.of(context);
     final effectiveTextColor = enabled ? null : theme.colorScheme.outline;
 
-    final Widget child;
+    final Widget content;
     if (icon case final ToolbarIcons icon) {
-      child = ToolbarIcon(
+      content = ToolbarIcon(
         icon: icon,
         selected: isSelected,
         color: Theme.of(context).textTheme.bodyLarge?.color,
       );
-    } else {
-      child = Padding(
+    } else if (text != null) {
+      content = Padding(
         padding: textPadding,
         child: Text(
           text!,
@@ -166,6 +174,8 @@ class EditorToolbarMenuButton extends StatelessWidget {
           ),
         ),
       );
+    } else {
+      content = child!;
     }
 
     return GestureDetector(
@@ -186,7 +196,7 @@ class EditorToolbarMenuButton extends StatelessWidget {
           ),
         ),
         padding: iconPadding,
-        child: child,
+        child: content,
       ),
     );
   }
