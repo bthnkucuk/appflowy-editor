@@ -39,11 +39,7 @@ mixin _HistoryMixin {
   /// Record the transaction into the undo or redo stack and, for user
   /// edits, schedule the debounce-seal that groups consecutive
   /// keystrokes. Called from `EditorState.apply()`.
-  void _recordRedoOrUndo(
-    ApplyOptions options,
-    Transaction transaction,
-    bool skipDebounce,
-  ) {
+  void _recordRedoOrUndo(ApplyOptions options, Transaction transaction, bool skipDebounce) {
     final source = options.source;
     undoManager.record(transaction, source);
 

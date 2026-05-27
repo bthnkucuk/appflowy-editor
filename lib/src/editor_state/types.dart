@@ -4,24 +4,35 @@
 library;
 
 import '../core/transform/transaction.dart';
-import 'selection_drag_mode.dart';
 import 'undo_manager.dart';
+
+/// The drag-mode state for mobile selection / cursor manipulation. Lives
+/// at the editor_state layer so the core (editor_state, scroll service)
+/// can compare against it directly without the `.toString()` hack that
+/// previously stringified the enum to break a layering dependency.
+///
+/// Name is intentionally kept as `MobileSelectionDragMode` (and not the
+/// shorter `SelectionDragMode`) to avoid a 50+ callsite rename. The enum
+/// has been mobile-coded historically; if desktop drag-to-select ever
+/// reuses these states a typedef alias is the migration path.
+enum MobileSelectionDragMode { none, leftSelectionHandle, rightSelectionHandle, cursor }
+
+/// Key under which the active [MobileSelectionDragMode] is published in
+/// `EditorState.selectionExtraInfo`. Consumers can read it directly, but
+/// `SelectionExtraInfo.dragMode` is the typed access path you actually
+/// want.
+const String selectionDragModeKey = 'selection_drag_mode';
 
 /// The record broadcast by `EditorState.transactionStream`. Pattern-matched
 /// at consumer sites; consumers depend on the field order
 /// (time, transaction, options).
-typedef EditorTransactionValue = (
-  TransactionTime time,
-  Transaction transaction,
-  ApplyOptions options,
-);
+typedef EditorTransactionValue = (TransactionTime time, Transaction transaction, ApplyOptions options);
 
 /// The type of this value is bool.
 ///
 /// Set true on this key in `selectionExtraInfo` to prevent attaching the
 /// text service when selection is changed.
-const selectionExtraInfoDoNotAttachTextService =
-    'selectionExtraInfoDoNotAttachTextService';
+const selectionExtraInfoDoNotAttachTextService = 'selectionExtraInfoDoNotAttachTextService';
 
 /// Typed view over the untyped `selectionExtraInfo` map that
 /// `EditorState.updateSelectionWithReason` carries alongside a selection
@@ -36,12 +47,10 @@ const selectionExtraInfoDoNotAttachTextService =
 extension type SelectionExtraInfo._(Map<String, Object?> _map) {
   /// Wrap an existing map; `null` becomes an empty wrapper so callers
   /// don't have to null-check before reading typed accessors.
-  factory SelectionExtraInfo.from(Map<String, Object?>? map) =>
-      SelectionExtraInfo._(map ?? const <String, Object?>{});
+  factory SelectionExtraInfo.from(Map<String, Object?>? map) => SelectionExtraInfo._(map ?? const <String, Object?>{});
 
   /// Empty info, useful as a default sentinel.
-  factory SelectionExtraInfo.empty() =>
-      SelectionExtraInfo._(const <String, Object?>{});
+  factory SelectionExtraInfo.empty() => SelectionExtraInfo._(const <String, Object?>{});
 
   /// The raw map for callers that still talk in untyped extraInfo (e.g.
   /// `Transaction.selectionExtraInfo` serialization).
@@ -52,9 +61,7 @@ extension type SelectionExtraInfo._(Map<String, Object?> _map) {
   /// type other than the enum.
   MobileSelectionDragMode get dragMode {
     final value = _map[selectionDragModeKey];
-    return value is MobileSelectionDragMode
-        ? value
-        : MobileSelectionDragMode.none;
+    return value is MobileSelectionDragMode ? value : MobileSelectionDragMode.none;
   }
 
   /// Whether a drag (handle / long-press cursor) is currently in
@@ -64,15 +71,11 @@ extension type SelectionExtraInfo._(Map<String, Object?> _map) {
 
   /// True when the selection update should NOT attach the text service
   /// (used to suppress IME re-attachment during transient updates).
-  bool get doNotAttachTextService =>
-      _map[selectionExtraInfoDoNotAttachTextService] == true;
+  bool get doNotAttachTextService => _map[selectionExtraInfoDoNotAttachTextService] == true;
 }
 
 final class ApplyOptions {
-  const ApplyOptions({
-    this.source = TransactionSource.userEdit,
-    this.inMemoryUpdate = false,
-  });
+  const ApplyOptions({this.source = TransactionSource.userEdit, this.inMemoryUpdate = false});
 
   /// The source of the transaction. Determines how it's recorded in the
   /// undo/redo history. Defaults to [TransactionSource.userEdit] which

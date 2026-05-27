@@ -1,7 +1,5 @@
 import 'dart:ui';
-
-import '../../../../../core/location/selection.dart';
-import '../../../../../editor_state/selection_drag_mode.dart';
+import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/foundation.dart';
 
 /// Mutable state shared across the mobile selection service, gesture

@@ -36,11 +36,7 @@ mixin _DocumentQueryMixin {
     final endNode = document.nodeAtPath(normalized.end.path);
 
     if (startNode != null && endNode != null) {
-      final nodes = NodeIterator(
-        document: document,
-        startNode: startNode,
-        endNode: endNode,
-      ).toList();
+      final nodes = NodeIterator(document: document, startNode: startNode, endNode: endNode).toList();
 
       return selection.isForward ? nodes.reversed.toList() : nodes;
     }
@@ -81,10 +77,7 @@ mixin _DocumentQueryMixin {
         res.first.updateAttributes({
           ...res.first.attributes,
           blockComponentDelta: delta
-              .slice(
-                selection.startIndex,
-                selection.isSingle ? selection.endIndex : delta.length,
-              )
+              .slice(selection.startIndex, selection.isSingle ? selection.endIndex : delta.length)
               .toJson(),
         });
       }
@@ -98,20 +91,12 @@ mixin _DocumentQueryMixin {
         if (node.parent != null) {
           node.insertBefore(
             node.copyWith(
-              attributes: {
-                ...node.attributes,
-                blockComponentDelta: delta
-                    .slice(0, selection.endIndex)
-                    .toJson(),
-              },
+              attributes: {...node.attributes, blockComponentDelta: delta.slice(0, selection.endIndex).toJson()},
             ),
           );
           node.unlink();
         } else {
-          node.updateAttributes({
-            ...node.attributes,
-            blockComponentDelta: delta.slice(0, selection.endIndex).toJson(),
-          });
+          node.updateAttributes({...node.attributes, blockComponentDelta: delta.slice(0, selection.endIndex).toJson()});
         }
       }
     }

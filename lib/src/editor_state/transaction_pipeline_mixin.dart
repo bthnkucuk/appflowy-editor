@@ -27,14 +27,12 @@ mixin _TransactionPipelineMixin {
 
   /// Sync broadcast — listeners run inline with the transaction emit, so
   /// they observe the pre/post-mutation state in the exact slot.
-  final StreamController<EditorTransactionValue> _observer =
-      StreamController.broadcast(sync: true);
+  final StreamController<EditorTransactionValue> _observer = StreamController.broadcast(sync: true);
 
   /// Async broadcast — used by document-rule subscriptions that may
   /// produce follow-up transactions; emitting async prevents reentrant
   /// rule loops within the same microtask.
-  final StreamController<EditorTransactionValue> _asyncObserver =
-      StreamController.broadcast();
+  final StreamController<EditorTransactionValue> _asyncObserver = StreamController.broadcast();
 
   // ---------------------------------------------------------------------------
   // Dirty tracking — content-based, incremental.
@@ -94,11 +92,7 @@ mixin _TransactionPipelineMixin {
   /// Emit a (before|after) transaction event to both observers, and on
   /// the after-emit apply the hash delta from this transaction. The
   /// closed-check guards prevent writes after dispose.
-  void _broadcastTransaction(
-    TransactionTime time,
-    Transaction transaction,
-    ApplyOptions options,
-  ) {
+  void _broadcastTransaction(TransactionTime time, Transaction transaction, ApplyOptions options) {
     if (!_observer.isClosed) {
       _observer.add((time, transaction, options));
     }

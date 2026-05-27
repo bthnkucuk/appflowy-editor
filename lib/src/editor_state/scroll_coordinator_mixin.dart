@@ -51,9 +51,7 @@ mixin _ScrollCoordinatorMixin {
   // State
   // ---------------------------------------------------------------------------
 
-  final ValueNotifier<bool> isAutoScrollHighlightNotifier = ValueNotifier(
-    false,
-  );
+  final ValueNotifier<bool> isAutoScrollHighlightNotifier = ValueNotifier(false);
 
   bool get isAutoScrollHighlight => isAutoScrollHighlightNotifier.value;
 
@@ -71,11 +69,9 @@ mixin _ScrollCoordinatorMixin {
 
   final Set<VoidCallback> _onScrollViewScrolledListeners = {};
 
-  void addScrollViewScrolledListener(VoidCallback callback) =>
-      _onScrollViewScrolledListeners.add(callback);
+  void addScrollViewScrolledListener(VoidCallback callback) => _onScrollViewScrolledListeners.add(callback);
 
-  void removeScrollViewScrolledListener(VoidCallback callback) =>
-      _onScrollViewScrolledListeners.remove(callback);
+  void removeScrollViewScrolledListener(VoidCallback callback) => _onScrollViewScrolledListeners.remove(callback);
 
   void _notifyScrollViewScrolledListeners() {
     for (final listener in Set.of(_onScrollViewScrolledListeners)) {
@@ -122,9 +118,7 @@ mixin _ScrollCoordinatorMixin {
             // The field is the untyped `Map?` we publish to the rest of
             // the editor; cast at the boundary so the typed accessor can
             // do its work.
-            final info = SelectionExtraInfo.from(
-              selectionExtraInfo?.cast<String, Object?>(),
-            );
+            final info = SelectionExtraInfo.from(selectionExtraInfo?.cast<String, Object?>());
             if (!info.isDraggingSelection) {
               return;
             }
@@ -160,14 +154,9 @@ mixin _ScrollCoordinatorMixin {
     if (selection.isCollapsed && nodes.length == 1) {
       final selectable = nodes.first.selectable;
       if (selectable != null) {
-        final rect = selectable.getCursorRectInPosition(
-          selection.end,
-          shiftWithBaseOffset: true,
-        );
+        final rect = selectable.getCursorRectInPosition(selection.end, shiftWithBaseOffset: true);
         if (rect != null) {
-          rects.add(
-            selectable.transformRectToGlobal(rect, shiftWithBaseOffset: true),
-          );
+          rects.add(selectable.transformRectToGlobal(rect, shiftWithBaseOffset: true));
         }
       }
     } else {
@@ -176,10 +165,7 @@ mixin _ScrollCoordinatorMixin {
         if (selectable == null) {
           continue;
         }
-        final nodeRects = selectable.getRectsInSelection(
-          selection,
-          shiftWithBaseOffset: true,
-        );
+        final nodeRects = selectable.getRectsInSelection(selection, shiftWithBaseOffset: true);
         if (nodeRects.isEmpty) {
           continue;
         }
@@ -208,14 +194,9 @@ mixin _ScrollCoordinatorMixin {
     if (selection.isCollapsed && nodes.length == 1) {
       final selectable = nodes.first.selectable;
       if (selectable != null) {
-        final rect = selectable.getCursorRectInPosition(
-          selection.end,
-          shiftWithBaseOffset: true,
-        );
+        final rect = selectable.getCursorRectInPosition(selection.end, shiftWithBaseOffset: true);
         if (rect != null) {
-          rects.add(
-            selectable.transformRectToGlobal(rect, shiftWithBaseOffset: true),
-          );
+          rects.add(selectable.transformRectToGlobal(rect, shiftWithBaseOffset: true));
         }
       }
     } else {
@@ -224,10 +205,7 @@ mixin _ScrollCoordinatorMixin {
         if (selectable == null) {
           continue;
         }
-        final nodeRects = selectable.getRectsInSelection(
-          selection,
-          shiftWithBaseOffset: true,
-        );
+        final nodeRects = selectable.getRectsInSelection(selection, shiftWithBaseOffset: true);
         if (nodeRects.isEmpty) {
           continue;
         }
@@ -270,27 +248,18 @@ mixin _ScrollCoordinatorMixin {
       if (fromInside) return;
       final index = askedSelection?.start.path.firstOrNull;
       if (index != null) {
-        editorScrollController.jumpToIndex(
-          index: index,
-          alignment: alignToTop ? 0 : 1,
-        );
+        editorScrollController.jumpToIndex(index: index, alignment: alignToTop ? 0 : 1);
       }
 
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
         Future.delayed(Duration(milliseconds: 0), () {
-          scrollToHighlight(
-            editorScrollController,
-            selection: selection,
-            fromInside: true,
-          );
+          scrollToHighlight(editorScrollController, selection: selection, fromInside: true);
         });
       });
     }
   }
 
-  void enableAutoScrollHighlight(
-    EditorScrollController editorScrollController,
-  ) {
+  void enableAutoScrollHighlight(EditorScrollController editorScrollController) {
     isAutoScrollHighlightNotifier.value = true;
     highlightChanged(editorScrollController);
   }

@@ -69,8 +69,7 @@ mixin _TableOfContentsMixin {
   Document get document;
   Stream<EditorTransactionValue> get transactionStream;
 
-  final ValueNotifier<List<TocEntry>> _tocNotifier =
-      ValueNotifier<List<TocEntry>>(const []);
+  final ValueNotifier<List<TocEntry>> _tocNotifier = ValueNotifier<List<TocEntry>>(const []);
 
   /// Public live outline. Render with `(level - 1) * indentStep` for
   /// Word-style indentation.
@@ -109,8 +108,7 @@ mixin _TableOfContentsMixin {
         // either the type or the heading level is involved, or if the
         // node is already a heading (so a delta edit on the heading
         // changes its text).
-        if (op.attributes.containsKey('type') ||
-            op.attributes.containsKey(HeadingBlockKeys.level)) {
+        if (op.attributes.containsKey('type') || op.attributes.containsKey(HeadingBlockKeys.level)) {
           return true;
         }
         final node = document.nodeAtPath(op.path);

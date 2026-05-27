@@ -55,11 +55,7 @@ extension EditorExport on EditorState {
       case EditorExportFormat.markdown:
         return exportAsMarkdown(fileName: fileName);
       case EditorExportFormat.pdf:
-        return exportAsPdf(
-          fileName: fileName,
-          pdfFont: pdfFont,
-          pdfFontFallback: pdfFontFallback,
-        );
+        return exportAsPdf(fileName: fileName, pdfFont: pdfFont, pdfFontFallback: pdfFontFallback);
     }
   }
 
@@ -98,10 +94,7 @@ extension EditorExport on EditorState {
     final markdown = documentToMarkdown(document);
     final font = await pdfFont?.call();
     final fontFallback = await pdfFontFallback?.call() ?? const <pw.Font>[];
-    final pdf = await PdfHTMLEncoder(
-      font: font,
-      fontFallback: fontFallback,
-    ).convert(markdown);
+    final pdf = await PdfHTMLEncoder(font: font, fontFallback: fontFallback).convert(markdown);
     // Stage on disk and drop the byte buffer immediately so the
     // returned XFile only retains a path, not the whole document.
     return _writeBytes(
@@ -111,51 +104,23 @@ extension EditorExport on EditorState {
     );
   }
 
-  Future<XFile> _writeString(
-    String contents, {
-    required String name,
-    required String mimeType,
-  }) async {
+  Future<XFile> _writeString(String contents, {required String name, required String mimeType}) async {
     if (kIsWeb) {
       final bytes = Uint8List.fromList(utf8.encode(contents));
-      return XFile.fromData(
-        bytes,
-        name: name,
-        mimeType: mimeType,
-        length: bytes.length,
-      );
+      return XFile.fromData(bytes, name: name, mimeType: mimeType, length: bytes.length);
     }
     final file = await _newCacheFile(name);
     await file.writeAsString(contents, flush: true);
-    return XFile(
-      file.path,
-      name: name,
-      mimeType: mimeType,
-      length: await file.length(),
-    );
+    return XFile(file.path, name: name, mimeType: mimeType, length: await file.length());
   }
 
-  Future<XFile> _writeBytes(
-    Uint8List bytes, {
-    required String name,
-    required String mimeType,
-  }) async {
+  Future<XFile> _writeBytes(Uint8List bytes, {required String name, required String mimeType}) async {
     if (kIsWeb) {
-      return XFile.fromData(
-        bytes,
-        name: name,
-        mimeType: mimeType,
-        length: bytes.length,
-      );
+      return XFile.fromData(bytes, name: name, mimeType: mimeType, length: bytes.length);
     }
     final file = await _newCacheFile(name);
     await file.writeAsBytes(bytes, flush: true);
-    return XFile(
-      file.path,
-      name: name,
-      mimeType: mimeType,
-      length: await file.length(),
-    );
+    return XFile(file.path, name: name, mimeType: mimeType, length: await file.length());
   }
 
   Future<File> _newCacheFile(String name) async {

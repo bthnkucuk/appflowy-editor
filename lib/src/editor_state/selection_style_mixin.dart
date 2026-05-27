@@ -19,20 +19,16 @@ mixin _SelectionStyleMixin {
   // ---------------------------------------------------------------------------
 
   /// The selection notifier of the editor.
-  final PropertyValueNotifier<Selection?> selectionNotifier =
-      PropertyValueNotifier<Selection?>(null);
+  final PropertyValueNotifier<Selection?> selectionNotifier = PropertyValueNotifier<Selection?>(null);
 
   /// The highlight notifier of the editor.
-  final PropertyValueNotifier<Selection?> highlightNotifier =
-      PropertyValueNotifier<Selection?>(null);
+  final PropertyValueNotifier<Selection?> highlightNotifier = PropertyValueNotifier<Selection?>(null);
 
   /// The tap notifier of the editor.
-  final PropertyValueNotifier<Selection?> tapNotifier =
-      PropertyValueNotifier<Selection?>(null);
+  final PropertyValueNotifier<Selection?> tapNotifier = PropertyValueNotifier<Selection?>(null);
 
   /// Remote selection is the selection from other users.
-  final PropertyValueNotifier<List<RemoteSelection>> remoteSelections =
-      PropertyValueNotifier<List<RemoteSelection>>([]);
+  final PropertyValueNotifier<List<RemoteSelection>> remoteSelections = PropertyValueNotifier<List<RemoteSelection>>([]);
 
   // ---------------------------------------------------------------------------
   // Selection accessors
@@ -154,8 +150,7 @@ mixin _SelectionStyleMixin {
   ///
   /// NOTES: It only works once; after the selection is changed, the
   /// toggled style will be cleared (see the [selection] setter).
-  UnmodifiableMapView<String, dynamic> get toggledStyle =>
-      UnmodifiableMapView<String, dynamic>(_toggledStyle);
+  UnmodifiableMapView<String, dynamic> get toggledStyle => UnmodifiableMapView<String, dynamic>(_toggledStyle);
 
   final _toggledStyle = Attributes();
   late final toggledStyleNotifier = ValueNotifier<Attributes>(toggledStyle);

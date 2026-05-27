@@ -11,7 +11,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
-export 'editor_state/selection_drag_mode.dart';
 export 'editor_state/types.dart';
 
 // Internal mixin files. Kept as `part`/`part of` so they share
@@ -75,8 +74,7 @@ class EditorState extends _EditorStateBase {
     _initTableOfContents();
   }
 
-  EditorState.blank({bool withInitialText = true})
-    : this(document: Document.blank(withInitialText: withInitialText));
+  EditorState.blank({bool withInitialText = true}) : this(document: Document.blank(withInitialText: withInitialText));
 
   // Satisfies [_TransactionPipelineMixin.document] abstract getter.
   @override
@@ -191,8 +189,7 @@ class EditorState extends _EditorStateBase {
       _recordRedoOrUndo(options, transaction, skipHistoryDebounce);
 
       if (withUpdateSelection) {
-        _selectionUpdateReason =
-            transaction.reason ?? SelectionUpdateReason.transaction;
+        _selectionUpdateReason = transaction.reason ?? SelectionUpdateReason.transaction;
         _selectionType = transaction.customSelectionType;
         if (transaction.selectionExtraInfo != null) {
           selectionExtraInfo = transaction.selectionExtraInfo;
@@ -255,12 +252,8 @@ class EditorState extends _EditorStateBase {
         if (selection != null) {
           if (op.path <= selection.start.path) {
             selection = Selection(
-              start: selection.start.copyWith(
-                path: selection.start.path.nextNPath(op.nodes.length),
-              ),
-              end: selection.end.copyWith(
-                path: selection.end.path.nextNPath(op.nodes.length),
-              ),
+              start: selection.start.copyWith(path: selection.start.path.nextNPath(op.nodes.length)),
+              end: selection.end.copyWith(path: selection.end.path.nextNPath(op.nodes.length)),
             );
           }
         }
@@ -271,9 +264,7 @@ class EditorState extends _EditorStateBase {
         if (selection != null) {
           if (op.path <= selection.start.path) {
             selection = Selection(
-              start: selection.start.copyWith(
-                path: selection.start.path.previous,
-              ),
+              start: selection.start.copyWith(path: selection.start.path.previous),
               end: selection.end.copyWith(path: selection.end.path.previous),
             );
           }
@@ -316,9 +307,7 @@ class EditorState extends _EditorStateBase {
     await SchedulerBinding.instance.endOfFrame;
     final node = document.nodeAtPath(resolvedPath);
     if (node != null) {
-      selectionService.updateSelection(
-        Selection.collapsed(Position(path: node.path)),
-      );
+      selectionService.updateSelection(Selection.collapsed(Position(path: node.path)));
     }
   }
 }

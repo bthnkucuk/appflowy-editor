@@ -6,11 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ScrollServiceWidget extends StatefulWidget {
-  const ScrollServiceWidget({
-    super.key,
-    required this.editorScrollController,
-    required this.child,
-  });
+  const ScrollServiceWidget({super.key, required this.editorScrollController, required this.child});
 
   final EditorScrollController editorScrollController;
 
@@ -20,13 +16,9 @@ class ScrollServiceWidget extends StatefulWidget {
   State<ScrollServiceWidget> createState() => _ScrollServiceWidgetState();
 }
 
-class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
-    implements AppFlowyScrollService {
-  final _forwardKey = GlobalKey(
-    debugLabel: 'forward_to_platform_scroll_service',
-  );
-  late AppFlowyScrollService forward =
-      _forwardKey.currentState as AppFlowyScrollService;
+class _ScrollServiceWidgetState extends State<ScrollServiceWidget> implements AppFlowyScrollService {
+  final _forwardKey = GlobalKey(debugLabel: 'forward_to_platform_scroll_service');
+  late AppFlowyScrollService forward = _forwardKey.currentState as AppFlowyScrollService;
 
   late EditorState editorState = context.read<EditorState>();
 
@@ -78,8 +70,7 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
   // Replaces the former `KeyboardHeightObserver.currentKeyboardHeight` lookup,
   // which was just a snapshot of the same `viewInsets.bottom` value the
   // platform reports natively.
-  double get _currentKeyboardInset =>
-      WidgetsBinding.instance.platformDispatcher.views.first.viewInsets.bottom;
+  double get _currentKeyboardInset => WidgetsBinding.instance.platformDispatcher.views.first.viewInsets.bottom;
 
   void _onSelectionChanged() {
     // should auto scroll after the cursor or selection updated.
@@ -92,10 +83,7 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
       'extraInfo=${editorState.selectionExtraInfo} '
       'kbHeight=$_currentKeyboardInset',
     );
-    if (selection == null ||
-        [
-          SelectionUpdateReason.selectAll,
-        ].contains(editorState.selectionUpdateReason)) {
+    if (selection == null || [SelectionUpdateReason.selectAll].contains(editorState.selectionUpdateReason)) {
       // ignore: avoid_print
       print('[SCROLL-DBG]   → skipped (null or selectAll)');
       return;
@@ -111,14 +99,11 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
 
       Rect targetRect;
       AxisDirection? direction;
-      final dragMode = SelectionExtraInfo.from(
-        editorState.selectionExtraInfo?.cast<String, Object?>(),
-      ).dragMode;
+      final dragMode = SelectionExtraInfo.from(editorState.selectionExtraInfo?.cast<String, Object?>()).dragMode;
 
       // For desktop: if auto-scroller is already scrolling (from drag-to-select),
       // don't override it here. The desktop_selection_service handles drag scrolling.
-      if (PlatformExtension.isDesktopOrWeb &&
-          (editorState.autoScroller?.scrolling ?? false)) {
+      if (PlatformExtension.isDesktopOrWeb && (editorState.autoScroller?.scrolling ?? false)) {
         return;
       }
 
@@ -138,8 +123,7 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
           if (lastSelection != null) {
             final isMovingUp =
                 selection.end.path < lastSelection!.end.path ||
-                (selection.end.path.equals(lastSelection!.end.path) &&
-                    selection.end.offset < lastSelection!.end.offset);
+                (selection.end.path.equals(lastSelection!.end.path) && selection.end.offset < lastSelection!.end.offset);
             direction = isMovingUp ? AxisDirection.up : AxisDirection.down;
           }
           break;
@@ -151,10 +135,8 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
           // sometimes moving up in a long single node may be not working
           // so we need to special handle this case.
           final isLastSelectionSingle = lastSelection?.isSingle ?? false;
-          final isLastSelectionPathEqual =
-              lastSelection?.start.path.equals(selection.start.path) ?? false;
-          final isInSingleNode =
-              isLastSelectionSingle && isLastSelectionPathEqual;
+          final isLastSelectionPathEqual = lastSelection?.start.path.equals(selection.start.path) ?? false;
+          final isInSingleNode = isLastSelectionSingle && isLastSelectionPathEqual;
           if (selection.isForward && isInSingleNode) {
             targetRect = selectionRects.first;
           }
@@ -167,9 +149,7 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
       if (PlatformExtension.isMobile) {
         // soft keyboard
         // workaround: wait for the soft keyboard to show up
-        final keyboardDelay = _currentKeyboardInset == 0
-            ? const Duration(milliseconds: 250)
-            : Duration.zero;
+        final keyboardDelay = _currentKeyboardInset == 0 ? const Duration(milliseconds: 250) : Duration.zero;
         // ignore: avoid_print
         print(
           '[SCROLL-DBG]   mobile branch: '
@@ -199,19 +179,14 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
           // We pick the same handle anchor scroll_service_widget already
           // uses for `targetRect` above: first for left handle, last
           // otherwise (right handle / cursor / default).
-          final scrollBox =
-              _forwardKey.currentContext!.findRenderObject() as RenderBox?;
+          final scrollBox = _forwardKey.currentContext!.findRenderObject() as RenderBox?;
           final freshRects = editorState.selectionRects();
           if (scrollBox != null && freshRects.isNotEmpty) {
             final viewportTop = scrollBox.localToGlobal(Offset.zero).dy;
             final viewportBottom = viewportTop + scrollBox.size.height;
-            final isLeftHandle =
-                dragMode == MobileSelectionDragMode.leftSelectionHandle;
-            final freshTarget = isLeftHandle
-                ? freshRects.first
-                : freshRects.last;
-            if (freshTarget.top >= viewportTop &&
-                freshTarget.bottom <= viewportBottom) {
+            final isLeftHandle = dragMode == MobileSelectionDragMode.leftSelectionHandle;
+            final freshTarget = isLeftHandle ? freshRects.first : freshRects.last;
+            if (freshTarget.top >= viewportTop && freshTarget.bottom <= viewportBottom) {
               // ignore: avoid_print
               print(
                 '[SCROLL-DBG]   viewport-guard: rect $freshTarget inside '
@@ -235,21 +210,13 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
           );
           // Mobile needs to continuously update scroll position/direction during drag
           // Don't skip even if already scrolling, because direction may have changed
-          startAutoScroll(
-            endTouchPoint,
-            edgeOffset: editorState.autoScrollEdgeOffset,
-            direction: direction,
-          );
+          startAutoScroll(endTouchPoint, edgeOffset: editorState.autoScrollEdgeOffset, direction: direction);
         });
       } else {
         if (_forwardKey.currentContext == null) {
           return;
         }
-        startAutoScroll(
-          endTouchPoint,
-          edgeOffset: editorState.autoScrollEdgeOffset,
-          direction: direction,
-        );
+        startAutoScroll(endTouchPoint, edgeOffset: editorState.autoScrollEdgeOffset, direction: direction);
       }
     });
   }
@@ -276,10 +243,8 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
   int? get page => forward.page;
 
   @override
-  void scrollTo(
-    double dy, {
-    Duration duration = const Duration(milliseconds: 150),
-  }) => forward.scrollTo(dy, duration: duration);
+  void scrollTo(double dy, {Duration duration = const Duration(milliseconds: 150)}) =>
+      forward.scrollTo(dy, duration: duration);
 
   @override
   void jumpTo(int index) => forward.jumpTo(index);
@@ -295,16 +260,8 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget>
   }
 
   @override
-  void startAutoScroll(
-    Offset offset, {
-    double edgeOffset = 100,
-    AxisDirection? direction,
-  }) {
-    forward.startAutoScroll(
-      offset,
-      edgeOffset: edgeOffset,
-      direction: direction,
-    );
+  void startAutoScroll(Offset offset, {double edgeOffset = 100, AxisDirection? direction}) {
+    forward.startAutoScroll(offset, edgeOffset: edgeOffset, direction: direction);
   }
 
   @override

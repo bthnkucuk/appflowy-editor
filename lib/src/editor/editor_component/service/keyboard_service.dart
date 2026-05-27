@@ -28,10 +28,7 @@ abstract class AppFlowyKeyboardService {
   ///   you can disable the keyboard service of flowy_editor.
   /// But you need to call the `enable` function to restore after exiting
   ///   your custom component, otherwise the keyboard service will fails.
-  void disable({
-    bool showCursor = false,
-    UnfocusDisposition disposition = UnfocusDisposition.scope,
-  });
+  void disable({bool showCursor = false, UnfocusDisposition disposition = UnfocusDisposition.scope});
 
   /// Enable the keyboard shortcuts
   void enableShortcuts();
@@ -71,10 +68,7 @@ abstract class AppFlowyKeyboardServiceInterceptor {
   }
 
   /// Intercept delete operation
-  Future<bool> interceptDelete(
-    TextEditingDeltaDeletion deletion,
-    EditorState editorState,
-  ) async {
+  Future<bool> interceptDelete(TextEditingDeltaDeletion deletion, EditorState editorState) async {
     return false;
   }
 
@@ -97,18 +91,12 @@ abstract class AppFlowyKeyboardServiceInterceptor {
   }
 
   /// Intercept perform action operation
-  Future<bool> interceptPerformAction(
-    TextInputAction action,
-    EditorState editorState,
-  ) async {
+  Future<bool> interceptPerformAction(TextInputAction action, EditorState editorState) async {
     return false;
   }
 
   /// Intercept floating cursor operation
-  Future<bool> interceptFloatingCursor(
-    RawFloatingCursorPoint point,
-    EditorState editorState,
-  ) async {
+  Future<bool> interceptFloatingCursor(RawFloatingCursorPoint point, EditorState editorState) async {
     return false;
   }
 }

@@ -1,7 +1,4 @@
-import '../../../core/document/node.dart';
-import '../../../core/location/position.dart';
-import '../../../core/location/selection.dart';
-import '../../../editor_state/selection_drag_mode.dart';
+import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 
 class DragAreaBuilderData {
@@ -11,11 +8,9 @@ class DragAreaBuilderData {
   final Offset dragOffset;
 }
 
-typedef DragAreaBuilder =
-    Widget Function(BuildContext context, DragAreaBuilderData data);
+typedef DragAreaBuilder = Widget Function(BuildContext context, DragAreaBuilderData data);
 
-typedef DragTargetNodeInterceptor =
-    Node Function(BuildContext context, Node node);
+typedef DragTargetNodeInterceptor = Node Function(BuildContext context, Node node);
 
 /// [AppFlowySelectionService] is responsible for processing
 /// the [Selection] changes and updates.
@@ -85,10 +80,7 @@ abstract class AppFlowySelectionService {
   /// The functions below are only for mobile.
   Selection? onPanStart(DragStartDetails details, MobileSelectionDragMode mode);
 
-  Selection? onPanUpdate(
-    DragUpdateDetails details,
-    MobileSelectionDragMode mode,
-  );
+  Selection? onPanUpdate(DragUpdateDetails details, MobileSelectionDragMode mode);
 
   void onPanEnd(DragEndDetails details, MobileSelectionDragMode mode);
 
@@ -102,11 +94,7 @@ abstract class AppFlowySelectionService {
   /// Otherwise, the line will be drawn by default [DropTargetStyle].
   ///
   /// If [interceptor] is provided, the node will be intercepted by [interceptor].
-  void renderDropTargetForOffset(
-    Offset offset, {
-    DragAreaBuilder? builder,
-    DragTargetNodeInterceptor? interceptor,
-  });
+  void renderDropTargetForOffset(Offset offset, {DragAreaBuilder? builder, DragTargetNodeInterceptor? interceptor});
 
   /// Removes the horizontal line drawn by [renderDropTargetForOffset].
   ///
@@ -114,10 +102,7 @@ abstract class AppFlowySelectionService {
 
   /// Returns the [DropTargetRenderData] for the [offset].
   ///
-  DropTargetRenderData? getDropTargetRenderData(
-    Offset offset, {
-    DragTargetNodeInterceptor? interceptor,
-  });
+  DropTargetRenderData? getDropTargetRenderData(Offset offset, {DragTargetNodeInterceptor? interceptor});
 }
 
 class SelectionGestureInterceptor {
