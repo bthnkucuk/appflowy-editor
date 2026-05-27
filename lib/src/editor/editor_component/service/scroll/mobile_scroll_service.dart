@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -62,7 +64,13 @@ class _MobileScrollServiceState extends State<MobileScrollService>
 
   @override
   void jumpTo(int index) {
-    editorScrollController.jumpToIndex(index: index);
+    // Skip the jump when the target index is already inside the viewport.
+    // Without this, navigating between find/replace matches that all sit
+    // on-screen still triggers a viewport scroll on every step.
+    final (start, end) = editorScrollController.visibleRangeNotifier.value;
+    if (index < start || index > end) {
+      editorScrollController.jumpToIndex(index: max(0, index));
+    }
   }
 
   @override

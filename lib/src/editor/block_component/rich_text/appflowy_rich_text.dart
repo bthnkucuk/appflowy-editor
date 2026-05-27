@@ -27,6 +27,12 @@ typedef AppFlowyTextSpanOverlayBuilder =
       SelectableMixin delegate,
     );
 
+typedef AppFlowyTextSpanBackgroundBuilder = List<Widget> Function(
+  BuildContext context,
+  Node node,
+  SelectableMixin delegate,
+);
+
 class AppFlowyRichText extends StatefulWidget {
   const AppFlowyRichText({
     super.key,
@@ -39,6 +45,7 @@ class AppFlowyRichText extends StatefulWidget {
     this.textDirection = TextDirection.ltr,
     this.textSpanDecoratorForCustomAttributes,
     this.textSpanOverlayBuilder,
+    this.textSpanBackgroundBuilder,
     this.textAlign,
     this.cursorColor = const Color.fromARGB(255, 0, 0, 0),
     this.selectionColor = const Color.fromARGB(53, 111, 201, 231),
@@ -95,6 +102,11 @@ class AppFlowyRichText extends StatefulWidget {
   /// You can use this to customize the text span overlay, for example, a hover menu in linked text.
   final AppFlowyTextSpanOverlayBuilder? textSpanOverlayBuilder;
 
+  /// customize the text span background builder
+  ///
+  /// You can use this to customize the text span background, for example, a highlight behind the text.
+  final AppFlowyTextSpanBackgroundBuilder? textSpanBackgroundBuilder;
+
   final TextDirection textDirection;
 
   final Color cursorColor;
@@ -135,6 +147,10 @@ class _AppFlowyRichTextState extends State<AppFlowyRichText>
       widget.textSpanOverlayBuilder ??
       widget.editorState.editorStyle.textSpanOverlayBuilder;
 
+  AppFlowyTextSpanBackgroundBuilder? get textSpanBackgroundBuilder =>
+      widget.textSpanBackgroundBuilder ??
+      widget.editorState.editorStyle.textSpanBackgroundBuilder;
+
   @override
   void initState() {
     super.initState();
@@ -146,6 +162,7 @@ class _AppFlowyRichTextState extends State<AppFlowyRichText>
     Widget child = Stack(
       children: [
         _buildPlaceholderText(context),
+        ..._buildRichTextBackground(context),
         _buildRichText(context),
         ..._buildRichTextOverlay(context),
       ],
@@ -431,6 +448,11 @@ class _AppFlowyRichTextState extends State<AppFlowyRichText>
         widget.editorState.editorStyle.textScaleFactor,
       ),
     );
+  }
+
+  List<Widget> _buildRichTextBackground(BuildContext context) {
+    if (textKey.currentContext == null) return [];
+    return textSpanBackgroundBuilder?.call(context, widget.node, this) ?? [];
   }
 
   List<Widget> _buildRichTextOverlay(BuildContext context) {

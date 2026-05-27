@@ -19,6 +19,7 @@ class EditorStyle extends Equatable {
     required this.textStyleConfiguration,
     required this.textSpanDecorator,
     this.textSpanOverlayBuilder,
+    this.textSpanBackgroundBuilder,
     this.magnifierSize = const Size(72, 48),
     this.mobileDragHandleBallSize = const Size(8, 8),
     this.mobileDragHandleWidth = 2.0,
@@ -83,6 +84,9 @@ class EditorStyle extends Equatable {
   /// Customize the text span overlay builder.
   final AppFlowyTextSpanOverlayBuilder? textSpanOverlayBuilder;
 
+  /// Customize the text span background builder.
+  final AppFlowyTextSpanBackgroundBuilder? textSpanBackgroundBuilder;
+
   final String? defaultTextDirection;
 
   // The size of the magnifier.
@@ -134,6 +138,7 @@ class EditorStyle extends Equatable {
     TextStyleConfiguration? textStyleConfiguration,
     TextSpanDecoratorForAttribute? textSpanDecorator,
     this.textSpanOverlayBuilder,
+    this.textSpanBackgroundBuilder,
     this.defaultTextDirection,
     this.cursorWidth = 2.0,
     this.textScaleFactor = 1.0,
@@ -179,6 +184,7 @@ class EditorStyle extends Equatable {
     TextStyleConfiguration? textStyleConfiguration,
     TextSpanDecoratorForAttribute? textSpanDecorator,
     this.textSpanOverlayBuilder,
+    this.textSpanBackgroundBuilder,
     this.defaultTextDirection,
     this.magnifierSize = const Size(72, 48),
     this.mobileDragHandleBallSize = const Size(8, 8),
@@ -223,6 +229,7 @@ class EditorStyle extends Equatable {
     TextStyleConfiguration? textStyleConfiguration,
     TextSpanDecoratorForAttribute? textSpanDecorator,
     AppFlowyTextSpanOverlayBuilder? textSpanOverlayBuilder,
+    AppFlowyTextSpanBackgroundBuilder? textSpanBackgroundBuilder,
     String? defaultTextDirection,
     Size? magnifierSize,
     Size? mobileDragHandleBallSize,
@@ -253,6 +260,8 @@ class EditorStyle extends Equatable {
       textSpanDecorator: textSpanDecorator ?? this.textSpanDecorator,
       textSpanOverlayBuilder:
           textSpanOverlayBuilder ?? this.textSpanOverlayBuilder,
+      textSpanBackgroundBuilder:
+          textSpanBackgroundBuilder ?? this.textSpanBackgroundBuilder,
       defaultTextDirection: defaultTextDirection,
       magnifierSize: magnifierSize ?? this.magnifierSize,
       mobileDragHandleBallSize:
@@ -292,6 +301,7 @@ class EditorStyle extends Equatable {
     textStyleConfiguration,
     textSpanDecorator,
     textSpanOverlayBuilder,
+    textSpanBackgroundBuilder,
     magnifierSize,
     mobileDragHandleBallSize,
     mobileDragHandleWidth,

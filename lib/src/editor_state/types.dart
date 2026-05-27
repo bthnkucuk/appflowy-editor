@@ -34,6 +34,16 @@ typedef EditorTransactionValue = (TransactionTime time, Transaction transaction,
 /// text service when selection is changed.
 const selectionExtraInfoDoNotAttachTextService = 'selectionExtraInfoDoNotAttachTextService';
 
+/// Border radius (logical pixels) for the highlight rect of the
+/// currently-selected match in find-and-replace. Stored under this
+/// key in `selectionExtraInfo` so that
+/// `SelectionAreaPainter` can render an [RRect] instead of a plain
+/// rect — visually distinguishes the active search hit from regular
+/// selections.
+///
+/// Type: `double`.
+const selectionExtraInfoSelectionRadius = 'selectionExtraInfoSelectionRadius';
+
 /// Typed view over the untyped `selectionExtraInfo` map that
 /// `EditorState.updateSelectionWithReason` carries alongside a selection
 /// change. Wire-compatible — the underlying value remains a

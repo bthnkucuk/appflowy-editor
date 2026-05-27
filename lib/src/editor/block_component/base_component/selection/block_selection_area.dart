@@ -261,9 +261,21 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
             if (rects.length == 1 && rects.first.width == 0) {
               return const SizedBox.shrink();
             }
+            // Optional per-selection corner radius. Used by the
+            // find-replace highlight to draw the active match with
+            // rounded corners (key is set on the selection extraInfo
+            // by SearchServiceV3); regular selections leave it null
+            // and fall back to square rects.
+            final extraInfo = context
+                .read<EditorState>()
+                .selectionExtraInfo;
+            final radius =
+                (extraInfo?[selectionExtraInfoSelectionRadius] as double?) ??
+                0.0;
             return SelectionAreaPaint(
               rects: rects,
               selectionColor: widget.selectionColor,
+              radius: radius,
             );
           case BlockSelectionType.highlight:
             // BlockSelectionArea doesn't paint the highlight variant —
