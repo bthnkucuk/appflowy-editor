@@ -64,35 +64,29 @@ class _SheetBlocksMenu extends StatefulWidget {
 }
 
 class _SheetBlocksMenuState extends State<_SheetBlocksMenu> {
-  VoidCallback? _selectionWatcher;
-
   @override
   void initState() {
     super.initState();
-    _selectionWatcher = () {
-      if (!mounted) return;
-      final live = widget.editorState.selection;
-      if (live != widget.selection) {
-        widget.editorState.updateSelectionWithReason(
-          widget.selection,
-          extraInfo: {
-            selectionExtraInfoDisableMobileToolbarKey: true,
-            selectionExtraInfoDisableFloatingToolbar: true,
-            selectionExtraInfoDoNotAttachTextService: true,
-          },
-        );
-      }
-    };
-    widget.editorState.selectionNotifier.addListener(_selectionWatcher!);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _selectionWatcher!());
+    widget.editorState.selectionNotifier.addListener(_pinSelection);
   }
 
   @override
   void dispose() {
-    if (_selectionWatcher != null) {
-      widget.editorState.selectionNotifier.removeListener(_selectionWatcher!);
-    }
+    widget.editorState.selectionNotifier.removeListener(_pinSelection);
     super.dispose();
+  }
+
+  void _pinSelection() {
+    if (!mounted) return;
+    if (widget.editorState.selection == widget.selection) return;
+    widget.editorState.updateSelectionWithReason(
+      widget.selection,
+      extraInfo: {
+        selectionExtraInfoDisableMobileToolbarKey: true,
+        selectionExtraInfoDisableFloatingToolbar: true,
+        selectionExtraInfoDoNotAttachTextService: true,
+      },
+    );
   }
 
   final _lists = [

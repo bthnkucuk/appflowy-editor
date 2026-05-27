@@ -36,21 +36,12 @@ MobileToolbarItem buildTextAndBackgroundColorMobileToolbarItemSheet({
               barrierColor: Colors.transparent,
               originateAboveBottomViewInset: true,
               child: MobileToolbarTheme(
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: MobileToolbarItemMenu(
-                    editorState: editorState,
-                    itemMenuBuilder: () => Padding(
-                      padding: EdgeInsets.only(
-                        bottom: kBottomNavigationBarHeight,
-                      ),
-                      child: _SheetTextAndBackgroundColorMenu(
-                        editorState,
-                        selection,
-                        textColorOptions: textColorOptions,
-                        backgroundColorOptions: backgroundColorOptions,
-                      ),
-                    ),
+                child: EditorToolbarSheetScaffold(
+                  child: _SheetTextAndBackgroundColorMenu(
+                    editorState,
+                    selection,
+                    textColorOptions: textColorOptions,
+                    backgroundColorOptions: backgroundColorOptions,
                   ),
                 ),
               ),
@@ -89,35 +80,29 @@ class _SheetTextAndBackgroundColorMenu extends StatefulWidget {
 
 class _SheetTextAndBackgroundColorMenuState
     extends State<_SheetTextAndBackgroundColorMenu> {
-  VoidCallback? _selectionWatcher;
-
   @override
   void initState() {
     super.initState();
-    _selectionWatcher = () {
-      if (!mounted) return;
-      final live = widget.editorState.selection;
-      if (live != widget.selection) {
-        widget.editorState.updateSelectionWithReason(
-          widget.selection,
-          extraInfo: {
-            selectionExtraInfoDisableMobileToolbarKey: true,
-            selectionExtraInfoDisableFloatingToolbar: true,
-            selectionExtraInfoDoNotAttachTextService: true,
-          },
-        );
-      }
-    };
-    widget.editorState.selectionNotifier.addListener(_selectionWatcher!);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _selectionWatcher!());
+    widget.editorState.selectionNotifier.addListener(_pinSelection);
   }
 
   @override
   void dispose() {
-    if (_selectionWatcher != null) {
-      widget.editorState.selectionNotifier.removeListener(_selectionWatcher!);
-    }
+    widget.editorState.selectionNotifier.removeListener(_pinSelection);
     super.dispose();
+  }
+
+  void _pinSelection() {
+    if (!mounted) return;
+    if (widget.editorState.selection == widget.selection) return;
+    widget.editorState.updateSelectionWithReason(
+      widget.selection,
+      extraInfo: {
+        selectionExtraInfoDisableMobileToolbarKey: true,
+        selectionExtraInfoDisableFloatingToolbar: true,
+        selectionExtraInfoDoNotAttachTextService: true,
+      },
+    );
   }
 
   @override
@@ -136,13 +121,21 @@ class _SheetTextAndBackgroundColorMenuState
           SizedBox(
             height: style.buttonHeight,
             child: TabBar(
-              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorSize: TabBarIndicatorSize.label,
               tabs: myTabs,
-              labelColor: style.tabBarSelectedBackgroundColor,
-              indicator: BoxDecoration(
-                borderRadius: BorderRadius.circular(style.borderRadius),
-                color: style.tabBarSelectedForegroundColor,
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(
+                  width: 2.4,
+                  color: style.tabBarSelectedForegroundColor,
+                ),
+                borderRadius: const .all(.circular(2)),
               ),
+
+              // labelColor: style.tabBarSelectedBackgroundColor,
+              // indicator: BoxDecoration(
+              //   borderRadius: BorderRadius.circular(style.borderRadius),
+              //   color: style.tabBarSelectedForegroundColor,
+              // ),
               dividerColor: Colors.transparent,
             ),
           ),

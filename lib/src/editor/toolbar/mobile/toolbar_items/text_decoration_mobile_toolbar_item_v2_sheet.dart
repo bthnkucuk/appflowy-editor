@@ -64,35 +64,32 @@ class _SheetTextDecorationV2Menu extends StatefulWidget {
 
 class _SheetTextDecorationV2MenuState
     extends State<_SheetTextDecorationV2Menu> {
-  VoidCallback? _selectionWatcher;
-
   @override
   void initState() {
     super.initState();
-    _selectionWatcher = () {
-      if (!mounted) return;
-      final live = widget.editorState.selection;
-      if (live != widget.selection) {
-        widget.editorState.updateSelectionWithReason(
-          widget.selection,
-          extraInfo: {
-            selectionExtraInfoDisableMobileToolbarKey: true,
-            selectionExtraInfoDisableFloatingToolbar: true,
-            selectionExtraInfoDoNotAttachTextService: true,
-          },
-        );
-      }
-    };
-    widget.editorState.selectionNotifier.addListener(_selectionWatcher!);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _selectionWatcher!());
+    widget.editorState.selectionNotifier.addListener(_pinSelection);
   }
 
   @override
   void dispose() {
-    if (_selectionWatcher != null) {
-      widget.editorState.selectionNotifier.removeListener(_selectionWatcher!);
-    }
+    widget.editorState.selectionNotifier.removeListener(_pinSelection);
     super.dispose();
+  }
+
+  /// Snap the live selection back to the one this sheet opened with
+  /// if anything (IME re-attach, focus chain) drifts it. Mirrors the
+  /// pattern in heading_mobile_toolbar_item_sheet.
+  void _pinSelection() {
+    if (!mounted) return;
+    if (widget.editorState.selection == widget.selection) return;
+    widget.editorState.updateSelectionWithReason(
+      widget.selection,
+      extraInfo: {
+        selectionExtraInfoDisableMobileToolbarKey: true,
+        selectionExtraInfoDisableFloatingToolbar: true,
+        selectionExtraInfoDoNotAttachTextService: true,
+      },
+    );
   }
 
   final _textDecorations = [
