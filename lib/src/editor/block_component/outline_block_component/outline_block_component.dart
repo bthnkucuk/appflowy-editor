@@ -33,10 +33,7 @@ class OutlineBlockKeys {
 }
 
 Node outlineBlockNode({bool collapsed = false}) {
-  return Node(
-    type: OutlineBlockKeys.type,
-    attributes: {if (collapsed) OutlineBlockKeys.collapsed: true},
-  );
+  return Node(type: OutlineBlockKeys.type, attributes: {if (collapsed) OutlineBlockKeys.collapsed: true});
 }
 
 enum _OutlineBlockStatus { noHeadings, noMatchHeadings, success }
@@ -54,15 +51,14 @@ class OutlineBlockComponentBuilder extends BlockComponentBuilder {
       node: node,
       configuration: configuration,
       showActions: showActions(node),
-      actionBuilder: (context, state) =>
-          actionBuilder(blockComponentContext, state),
-      actionTrailingBuilder: (context, state) =>
-          actionTrailingBuilder(blockComponentContext, state),
+      actionBuilder: (context, state) => actionBuilder(blockComponentContext, state),
+      actionTrailingBuilder: (context, state) => actionTrailingBuilder(blockComponentContext, state),
     );
   }
 
   @override
-  BlockComponentValidate get validate => (node) => node.children.isEmpty;
+  BlockComponentValidate get validate =>
+      (node) => node.children.isEmpty;
 }
 
 class OutlineBlockWidget extends BlockComponentStatefulWidget {
@@ -80,10 +76,7 @@ class OutlineBlockWidget extends BlockComponentStatefulWidget {
 }
 
 class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
-    with
-        BlockComponentConfigurable,
-        BlockComponentBackgroundColorMixin,
-        SelectableMixin {
+    with BlockComponentConfigurable, BlockComponentBackgroundColorMixin, SelectableMixin {
   // Maximum heading level the outline can render. Matches AppFlowy.
   static const maxVisibleDepth = 6;
 
@@ -96,8 +89,7 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
   late EditorState editorState = context.read<EditorState>();
   late Stream<EditorTransactionValue> stream = editorState.transactionStream;
 
-  final GlobalKey blockComponentKey =
-      GlobalKey(debugLabel: OutlineBlockKeys.type);
+  final GlobalKey blockComponentKey = GlobalKey(debugLabel: OutlineBlockKeys.type);
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +109,15 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
           highlightAreaColor: editorState.editorStyle.highlightAreaColor,
           remoteSelection: editorState.remoteSelections,
           blockColor: editorState.editorStyle.selectionColor,
-          selectionAboveBlock: true,
+          // selectionAboveBlock: false so the block-selection paint
+          // sits *behind* the content. With `true`, the opaque
+          // Positioned Container that paints the selection tint lands
+          // on top of our InkWell rows + the collapse chevron, eating
+          // all subsequent taps once the outline is selected. Upstream
+          // outline has no interactive children below the selection
+          // paint so this didn't bite them — but our chevron and item
+          // taps need pointer events to reach the child.
+          selectionAboveBlock: false,
           supportTypes: const [BlockSelectionType.block],
           child: child,
         );
@@ -136,8 +136,7 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
     );
   }
 
-  bool get _collapsed =>
-      widget.node.attributes[OutlineBlockKeys.collapsed] == true;
+  bool get _collapsed => widget.node.attributes[OutlineBlockKeys.collapsed] == true;
 
   Future<void> _toggleCollapsed() async {
     final t = editorState.transaction
@@ -154,18 +153,12 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
       case _OutlineBlockStatus.noHeadings:
         child = Align(
           alignment: Alignment.centerLeft,
-          child: Text(
-            'Add a heading to populate the outline',
-            style: configuration.placeholderTextStyle(node),
-          ),
+          child: Text('Add a heading to populate the outline', style: configuration.placeholderTextStyle(node)),
         );
       case _OutlineBlockStatus.noMatchHeadings:
         child = Align(
           alignment: Alignment.centerLeft,
-          child: Text(
-            'No headings match the depth filter',
-            style: configuration.placeholderTextStyle(node),
-          ),
+          child: Text('No headings match the depth filter', style: configuration.placeholderTextStyle(node)),
         );
       case _OutlineBlockStatus.success:
         final children = headings
@@ -184,51 +177,63 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
     }
 
     final theme = Theme.of(context);
-    final header = Row(
-      children: [
-        InkWell(
-          onTap: _toggleCollapsed,
-          customBorder: const CircleBorder(),
-          child: Padding(
-            padding: const EdgeInsets.all(2),
-            child: Icon(
+    // Whole header row is tappable — tapping the title also toggles
+    // collapse, matching Notion / AppFlowy behavior. The chevron icon
+    // is just a visual affordance, not its own hit zone, otherwise on
+    // a collapsed block the title area would be dead (a 22px wide
+    // chevron is a frustratingly small hit target on mobile).
+    final header = InkWell(
+      onTap: _toggleCollapsed,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+        child: Row(
+          children: [
+            Icon(
               _collapsed
                   ? Icons.keyboard_arrow_right_rounded
                   : Icons.keyboard_arrow_down_rounded,
               size: 22,
               color: theme.colorScheme.onSurface,
             ),
-          ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                'Table of contents',
+                style: theme.textTheme.titleLarge,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            'Table of contents',
-            style: theme.textTheme.titleLarge,
-          ),
-        ),
-      ],
+      ),
     );
+
+    // Default theme-aware tint + 0.5px border so the block reads as a
+    // distinct surface even when the user hasn't set an explicit
+    // backgroundColor attribute. Honors `decoration` from the
+    // BlockComponentBackgroundColorMixin if set.
+    final defaultBg = theme.brightness == Brightness.dark
+        ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.40)
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.55);
+    final borderColor = theme.colorScheme.outlineVariant.withValues(alpha: 0.6);
 
     return Container(
       key: blockComponentKey,
       constraints: const BoxConstraints(minHeight: 40.0),
       padding: padding,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 5.0),
+        padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 10.0),
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-          color: (decoration as BoxDecoration?)?.color,
+          color: (decoration as BoxDecoration?)?.color ?? defaultBg,
+          border: Border.all(color: borderColor, width: 0.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             header,
-            if (!_collapsed) ...[
-              const SizedBox(height: 8.0),
-              child,
-            ],
+            if (!_collapsed) ...[const SizedBox(height: 8.0), child],
           ],
         ),
       ),
@@ -236,20 +241,13 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
   }
 
   (_OutlineBlockStatus, Iterable<Node>) getHeadingNodes() {
-    final nodes = NodeIterator(
-      document: editorState.document,
-      startNode: editorState.document.root,
-    ).toList();
+    final nodes = NodeIterator(document: editorState.document, startNode: editorState.document.root).toList();
     final level = node.attributes[OutlineBlockKeys.depth] ?? maxVisibleDepth;
     var headings = nodes.where(_isHeadingNode);
     if (headings.isEmpty) {
       return (_OutlineBlockStatus.noHeadings, []);
     }
-    headings = headings.where(
-      (e) =>
-          e.type == HeadingBlockKeys.type &&
-          e.attributes[HeadingBlockKeys.level] <= level,
-    );
+    headings = headings.where((e) => e.type == HeadingBlockKeys.type && e.attributes[HeadingBlockKeys.level] <= level);
     if (headings.isEmpty) {
       return (_OutlineBlockStatus.noMatchHeadings, []);
     }
@@ -257,8 +255,7 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
   }
 
   bool _isHeadingNode(Node node) {
-    return node.type == HeadingBlockKeys.type &&
-        node.delta?.isNotEmpty == true;
+    return node.type == HeadingBlockKeys.type && node.delta?.isNotEmpty == true;
   }
 
   // SelectableMixin — outline node has no caret. Treats itself as an
@@ -287,21 +284,12 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
   }
 
   @override
-  Rect? getCursorRectInPosition(
-    Position position, {
-    bool shiftWithBaseOffset = false,
-  }) {
-    return getRectsInSelection(
-      Selection.collapsed(position),
-      shiftWithBaseOffset: shiftWithBaseOffset,
-    ).firstOrNull;
+  Rect? getCursorRectInPosition(Position position, {bool shiftWithBaseOffset = false}) {
+    return getRectsInSelection(Selection.collapsed(position), shiftWithBaseOffset: shiftWithBaseOffset).firstOrNull;
   }
 
   @override
-  List<Rect> getRectsInSelection(
-    Selection selection, {
-    bool shiftWithBaseOffset = false,
-  }) {
+  List<Rect> getRectsInSelection(Selection selection, {bool shiftWithBaseOffset = false}) {
     final box = _renderBox;
     if (box == null) return [];
     return [Offset.zero & box.size];
@@ -312,8 +300,7 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
       Selection.single(path: widget.node.path, startOffset: 0, endOffset: 1);
 
   @override
-  Offset localToGlobal(Offset offset, {bool shiftWithBaseOffset = false}) =>
-      _renderBox!.localToGlobal(offset);
+  Offset localToGlobal(Offset offset, {bool shiftWithBaseOffset = false}) => _renderBox!.localToGlobal(offset);
 
   @override
   TextDirection textDirection() => TextDirection.ltr;
@@ -363,9 +350,7 @@ class OutlineItemWidget extends StatelessWidget {
     }
 
     return IgnorePointer(
-      child: Text.rich(
-        TextSpan(children: children, style: style),
-      ),
+      child: Text.rich(TextSpan(children: children, style: style)),
     );
   }
 }
