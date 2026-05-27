@@ -195,6 +195,11 @@ class _HeadingBlockComponentWidgetState
       );
     }
 
+    child = Padding(
+      padding: margin,
+      child: child,
+    );
+
     return child;
   }
 

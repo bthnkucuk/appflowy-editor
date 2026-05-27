@@ -179,6 +179,11 @@ class _QuoteBlockComponentWidgetState extends State<QuoteBlockComponentWidget>
       );
     }
 
+    child = Padding(
+      padding: margin,
+      child: child,
+    );
+
     return child;
   }
 }
