@@ -1,6 +1,7 @@
 export 'blocks_mobile_toolbar_item_sheet.dart';
 export 'code_mobile_toolbar_item.dart';
 export 'color/color.dart';
+export 'align_mobile_toolbar_item_sheet.dart';
 export 'appearance_mobile_sheet.dart';
 export 'divider_mobile_toolbar_item.dart';
 export 'extras_mobile_toolbar_item_sheet.dart';

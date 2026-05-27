@@ -33,6 +33,7 @@ enum ToolbarIcons {
   alignLeft,
   alignCenter,
   alignRight,
+  alignJustify,
   // text direction
   textDirectionAuto,
   textDirectionLtr,
@@ -96,6 +97,7 @@ const Map<ToolbarIcons, IconifyIconData> _phMap = {
   ToolbarIcons.alignLeft: PhIcons.textAlignLeft,
   ToolbarIcons.alignCenter: PhIcons.textAlignCenter,
   ToolbarIcons.alignRight: PhIcons.textAlignRight,
+  ToolbarIcons.alignJustify: PhIcons.textAlignJustify,
 
   /// No phosphor "auto" direction icon — using magicWand as a best-guess fit.
   // TODO(icons): better match
@@ -162,6 +164,7 @@ const Map<ToolbarIcons, IconifyIconData> _phMapFilled = {
   ToolbarIcons.alignLeft: PhIcons.textAlignLeftFill,
   ToolbarIcons.alignCenter: PhIcons.textAlignCenterFill,
   ToolbarIcons.alignRight: PhIcons.textAlignRightFill,
+  ToolbarIcons.alignJustify: PhIcons.textAlignJustifyFill,
   ToolbarIcons.textDecorationBold: PhIcons.textAaFill,
   ToolbarIcons.more: PhIcons.dotsThreeFill,
   ToolbarIcons.stats: PhIcons.chartBarFill,

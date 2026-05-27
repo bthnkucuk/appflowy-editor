@@ -85,6 +85,7 @@ class _MobileEditorState extends State<MobileEditor> {
         boldMobileToolbarItem,
         italicMobileToolbarItem,
         underlineMobileToolbarItem,
+        alignMobileToolbarItemSheet,
         buildExtrasMobileToolbarItemSheet(
           exportFileName: 'appflowy-document',
           // Same PDF font config that home_page uses for the AppBar
