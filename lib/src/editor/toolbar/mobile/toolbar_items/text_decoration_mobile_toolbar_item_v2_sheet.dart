@@ -128,7 +128,6 @@ class _SheetTextDecorationV2MenuState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       child: DecoratedBox(
@@ -136,7 +135,7 @@ class _SheetTextDecorationV2MenuState
           shape: const RoundedSuperellipseBorder(
             borderRadius: BorderRadius.all(Radius.circular(16)),
           ),
-          color: theme.scaffoldBackgroundColor,
+          color: Colors.transparent,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -169,13 +168,9 @@ class _SheetTextDecorationV2MenuState
       });
     }
     return EditorToolbarMenuButton(
-      backgroundColor: Theme.of(context).cardColor,
+      backgroundColor: Colors.transparent,
       isSelected: isSelected,
-      icon: ToolbarIcon(
-        icon: decoration.icon,
-        selected: isSelected,
-        color: Theme.of(context).textTheme.bodyLarge?.color,
-      ),
+      icon: decoration.icon,
       iconPadding: const EdgeInsets.symmetric(vertical: 12),
       onTap: () {
         setState(() {
