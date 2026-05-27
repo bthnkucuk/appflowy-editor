@@ -26,8 +26,6 @@ class FindAndReplaceMenuWidget extends StatefulWidget {
   final bool showReplaceMenu;
 
   /// The style of the find and replace menu
-  ///
-  /// only works for SearchService, not for SearchServiceV2
   final FindReplaceStyle style;
   final bool showRegexButton;
   final bool showCaseSensitiveButton;
@@ -129,8 +127,6 @@ class FindMenu extends StatefulWidget {
   final VoidCallback onDismiss;
 
   /// The style of the find and replace menu
-  ///
-  /// only works for SearchService, not for SearchServiceV2
   final FindReplaceStyle style;
 
   /// The localizations of the find and replace menu
