@@ -25,10 +25,18 @@ class OutlineBlockKeys {
   static const String type = 'outline';
   static const String backgroundColor = blockComponentBackgroundColor;
   static const String depth = 'depth';
+
+  /// Persistent collapse state — written as a node attribute so the
+  /// block remembers its open/closed state across reloads, copy/paste,
+  /// and remote sync. Default `false` (expanded).
+  static const String collapsed = 'collapsed';
 }
 
-Node outlineBlockNode() {
-  return Node(type: OutlineBlockKeys.type);
+Node outlineBlockNode({bool collapsed = false}) {
+  return Node(
+    type: OutlineBlockKeys.type,
+    attributes: {if (collapsed) OutlineBlockKeys.collapsed: true},
+  );
 }
 
 enum _OutlineBlockStatus { noHeadings, noMatchHeadings, success }
@@ -128,6 +136,15 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
     );
   }
 
+  bool get _collapsed =>
+      widget.node.attributes[OutlineBlockKeys.collapsed] == true;
+
+  Future<void> _toggleCollapsed() async {
+    final t = editorState.transaction
+      ..updateNode(widget.node, {OutlineBlockKeys.collapsed: !_collapsed});
+    await editorState.apply(t);
+  }
+
   Widget _buildOutlineBlock() {
     final (status, headings) = getHeadingNodes();
 
@@ -166,6 +183,33 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
         );
     }
 
+    final theme = Theme.of(context);
+    final header = Row(
+      children: [
+        InkWell(
+          onTap: _toggleCollapsed,
+          customBorder: const CircleBorder(),
+          child: Padding(
+            padding: const EdgeInsets.all(2),
+            child: Icon(
+              _collapsed
+                  ? Icons.keyboard_arrow_right_rounded
+                  : Icons.keyboard_arrow_down_rounded,
+              size: 22,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            'Table of contents',
+            style: theme.textTheme.titleLarge,
+          ),
+        ),
+      ],
+    );
+
     return Container(
       key: blockComponentKey,
       constraints: const BoxConstraints(minHeight: 40.0),
@@ -180,12 +224,11 @@ class _OutlineBlockWidgetState extends State<OutlineBlockWidget>
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Table of contents',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8.0),
-            child,
+            header,
+            if (!_collapsed) ...[
+              const SizedBox(height: 8.0),
+              child,
+            ],
           ],
         ),
       ),
