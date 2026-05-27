@@ -3,6 +3,8 @@ import 'package:example/appearance/appearance_sheet.dart' show appearanceTick;
 import 'package:example/util/stutter_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:universal_platform/universal_platform.dart';
 
 class MobileEditor extends StatefulWidget {
@@ -83,6 +85,32 @@ class _MobileEditorState extends State<MobileEditor> {
         boldMobileToolbarItem,
         italicMobileToolbarItem,
         underlineMobileToolbarItem,
+        buildExtrasMobileToolbarItemSheet(
+          exportFileName: 'appflowy-document',
+          // Same PDF font config that home_page uses for the AppBar
+          // export action — keeps mobile-toolbar exports rendering
+          // non-ASCII glyphs and emoji correctly.
+          pdfFont: () => PdfGoogleFonts.notoSansRegular(),
+          pdfFontFallback: () async => Future.wait([
+            PdfGoogleFonts.notoColorEmoji(),
+            PdfGoogleFonts.notoSansSymbolsRegular(),
+            PdfGoogleFonts.notoSansSymbols2Regular(),
+            PdfGoogleFonts.notoSansMathRegular(),
+            PdfGoogleFonts.notoSansSCRegular(),
+            PdfGoogleFonts.notoSansJPRegular(),
+            PdfGoogleFonts.notoSansKRRegular(),
+          ]),
+          onExport: (callbackContext, file) async {
+            final box = callbackContext.findRenderObject() as RenderBox?;
+            await Share.shareXFiles(
+              [file],
+              subject: file.name,
+              sharePositionOrigin: box == null
+                  ? null
+                  : box.localToGlobal(Offset.zero) & box.size,
+            );
+          },
+        ),
       ],
       editorState: editorState,
       child: MobileFloatingToolbar(

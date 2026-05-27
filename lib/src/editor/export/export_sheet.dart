@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-///TODO(bthnkucuk): This is a temporary solution to export the document... UI needs to be improved.
 /// Supported export targets for [AppFlowyEditorExportSheet].
 enum AppFlowyExportFormat {
   json('json', 'application/json'),
@@ -42,17 +41,23 @@ typedef AppFlowyEditorExportCallback =
 /// passing bytes around) keeps large PDF exports from being pinned in heap
 /// after the callback returns.
 ///
-/// Open it with `showModalBottomSheet` (or any other host route):
+/// Layout matches the mobile toolbar sheet system (cf.
+/// `EditorToolbarSheetScaffold`, `EditorToolbarMenuButton`) — squircle
+/// rows with icon + label. Open via `StupidSimpleSheetRoute` for the
+/// frosted-glass shell or `showModalBottomSheet` for the classic look:
 ///
 /// ```dart
-/// showModalBottomSheet(
-///   context: context,
-///   builder: (_) => AppFlowyEditorExportSheet(
-///     editorState: editorState,
-///     fileName: 'my-doc',
-///     onExport: (context, file) async {
-///       // hand `file` to share_plus / file_picker / etc.
-///     },
+/// Navigator.of(context).push(
+///   StupidSimpleSheetRoute<void>(
+///     child: EditorToolbarSheetScaffold(
+///       child: AppFlowyEditorExportSheet(
+///         editorState: editorState,
+///         fileName: 'my-doc',
+///         onExport: (context, file) async {
+///           // hand `file` to share_plus / file_picker / etc.
+///         },
+///       ),
+///     ),
 ///   ),
 /// );
 /// ```
@@ -102,39 +107,84 @@ class _AppFlowyEditorExportSheetState extends State<AppFlowyEditorExportSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Export', style: theme.textTheme.titleMedium),
+          const Divider(height: 16, thickness: 0.5),
+          for (var i = 0; i < widget.formats.length; i++) ...[
+            if (i > 0) const SizedBox(height: 8),
+            _buildRow(widget.formats[i]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRow(AppFlowyExportFormat format) {
+    final busy = _exporting == format;
+    final disabled = _exporting != null && !busy;
+    return Opacity(
+      opacity: disabled ? 0.4 : 1,
+      child: EditorToolbarMenuButton(
+        isSelected: false,
+        onTap: busy || disabled ? () {} : () => _run(format),
+        enabled: !busy && !disabled,
+        iconPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Text('Export', style: theme.textTheme.titleMedium),
+            ToolbarIcon(
+              icon: _iconFor(format),
+              color: Theme.of(context).textTheme.bodyLarge?.color,
             ),
-            for (final format in widget.formats) _buildTile(format),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _labelFor(format),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  Text(
+                    '.${format.fileExtension}',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (busy)
+              const SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.outline,
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTile(AppFlowyExportFormat format) {
-    final busy = _exporting == format;
-    final disabled = _exporting != null && !busy;
-    return ListTile(
-      enabled: !disabled,
-      title: Text(_labelFor(format)),
-      subtitle: Text('.${format.fileExtension}'),
-      trailing: busy
-          ? const SizedBox.square(
-              dimension: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.file_download_outlined),
-      onTap: busy ? null : () => _run(format),
-    );
+  ToolbarIcons _iconFor(AppFlowyExportFormat format) {
+    switch (format) {
+      case AppFlowyExportFormat.json:
+        return ToolbarIcons.code;
+      case AppFlowyExportFormat.markdown:
+        return ToolbarIcons.text;
+      case AppFlowyExportFormat.pdf:
+        return ToolbarIcons.export;
+    }
   }
 
   String _labelFor(AppFlowyExportFormat format) {

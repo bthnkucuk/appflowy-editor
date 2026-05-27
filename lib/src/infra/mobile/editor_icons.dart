@@ -56,6 +56,10 @@ enum ToolbarIcons {
   // color picker reset/clear actions
   resetTextColor,
   clearHighlightColor,
+  // misc utility entries (extras sheet, statistics, etc.)
+  more,
+  stats,
+  export,
 }
 
 /// Phosphor's "regular" weight — the default look for toolbar buttons in
@@ -115,6 +119,9 @@ const Map<ToolbarIcons, IconifyIconData> _phMap = {
   ToolbarIcons.selectionMenuImage: PhIcons.image,
   ToolbarIcons.resetTextColor: PhIcons.arrowCounterClockwise,
   ToolbarIcons.clearHighlightColor: PhIcons.xCircle,
+  ToolbarIcons.more: PhIcons.dotsThree,
+  ToolbarIcons.stats: PhIcons.chartBar,
+  ToolbarIcons.export: PhIcons.export_,
 };
 
 /// Phosphor's "Fill" (solid) variants — used by [ToolbarIcon] when
@@ -150,6 +157,9 @@ const Map<ToolbarIcons, IconifyIconData> _phMapFilled = {
   ToolbarIcons.alignCenter: PhIcons.textAlignCenterFill,
   ToolbarIcons.alignRight: PhIcons.textAlignRightFill,
   ToolbarIcons.textDecorationBold: PhIcons.textAaFill,
+  ToolbarIcons.more: PhIcons.dotsThreeFill,
+  ToolbarIcons.stats: PhIcons.chartBarFill,
+  ToolbarIcons.export: PhIcons.exportFill,
 };
 
 class ToolbarIcon extends StatelessWidget {

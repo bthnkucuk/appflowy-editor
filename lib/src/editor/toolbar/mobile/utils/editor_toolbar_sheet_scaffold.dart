@@ -124,7 +124,10 @@ class EditorToolbarMenuButton extends StatelessWidget {
     this.fontFamily,
     this.textPadding = EdgeInsets.zero,
   }) : assert(
-         (icon != null ? 1 : 0) + (text != null ? 1 : 0) + (child != null ? 1 : 0) == 1,
+         (icon != null ? 1 : 0) +
+                 (text != null ? 1 : 0) +
+                 (child != null ? 1 : 0) ==
+             1,
          'Provide exactly one of icon, text, or child',
        );
 
