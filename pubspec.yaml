@@ -34,7 +34,7 @@ dependencies:
   slang: ^4.14.0
   slang_flutter: ^4.14.0
   string_validator: "^1.2.0"
-  stupid_simple_sheet: ^0.9.1+1
+  stupid_simple_sheet: ^1.0.0-dev.2
   iconifyx_ph:
     git:
       url: https://github.com/bthnkucuk/iconifyx
