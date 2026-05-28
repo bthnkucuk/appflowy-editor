@@ -36,10 +36,14 @@ export 'src/editor_state/undo_manager.dart' show TransactionSource;
 export 'src/extensions/extensions.dart';
 export 'src/infra/clipboard.dart';
 export 'src/infra/log.dart';
-// Slang-generated translations. Consumer apps that use slang themselves will
-// hide these by importing this barrel with `hide LocaleSettings,
-// TranslationProvider, AppLocaleUtils` to avoid name clashes.
-export 'src/localizations/strings.g.dart';
+// Slang-generated translations. We hide `TranslationProvider` and re-export it
+// under [AppFlowyTranslationProvider] so consumer apps that use slang themselves
+// don't collide with our provider — wrap your app in
+// `AppFlowyTranslationProvider(child: …)` instead. `LocaleSettings` and
+// `AppLocaleUtils` are still exported under their slang names; if your app
+// also uses slang, add `hide LocaleSettings, AppLocaleUtils` to this import.
+export 'src/localizations/strings.g.dart' hide TranslationProvider;
+export 'src/localizations/translation_provider_alias.dart';
 
 // ---------------------------------------------------------------------------
 // Render layer

@@ -22,7 +22,7 @@ void main() async {
   // Important for Offline Collaboration
   await AppflowyEditorSyncUtilityFunctions.initAppFlowyEditorSync();
 
-  runApp(TranslationProvider(child: const MyApp()));
+  runApp(AppFlowyTranslationProvider(child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
       ],
       supportedLocales: AppLocaleUtils.supportedLocales,
-      locale: TranslationProvider.of(context).flutterLocale,
+      locale: AppFlowyTranslationProvider.of(context).flutterLocale,
       debugShowCheckedModeBanner: false,
       home: const HomePage(),
       theme: ThemeData.light(useMaterial3: true),
