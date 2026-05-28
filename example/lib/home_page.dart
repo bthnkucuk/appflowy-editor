@@ -551,9 +551,11 @@ class _HomePageState extends State<HomePage> {
       }
     } else {
       // for desktop
-      final path = await FilePicker.saveFile(
-        fileName: 'document.${fileType.extension}',
-      );
+      // final path = await FilePicker.saveFile(
+      //   fileName: 'document.${fileType.extension}',
+      // );
+      // TODO: implement save file
+      final path = null;
       if (path != null) {
         await File(path).writeAsString(result);
         if (fileType == ExportFileType.pdf) {
@@ -671,4 +673,3 @@ class _DirtyIndicator extends StatelessWidget {
     );
   }
 }
-

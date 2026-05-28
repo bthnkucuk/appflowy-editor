@@ -19,9 +19,9 @@ dependencies:
   google_fonts: ^8.1.0
   collection: "^1.19.1"
   cross_file: ^0.3.5+2
-  device_info_plus: 12.4.0
+  device_info_plus: 13.1.0
   diff_match_patch: "^0.4.1"
-  file_picker: ^11.0.2
+  file_picker: ^12.0.0-beta.4
   flutter:
     sdk: flutter
   html: ^0.15.6

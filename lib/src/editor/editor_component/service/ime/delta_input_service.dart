@@ -52,12 +52,8 @@ class DeltaTextInputService extends TextInputService with DeltaTextInputClient {
   }
 
   @override
-  void attach(
-    TextEditingValue textEditingValue,
-    TextInputConfiguration configuration,
-  ) {
-    if (_textInputConnection == null ||
-        _textInputConnection!.attached == false) {
+  void attach(TextEditingValue textEditingValue, TextInputConfiguration configuration) {
+    if (_textInputConnection == null || _textInputConnection!.attached == false) {
       _textInputConnection = TextInput.attach(this, configuration);
     }
 
@@ -67,9 +63,7 @@ class DeltaTextInputService extends TextInputService with DeltaTextInputClient {
       ..show();
     currentTextEditingValue = formattedValue;
 
-    AppFlowyEditorLog.input.debug(
-      'attach text editing value: $textEditingValue',
-    );
+    AppFlowyEditorLog.input.debug('attach text editing value: $textEditingValue');
   }
 
   @override
@@ -81,9 +75,7 @@ class DeltaTextInputService extends TextInputService with DeltaTextInputClient {
 
   @override
   void updateEditingValueWithDeltas(List<TextEditingDelta> textEditingDeltas) {
-    AppFlowyEditorLog.input.debug(
-      textEditingDeltas.map((delta) => delta.toString()).toString(),
-    );
+    AppFlowyEditorLog.input.debug(textEditingDeltas.map((delta) => delta.toString()).toString());
     apply(textEditingDeltas);
   }
 
@@ -132,10 +124,7 @@ class DeltaTextInputService extends TextInputService with DeltaTextInputClient {
   void updateFloatingCursor(RawFloatingCursorPoint point) {}
 
   @override
-  void didChangeInputControl(
-    TextInputControl? oldControl,
-    TextInputControl? newControl,
-  ) {}
+  void didChangeInputControl(TextInputControl? oldControl, TextInputControl? newControl) {}
 
   @override
   void performSelector(String selectorName) {
@@ -147,9 +136,7 @@ class DeltaTextInputService extends TextInputService with DeltaTextInputClient {
     if (selectorName == 'deleteBackward:') {
       final oldText = currentTextEditingValue.text;
       final selection = currentTextEditingValue.selection;
-      final deleteRange = selection.isCollapsed
-          ? TextRange(start: selection.start - 1, end: selection.end)
-          : selection;
+      final deleteRange = selection.isCollapsed ? TextRange(start: selection.start - 1, end: selection.end) : selection;
       onDelete(
         TextEditingDeltaDeletion(
           oldText: oldText,
@@ -165,18 +152,10 @@ class DeltaTextInputService extends TextInputService with DeltaTextInputClient {
   @override
   void insertContent(KeyboardInsertedContent content) {}
 
-  @override
-  bool onFocusReceived() => false;
-
   void _updateComposing(TextEditingDelta delta) {
     if (delta is! TextEditingDeltaNonTextUpdate) {
-      if (composingTextRange != null &&
-          composingTextRange!.start != -1 &&
-          delta.composing.end != -1) {
-        composingTextRange = TextRange(
-          start: composingTextRange!.start,
-          end: delta.composing.end,
-        );
+      if (composingTextRange != null && composingTextRange!.start != -1 && delta.composing.end != -1) {
+        composingTextRange = TextRange(start: composingTextRange!.start, end: delta.composing.end);
       } else {
         composingTextRange = delta.composing;
       }
@@ -195,11 +174,7 @@ extension on TextEditingValue {
     final selection = this.selection >> _len;
     final composing = this.composing >> _len;
 
-    return TextEditingValue(
-      text: text,
-      selection: selection,
-      composing: composing,
-    );
+    return TextEditingValue(text: text, selection: selection, composing: composing);
   }
 }
 
@@ -248,11 +223,8 @@ extension on TextEditingDeltaReplacement {
 }
 
 extension on TextEditingDeltaNonTextUpdate {
-  TextEditingDeltaNonTextUpdate format() => TextEditingDeltaNonTextUpdate(
-    oldText: oldText << _len,
-    selection: selection << _len,
-    composing: composing << _len,
-  );
+  TextEditingDeltaNonTextUpdate format() =>
+      TextEditingDeltaNonTextUpdate(oldText: oldText << _len, selection: selection << _len, composing: composing << _len);
 }
 
 extension on TextSelection {
@@ -260,10 +232,8 @@ extension on TextSelection {
 
   TextSelection operator >>(int shiftAmount) => shift(shiftAmount);
 
-  TextSelection shift(int shiftAmount) => TextSelection(
-    baseOffset: max(0, baseOffset + shiftAmount),
-    extentOffset: max(0, extentOffset + shiftAmount),
-  );
+  TextSelection shift(int shiftAmount) =>
+      TextSelection(baseOffset: max(0, baseOffset + shiftAmount), extentOffset: max(0, extentOffset + shiftAmount));
 }
 
 extension on TextRange {
@@ -271,12 +241,8 @@ extension on TextRange {
 
   TextRange operator >>(int shiftAmount) => shift(shiftAmount);
 
-  TextRange shift(int shiftAmount) => !isValid
-      ? this
-      : TextRange(
-          start: max(0, start + shiftAmount),
-          end: max(0, end + shiftAmount),
-        );
+  TextRange shift(int shiftAmount) =>
+      !isValid ? this : TextRange(start: max(0, start + shiftAmount), end: max(0, end + shiftAmount));
 }
 
 extension on String {
