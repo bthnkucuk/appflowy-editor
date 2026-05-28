@@ -1,19 +1,7 @@
-import 'dart:math';
-
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/highlight_service_widget.dart';
-import 'package:appflowy_editor/src/flutter/overlay.dart';
-import 'package:flutter/material.dart' hide Overlay, OverlayEntry;
+import 'highlight_service_widget.dart';
+import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
-
-// workaround for the issue:
-// the popover will grab the focus even if it's inside the editor
-// setup a global value to indicate whether the focus should be grabbed
-// increase the value when the popover is opened
-// decrease the value when the popover is closed
-// only grab the focus when the value is 0
-// the operation must be paired
-KeepEditorFocusNotifier keepEditorFocusNotifier = KeepEditorFocusNotifier();
 
 /// The default value of the auto scroll edge offset on mobile
 /// The editor will scroll when the cursor is close to the edge of the screen
@@ -49,12 +37,12 @@ class AppFlowyEditor extends StatefulWidget {
     this.autoScrollEdgeOffset = appFlowyEditorAutoScrollEdgeOffset,
     this.documentRules = const [],
     this.blockWrapper,
-  })  : blockComponentBuilders =
-            blockComponentBuilders ?? standardBlockComponentBuilderMap,
-        characterShortcutEvents =
-            characterShortcutEvents ?? standardCharacterShortcutEvents,
-        commandShortcutEvents =
-            commandShortcutEvents ?? standardCommandShortcutEvents;
+  }) : blockComponentBuilders =
+           blockComponentBuilders ?? standardBlockComponentBuilderMap,
+       characterShortcutEvents =
+           characterShortcutEvents ?? standardCharacterShortcutEvents,
+       commandShortcutEvents =
+           commandShortcutEvents ?? standardCommandShortcutEvents;
 
   final EditorState editorState;
 
@@ -250,11 +238,19 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
   late EditorScrollController editorScrollController;
 
+  // Hoisted out of build() so we own a single instance and can dispose it.
+  // Overlay only honors initialEntries once; pre-hoist rebuilds were
+  // allocating fresh entries on every build and orphaning them.
+  late final OverlayEntry _rootOverlayEntry = OverlayEntry(
+    builder: (context) => services ?? const SizedBox.shrink(),
+  );
+
   @override
   void initState() {
     super.initState();
 
-    editorScrollController = widget.editorScrollController ??
+    editorScrollController =
+        widget.editorScrollController ??
         EditorScrollController(
           editorState: editorState,
           shrinkWrap: widget.shrinkWrap,
@@ -276,6 +272,11 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
       editorScrollController.dispose();
     }
 
+    // Order matters: remove() detaches from the Overlay; dispose() then
+    // releases the listener notifier. dispose() asserts _overlay == null.
+    _rootOverlayEntry.remove();
+    _rootOverlayEntry.dispose();
+
     super.dispose();
   }
 
@@ -285,12 +286,16 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
     _updateValues();
 
-    if (editorState.service != oldWidget.editorState.service) {
+    // EditorState now embeds the service-locator surface directly (via
+    // EditorServiceMixin); rebind the renderer when the editor state
+    // instance itself changes.
+    if (editorState != oldWidget.editorState) {
       editorState.renderer = _renderer;
     }
 
     if (widget.editorScrollController != oldWidget.editorScrollController) {
-      editorScrollController = widget.editorScrollController ??
+      editorScrollController =
+          widget.editorScrollController ??
           EditorScrollController(
             editorState: editorState,
             shrinkWrap: widget.shrinkWrap,
@@ -309,11 +314,7 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
       child: FocusScope(
         child: Overlay(
           clipBehavior: Clip.none,
-          initialEntries: [
-            OverlayEntry(
-              builder: (context) => services ?? const SizedBox.shrink(),
-            ),
-          ],
+          initialEntries: [_rootOverlayEntry],
         ),
       ),
     );
@@ -330,10 +331,10 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
     if (widget.highlightable) {
       return ScrollServiceWidget(
-        key: editorState.service.scrollServiceKey,
+        key: editorState.scrollServiceKey,
         editorScrollController: editorScrollController,
         child: HighlightServiceWidget(
-          key: editorState.service.selectionServiceKey,
+          key: editorState.selectionServiceKey,
           highlightColor: widget.editorStyle.highlightColor,
           child: child,
         ),
@@ -342,10 +343,11 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
     if (!widget.disableKeyboardService) {
       child = KeyboardServiceWidget(
-        key: editorState.service.keyboardServiceKey,
+        key: editorState.keyboardServiceKey,
         // disable all the shortcuts when the editor is not editable
-        characterShortcutEvents:
-            widget.editable ? widget.characterShortcutEvents : [],
+        characterShortcutEvents: widget.editable
+            ? widget.characterShortcutEvents
+            : [],
         // only allow copy and select all when the editor is not editable
         commandShortcutEvents: widget.commandShortcutEvents,
         focusNode: widget.focusNode,
@@ -357,7 +359,7 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
     if (!widget.disableSelectionService) {
       // dev.log('SelectionServiceWidget');
       child = SelectionServiceWidget(
-        key: editorState.service.selectionServiceKey,
+        key: editorState.selectionServiceKey,
         cursorColor: widget.editorStyle.cursorColor,
         selectionColor: widget.editorStyle.selectionColor,
         showMagnifier: widget.showMagnifier,
@@ -369,7 +371,7 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
     if (!widget.disableScrollService) {
       child = ScrollServiceWidget(
-        key: editorState.service.scrollServiceKey,
+        key: editorState.scrollServiceKey,
         editorScrollController: editorScrollController,
         child: child,
       );
@@ -381,11 +383,7 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
   void _autoFocusIfNeeded() {
     if (widget.editable && widget.autoFocus) {
       editorState.updateSelectionWithReason(
-        widget.focusedSelection ??
-            Selection.single(
-              path: [0],
-              startOffset: 0,
-            ),
+        widget.focusedSelection ?? Selection.single(path: [0], startOffset: 0),
         reason: SelectionUpdateReason.uiEvent,
       );
     }
@@ -403,30 +401,6 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
     editorState.documentRules = widget.documentRules;
   }
 
-  BlockComponentRendererService get _renderer => BlockComponentRenderer(
-        builders: {...widget.blockComponentBuilders},
-      );
-}
-
-class KeepEditorFocusNotifier extends ValueNotifier<int> {
-  KeepEditorFocusNotifier() : super(0);
-
-  bool get shouldKeepFocus => value > 0;
-
-  @override
-  set value(int v) {
-    super.value = max(0, v);
-  }
-
-  void increase() {
-    value++;
-  }
-
-  void decrease() {
-    value--;
-  }
-
-  void reset() {
-    value = 0;
-  }
+  BlockComponentRendererService get _renderer =>
+      BlockComponentRenderer(builders: {...widget.blockComponentBuilders});
 }

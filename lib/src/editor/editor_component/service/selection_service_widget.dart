@@ -1,8 +1,8 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/desktop_selection_service.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
-import 'package:flutter/material.dart' hide Overlay, OverlayEntry;
+import 'selection/desktop_selection_service.dart';
+import 'selection/mobile_selection_service.dart';
+import '../../util/platform_extension.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class SelectionServiceWidget extends StatefulWidget {
@@ -34,12 +34,9 @@ class SelectionServiceWidget extends StatefulWidget {
 class _SelectionServiceWidgetState extends State<SelectionServiceWidget>
     with WidgetsBindingObserver
     implements AppFlowySelectionService {
-  final forwardKey = GlobalKey(
-    debugLabel: 'forward_to_platform_selection_service',
-  );
+  final forwardKey = GlobalKey(debugLabel: 'forward_to_platform_selection_service');
 
-  AppFlowySelectionService get forward =>
-      forwardKey.currentState as AppFlowySelectionService;
+  AppFlowySelectionService get forward => forwardKey.currentState as AppFlowySelectionService;
 
   @override
   Widget build(BuildContext context) {
@@ -49,8 +46,7 @@ class _SelectionServiceWidgetState extends State<SelectionServiceWidget>
         cursorColor: widget.cursorColor,
         selectionColor: widget.selectionColor,
         contextMenuBuilder: widget.contextMenuBuilder,
-        dropTargetStyle:
-            widget.dropTargetStyle ?? const AppFlowyDropTargetStyle(),
+        dropTargetStyle: widget.dropTargetStyle ?? const AppFlowyDropTargetStyle(),
         child: widget.child,
       );
     }
@@ -82,8 +78,7 @@ class _SelectionServiceWidgetState extends State<SelectionServiceWidget>
   Node? getNodeInOffset(Offset offset) => forward.getNodeInOffset(offset);
 
   @override
-  Position? getPositionInOffset(Offset offset) =>
-      forward.getPositionInOffset(offset);
+  Position? getPositionInOffset(Offset offset) => forward.getPositionInOffset(offset);
 
   @override
   void registerGestureInterceptor(SelectionGestureInterceptor interceptor) =>
@@ -93,56 +88,28 @@ class _SelectionServiceWidgetState extends State<SelectionServiceWidget>
   List<Rect> get selectionRects => forward.selectionRects;
 
   @override
-  void unregisterGestureInterceptor(String key) =>
-      forward.unregisterGestureInterceptor(key);
+  void unregisterGestureInterceptor(String key) => forward.unregisterGestureInterceptor(key);
 
   @override
-  void updateSelection(Selection? selection) =>
-      forward.updateSelection(selection);
+  void updateSelection(Selection? selection) => forward.updateSelection(selection);
 
   @override
-  Selection? onPanStart(
-    DragStartDetails details,
-    MobileSelectionDragMode mode,
-  ) =>
-      forward.onPanStart(details, mode);
+  Selection? onPanStart(DragStartDetails details, MobileSelectionDragMode mode) => forward.onPanStart(details, mode);
 
   @override
-  Selection? onPanUpdate(
-    DragUpdateDetails details,
-    MobileSelectionDragMode mode,
-  ) =>
-      forward.onPanUpdate(details, mode);
+  Selection? onPanUpdate(DragUpdateDetails details, MobileSelectionDragMode mode) => forward.onPanUpdate(details, mode);
 
   @override
-  void onPanEnd(
-    DragEndDetails details,
-    MobileSelectionDragMode mode,
-  ) =>
-      forward.onPanEnd(details, mode);
+  void onPanEnd(DragEndDetails details, MobileSelectionDragMode mode) => forward.onPanEnd(details, mode);
 
   @override
   void removeDropTarget() => forward.removeDropTarget();
 
   @override
-  void renderDropTargetForOffset(
-    Offset offset, {
-    DragAreaBuilder? builder,
-    DragTargetNodeInterceptor? interceptor,
-  }) =>
-      forward.renderDropTargetForOffset(
-        offset,
-        builder: builder,
-        interceptor: interceptor,
-      );
+  void renderDropTargetForOffset(Offset offset, {DragAreaBuilder? builder, DragTargetNodeInterceptor? interceptor}) =>
+      forward.renderDropTargetForOffset(offset, builder: builder, interceptor: interceptor);
 
   @override
-  DropTargetRenderData? getDropTargetRenderData(
-    Offset offset, {
-    DragTargetNodeInterceptor? interceptor,
-  }) =>
-      forward.getDropTargetRenderData(
-        offset,
-        interceptor: interceptor,
-      );
+  DropTargetRenderData? getDropTargetRenderData(Offset offset, {DragTargetNodeInterceptor? interceptor}) =>
+      forward.getDropTargetRenderData(offset, interceptor: interceptor);
 }

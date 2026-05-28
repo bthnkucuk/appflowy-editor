@@ -1,1 +1,1 @@
-export 'af_mobile_icon.dart';
+export 'editor_icons.dart';

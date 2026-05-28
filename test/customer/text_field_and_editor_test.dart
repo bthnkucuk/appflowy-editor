@@ -10,8 +10,7 @@ void main() async {
   // 1. When the text field is focused, the editor's cursor should be disabled.
   // 2. When the editor is focused, the text field's cursor should be disabled.
   // 3. Tapping a non-first line of the editor should still allow the editor to grab focus.
-  await AppFlowyEditorLocalizations.load(
-    const Locale.fromSubtags(languageCode: 'en'),
+  await LocaleSettings.setLocaleRaw((const Locale.fromSubtags(languageCode: 'en').toLanguageTag()),
   );
   testWidgets('text field + editor', (tester) async {
     final widget = TextFieldAndEditor();
@@ -33,9 +32,7 @@ void main() async {
 
   testWidgets('text field + editor, focus issue', (tester) async {
     final editorState = EditorState.blank();
-    final widget = TextFieldAndEditor(
-      editorState: editorState,
-    );
+    final widget = TextFieldAndEditor(editorState: editorState);
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
 
@@ -60,10 +57,7 @@ void main() async {
 }
 
 class TextFieldAndEditor extends StatelessWidget {
-  TextFieldAndEditor({
-    super.key,
-    this.editorState,
-  });
+  TextFieldAndEditor({super.key, this.editorState});
 
   final controller = TextEditingController();
   final focusNode = FocusNode();
@@ -78,10 +72,7 @@ class TextFieldAndEditor extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              TextField(
-                controller: controller,
-                focusNode: focusNode,
-              ),
+              TextField(controller: controller, focusNode: focusNode),
               Expanded(
                 child: Container(
                   width: 500,

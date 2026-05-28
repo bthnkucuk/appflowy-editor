@@ -1,4 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
+// Use editorAppearanceTick from appflowy_editor.
 import 'package:example/pages/drag_to_reorder_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,9 +24,12 @@ class _DesktopEditorState extends State<DesktopEditor> {
 
   late final EditorScrollController editorScrollController;
 
-  late EditorStyle editorStyle;
   late Map<String, BlockComponentBuilder> blockComponentBuilders;
   late List<CommandShortcutEvent> commandShortcuts;
+
+  // Read live from editorState so appearance-sheet mutations take effect on
+  // the next setState.
+  EditorStyle get editorStyle => editorState.editorStyle;
 
   @override
   void initState() {
@@ -36,7 +40,7 @@ class _DesktopEditorState extends State<DesktopEditor> {
       shrinkWrap: false,
     );
 
-    editorStyle = _buildDesktopEditorStyle();
+    editorState.editorStyle = _buildDesktopEditorStyle();
     blockComponentBuilders = _buildBlockComponentBuilders();
     commandShortcuts = _buildCommandShortcuts();
   }
@@ -53,7 +57,7 @@ class _DesktopEditorState extends State<DesktopEditor> {
   void reassemble() {
     super.reassemble();
 
-    editorStyle = _buildDesktopEditorStyle();
+    editorState.editorStyle = _buildDesktopEditorStyle();
     blockComponentBuilders = _buildBlockComponentBuilders();
     commandShortcuts = _buildCommandShortcuts();
   }
@@ -86,34 +90,39 @@ class _DesktopEditorState extends State<DesktopEditor> {
       editorScrollController: editorScrollController,
       child: Directionality(
         textDirection: widget.textDirection,
-        child: AppFlowyEditor(
-          editorState: editorState,
-          editorScrollController: editorScrollController,
-          blockComponentBuilders: blockComponentBuilders,
-          commandShortcutEvents: commandShortcuts,
-          editorStyle: editorStyle,
-          enableAutoComplete: true,
-          autoCompleteTextProvider: _buildAutoCompleteTextProvider,
-          dropTargetStyle: const AppFlowyDropTargetStyle(
-            color: Colors.red,
-          ),
-          contextMenuBuilder: (context, position, editorState, onPressed) {
-            return ContextMenu(
-              position: position,
-              editorState: editorState,
-              items: standardContextMenuItems,
-              onPressed: onPressed,
-            );
-          },
-          header: Padding(
-            padding: const EdgeInsets.only(bottom: 10.0),
-            child: Image.asset(
-              'assets/images/header.png',
-              fit: BoxFit.fitWidth,
-              height: 150,
+        // Rebuild on appearance-sheet mutations — see mobile_editor for
+        // the rationale (cached editor widget upstream).
+        child: ValueListenableBuilder<int>(
+          valueListenable: editorAppearanceTick,
+          builder: (context, _, __) => AppFlowyEditor(
+            editorState: editorState,
+            editorScrollController: editorScrollController,
+            blockComponentBuilders: blockComponentBuilders,
+            commandShortcutEvents: commandShortcuts,
+            editorStyle: editorStyle,
+            enableAutoComplete: true,
+            autoCompleteTextProvider: _buildAutoCompleteTextProvider,
+            dropTargetStyle: const AppFlowyDropTargetStyle(
+              color: Colors.red,
             ),
+            contextMenuBuilder: (context, position, editorState, onPressed) {
+              return ContextMenu(
+                position: position,
+                editorState: editorState,
+                items: standardContextMenuItems,
+                onPressed: onPressed,
+              );
+            },
+            header: Padding(
+              padding: const EdgeInsets.only(bottom: 10.0),
+              child: Image.asset(
+                'assets/images/header.png',
+                fit: BoxFit.fitWidth,
+                height: 150,
+              ),
+            ),
+            footer: _buildFooter(),
           ),
-          footer: _buildFooter(),
         ),
       ),
     );
@@ -215,19 +224,35 @@ class _DesktopEditorState extends State<DesktopEditor> {
       },
     );
     // customize the heading block component
-    final levelToFontSize = [
-      30.0,
-      26.0,
-      22.0,
-      18.0,
-      16.0,
-      14.0,
-    ];
+    // Heading sizes scale off the current body font size in
+    // `editorState.editorStyle.textStyleConfiguration.text`, so the
+    // appearance sheet's slider also moves headings. Ratios derive from
+    // the pre-existing hardcoded table normalized against the previous
+    // body default (14): [30, 26, 22, 18, 16, 14] → [2.14, 1.86, 1.57,
+    // 1.29, 1.14, 1.0]. Desktop's H1 ratio is larger than mobile's.
+    const headingRatios = <double>[2.14, 1.86, 1.57, 1.29, 1.14, 1.0];
     map[HeadingBlockKeys.type] = HeadingBlockComponentBuilder(
-      textStyleBuilder: (level) => GoogleFonts.poppins(
-        fontSize: levelToFontSize.elementAtOrNull(level - 1) ?? 14.0,
-        fontWeight: FontWeight.w600,
-      ),
+      textStyleBuilder: (level) {
+        final text = editorState.editorStyle.textStyleConfiguration.text;
+        final baseSize = text.fontSize ?? 14.0;
+        final family = text.fontFamily?.split('_').first ?? 'Poppins';
+        final ratio = headingRatios.elementAtOrNull(level - 1) ?? 1.0;
+        try {
+          return GoogleFonts.getFont(
+            family,
+            fontSize: baseSize * ratio,
+            fontWeight: FontWeight.w600,
+            color: text.color,
+          );
+        } catch (_) {
+          return TextStyle(
+            fontFamily: family,
+            fontSize: baseSize * ratio,
+            fontWeight: FontWeight.w600,
+            color: text.color,
+          );
+        }
+      },
     );
     // customize the padding
     map.forEach((key, value) {

@@ -1,6 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/heading_block_component/heading_command_shortcut.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
+import 'heading_block_component/heading_command_shortcut.dart';
+import '../util/platform_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -11,13 +11,13 @@ final Map<String, BlockComponentBuilder> standardBlockComponentBuilderMap = {
   ParagraphBlockKeys.type: ParagraphBlockComponentBuilder(
     configuration: standardBlockComponentConfiguration.copyWith(
       placeholderText: (_) => PlatformExtension.isDesktopOrWeb
-          ? AppFlowyEditorL10n.current.slashPlaceHolder
+          ? aft.slashPlaceHolder
           : ' ',
     ),
   ),
   TodoListBlockKeys.type: TodoListBlockComponentBuilder(
     configuration: standardBlockComponentConfiguration.copyWith(
-      placeholderText: (_) => AppFlowyEditorL10n.current.toDoPlaceholder,
+      placeholderText: (_) => aft.toDoPlaceholder,
     ),
     toggleChildrenTriggers: [
       LogicalKeyboardKey.shift,
@@ -27,17 +27,17 @@ final Map<String, BlockComponentBuilder> standardBlockComponentBuilderMap = {
   ),
   BulletedListBlockKeys.type: BulletedListBlockComponentBuilder(
     configuration: standardBlockComponentConfiguration.copyWith(
-      placeholderText: (_) => AppFlowyEditorL10n.current.listItemPlaceholder,
+      placeholderText: (_) => aft.listItemPlaceholder,
     ),
   ),
   NumberedListBlockKeys.type: NumberedListBlockComponentBuilder(
     configuration: standardBlockComponentConfiguration.copyWith(
-      placeholderText: (_) => AppFlowyEditorL10n.current.listItemPlaceholder,
+      placeholderText: (_) => aft.listItemPlaceholder,
     ),
   ),
   QuoteBlockKeys.type: QuoteBlockComponentBuilder(
     configuration: standardBlockComponentConfiguration.copyWith(
-      placeholderText: (_) => AppFlowyEditorL10n.current.quote,
+      placeholderText: (_) => aft.quote,
     ),
   ),
   HeadingBlockKeys.type: HeadingBlockComponentBuilder(
@@ -54,6 +54,7 @@ final Map<String, BlockComponentBuilder> standardBlockComponentBuilderMap = {
   ),
   TableBlockKeys.type: TableBlockComponentBuilder(),
   TableCellBlockKeys.type: TableCellBlockComponentBuilder(),
+  OutlineBlockKeys.type: OutlineBlockComponentBuilder(),
 };
 
 final List<CharacterShortcutEvent> standardCharacterShortcutEvents = [

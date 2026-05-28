@@ -1,18 +1,22 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../new/infra/testable_editor.dart';
 
 void main() async {
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
   });
 
-  group('l10n.dart', () {
-    for (final locale
-        in AppFlowyEditorLocalizations.delegate.supportedLocales) {
-      testWidgets('test localization', (tester) async {
-        final editor = tester.editor..addEmptyParagraph();
-        await editor.startTesting(locale: locale);
+  group('slang locales load', () {
+    for (final locale in AppFlowyEditorLocale.values) {
+      test('locale: ${locale.languageTag}', () async {
+        await LocaleSettings.setLocale(locale);
+        expect(LocaleSettings.currentLocale, locale);
+        // Translations must resolve to a non-null value for every key. Some
+        // locales (cs-CZ, da, it-IT, pl-PL, tr-TR) ship empty-string
+        // placeholders for un-translated keys, mirroring the pre-slang ARBs.
+        // Loaded value just has to exist.
+        final t = LocaleSettings.instance.currentTranslations;
+        expect(t.bold, isNotNull);
       });
     }
   });

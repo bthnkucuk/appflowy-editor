@@ -21,12 +21,11 @@ void main() {
       Material(
         child: MobileAppWithToolbarWidget(
           editorState: editor.editorState,
-          toolbarItems: [
-            codeMobileToolbarItem,
-          ],
+          toolbarItems: [codeMobileToolbarItem],
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap code toolbar item
     final codeBtn = find.byType(IconButton).first;
@@ -37,9 +36,8 @@ void main() {
     expect(
       node?.allSatisfyInSelection(selection, (delta) {
         return delta.whereType<TextInsert>().every(
-              (element) =>
-                  element.attributes?[AppFlowyRichTextKeys.code] == true,
-            );
+          (element) => element.attributes?[AppFlowyRichTextKeys.code] == true,
+        );
       }),
       true,
     );

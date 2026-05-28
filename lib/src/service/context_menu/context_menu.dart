@@ -1,19 +1,20 @@
-import 'package:appflowy_editor/src/editor_state.dart';
+import '../../editor_state.dart';
 import 'package:flutter/material.dart';
 
-typedef ContextMenuWidgetBuilder = Widget Function(
-  BuildContext context,
-  Offset position,
-  EditorState editorState,
-  VoidCallback onPressed,
-);
+typedef ContextMenuWidgetBuilder =
+    Widget Function(
+      BuildContext context,
+      Offset position,
+      EditorState editorState,
+      VoidCallback onPressed,
+    );
 
 class ContextMenuItem {
   ContextMenuItem({
-    required String Function() getName,
+    required this._getName,
     required this.onPressed,
     this.isApplicable,
-  }) : _getName = getName;
+  });
 
   final String Function() _getName;
   final void Function(EditorState editorState) onPressed;
@@ -68,9 +69,7 @@ class ContextMenu extends StatelessWidget {
                     child: Text(
                       items[i][j].name,
                       textAlign: TextAlign.start,
-                      style: const TextStyle(
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(fontSize: 14),
                     ),
                   ),
                 ),
@@ -86,9 +85,7 @@ class ContextMenu extends StatelessWidget {
       left: position.dx,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        constraints: const BoxConstraints(
-          minWidth: 140,
-        ),
+        constraints: const BoxConstraints(minWidth: 140),
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(

@@ -1,0 +1,18 @@
+{
+  "bold": "bátor",
+  "bulletedList": "pontozott lista",
+  "checkbox": "jelölőnégyzetet",
+  "embedCode": "Beágyazás",
+  "heading1": "címsor1",
+  "heading2": "címsor2",
+  "heading3": "címsor3",
+  "highlight": "Kiemel",
+  "image": "kép",
+  "italic": "dőlt",
+  "link": "link",
+  "numberedList": "számozottLista",
+  "quote": "idézet",
+  "strikethrough": "áthúzott",
+  "text": "szöveg",
+  "underline": "aláhúzás"
+}

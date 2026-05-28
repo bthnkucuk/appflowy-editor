@@ -1,7 +1,10 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:flutter/cupertino.dart';
+// Use editorAppearanceTick from appflowy_editor.
+import 'package:example/util/stutter_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:universal_platform/universal_platform.dart';
 
 class MobileEditor extends StatefulWidget {
@@ -22,8 +25,14 @@ class _MobileEditorState extends State<MobileEditor> {
   EditorState get editorState => widget.editorState;
 
   late final EditorScrollController editorScrollController;
-  late EditorStyle editorStyle;
+  late final StutterLogger _stutterLogger;
+
   late Map<String, BlockComponentBuilder> blockComponentBuilders;
+
+  // Read live from editorState so the appearance sheet's mutations are
+  // visible after a `setState`. EditorState's late field is assigned in
+  // initState before AppFlowyEditor first builds.
+  EditorStyle get editorStyle => editorState.editorStyle;
 
   @override
   void initState() {
@@ -34,247 +43,124 @@ class _MobileEditorState extends State<MobileEditor> {
       shrinkWrap: false,
     );
 
-    editorState.highlightNotifier.addListener(() {
-      // final highlight = editorState.highlightNotifier.value;
+    // Dev-only diagnostic — logs per-notify BSA/BHA build deltas during
+    // a selection handle drag. Tail with
+    //   adb logcat | grep STUTTER
+    // and trigger by long-pressing in the document.
+    _stutterLogger = StutterLogger(editorState);
 
-      return;
-
-      // final visibleRange = editorScrollController.visibleRangeNotifier.value;
-
-      // if (highlight != null) {
-      //   final node = editorState.getNodesInSelection(highlight).lastOrNull;
-
-      //   final index =
-      //       node != null ? editorState.document.nodes.indexOf(node) : null;
-      //   if (index != null) {
-      //     if (index < visibleRange.$1 || index > visibleRange.$2) {
-      //       editorScrollController.itemScrollController.scrollTo(
-      //         index: index + 1,
-      //         duration: const Duration(milliseconds: 250),
-      //         curve: Curves.easeInOut,
-      //       );
-      //     }
-      //   }
-      // }
-    });
-
-    // () async {
-    //   for (final node in editorState.document.nodes) {
-    //     final textInserts = node.delta?.whereType<TextInsert>();
-    //     final String? text = textInserts?.map((t) => t.text).join();
-    //     await Future.delayed(const Duration(milliseconds: 1));
-
-    //   }
-    // }();
-
-    editorState.highlightNotifier.addListener(() {
-      final highlight = editorState.highlightNotifier.value;
-      final visibleRange = editorScrollController.visibleRangeNotifier.value;
-
-      if (highlight != null) {
-        final node = editorState.getNodesInSelection(highlight).lastOrNull;
-
-        final index =
-            node != null ? editorState.document.nodes.indexOf(node) : null;
-        if (index != null) {
-          if (index < visibleRange.$1 || index > visibleRange.$2) {
-            editorScrollController.itemScrollController.scrollTo(
-              index: index + 1,
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-            );
-          }
-        }
-      }
-    });
-
-    // () async {
-    //   for (final node in editorState.document.nodes) {
-    //     final textInserts = node.delta?.whereType<TextInsert>();
-    //     final String? text = textInserts?.map((t) => t.text).join();
-    //     await Future.delayed(const Duration(milliseconds: 1));
-    //   }
-    // }();
-
-    editorStyle = _buildMobileEditorStyle();
+    editorState.editorStyle = _buildMobileEditorStyle();
     blockComponentBuilders = _buildBlockComponentBuilders();
+  }
+
+  @override
+  void dispose() {
+    _stutterLogger.dispose();
+    editorScrollController.dispose();
+    super.dispose();
   }
 
   @override
   void reassemble() {
     super.reassemble();
 
-    editorStyle = _buildMobileEditorStyle();
+    editorState.editorStyle = _buildMobileEditorStyle();
     blockComponentBuilders = _buildBlockComponentBuilders();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // resizeToAvoidBottomInset: false,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          // for (final node in editorState.document.nodes) {
-          //   final textInserts = node.delta?.whereType<TextInsert>();
-          //   final String? text = textInserts?.map((t) => t.text).join();
-
-          //   editorState.updateHighlight(
-          //     Selection(
-          //       start: Position(offset: 0, path: node.path),
-          //       end: Position(offset: 500, path: node.path),
-          //     ),
-          //   );
-
-          //   await Future.delayed(const Duration(seconds: 1));
-          // }
-
-          // return;
-
-          // int index = 0;
-          // Timer.periodic(Duration(seconds: 1), (_) {
-          //   editorState.updateHighlight(
-          //     Selection(
-          //       start: Position(offset: 0, path: [index]),
-          //       end: Position(offset: 500, path: [index]),
-          //     ),
-          //   );
-          //   index++;
-          // });
-          // return;
-          // print(editorState.document.last?.toJson());
-
-          editorState.document.insertNodesToEndOfDocument(
-            List.generate(
-              10,
-              (index) => Node.fromJson(
-                {
-                  "type": "paragraph",
-                  "data": {
-                    "level": 1,
-                    "delta": [
-                      {
-                        "insert": "AppFlowy Editor $index",
-                        "attributes": {
-                          "bold": true,
-                          "italic": false,
-                          "underline": false,
-                        },
-                      },
-                      {
-                        "insert":
-                            " empowers your flutter app with seamless document editing features.",
-                        "attributes": {
-                          "bold": false,
-                          "italic": false,
-                          "underline": false,
-                        },
-                      }
-                    ],
-                  },
-                },
-              ),
-            ),
-          );
-          editorState.updateHighlight(
-            Selection(
-              start: Position(offset: 0, path: [3]),
-              end: Position(offset: 10, path: [3]),
-            ),
-          );
-          // editorState.document.insertNodesToEndOfDocument(
-          //   List.generate(
-          //     10,
-          //     (index) => Node.fromJson(
-          //       {
-          //         "type": "paragraph",
-          //         "data": {
-          //           "level": 1,
-          //           "delta": [
-          //             {
-          //               "insert": "AppFlowy Editor $index",
-          //               "attributes": {
-          //                 "bold": true,
-          //                 "italic": false,
-          //                 "underline": false
-          //               },
-          //             },
-          //             {
-          //               "insert":
-          //                   " empowers your flutter app with seamless document editing features.",
-          //               "attributes": {
-          //                 "bold": false,
-          //                 "italic": false,
-          //                 "underline": false
-          //               },
-          //             }
-          //           ],
-          //         },
-          //       },
-          //     ),
-          //   ),
-          // );
-          // editorState.updateHighlight(
-          //   Selection(
-          //     start: Position(offset: 0, path: [3]),
-          //     end: Position(offset: 10, path: [3]),
-          //   ),
-          // );
-        },
-      ),
-      body: MobileToolbarV2(
-        toolbarHeight: 48.0,
-        toolbarItems: [
-          textDecorationMobileToolbarItemV2,
-          buildTextAndBackgroundColorMobileToolbarItem(),
-          blocksMobileToolbarItem,
-          linkMobileToolbarItem,
-          dividerMobileToolbarItem,
-        ],
-        editorState: editorState,
-        child: MobileFloatingToolbar(
-          editorState: editorState,
-          editorScrollController: editorScrollController,
-          floatingToolbarHeight: 32,
-          toolbarBuilder: (context, anchor, closeToolbar) {
-            return AdaptiveTextSelectionToolbar.editable(
-              clipboardStatus: ClipboardStatus.pasteable,
-              onCopy: () {
-                copyCommand.execute(editorState);
-                closeToolbar();
-              },
-              onCut: () => cutCommand.execute(editorState),
-              onPaste: () => pasteCommand.execute(editorState),
-              onSelectAll: () => selectAllCommand.execute(editorState),
-              onLiveTextInput: null,
-              onLookUp: null,
-              onSearchWeb: null,
-              onShare: null,
-              anchors: TextSelectionToolbarAnchors(
-                primaryAnchor: anchor,
-              ),
+    return MobileToolbarV2(
+      toolbarHeight: 48.0,
+      toolbarItems: [
+        undoMobileToolbarItem,
+        redoMobileToolbarItem,
+        codeMobileToolbarItem,
+        quoteMobileToolbarItem,
+        textDecorationMobileToolbarItemV2Sheet,
+        buildTextAndBackgroundColorMobileToolbarItemSheet(),
+        blocksMobileToolbarItemSheet,
+        linkMobileToolbarItemSheet,
+        dividerMobileToolbarItem,
+        boldMobileToolbarItem,
+        italicMobileToolbarItem,
+        underlineMobileToolbarItem,
+        alignMobileToolbarItemSheet,
+        outlineMobileToolbarItem,
+        buildExtrasMobileToolbarItemSheet(
+          exportFileName: 'appflowy-document',
+          // Same PDF font config that home_page uses for the AppBar
+          // export action — keeps mobile-toolbar exports rendering
+          // non-ASCII glyphs and emoji correctly.
+          pdfFont: () => PdfGoogleFonts.notoSansRegular(),
+          pdfFontFallback: () async => Future.wait([
+            PdfGoogleFonts.notoColorEmoji(),
+            PdfGoogleFonts.notoSansSymbolsRegular(),
+            PdfGoogleFonts.notoSansSymbols2Regular(),
+            PdfGoogleFonts.notoSansMathRegular(),
+            PdfGoogleFonts.notoSansSCRegular(),
+            PdfGoogleFonts.notoSansJPRegular(),
+            PdfGoogleFonts.notoSansKRRegular(),
+          ]),
+          onExport: (callbackContext, file) async {
+            final box = callbackContext.findRenderObject() as RenderBox?;
+            await Share.shareXFiles(
+              [file],
+              subject: file.name,
+              sharePositionOrigin: box == null
+                  ? null
+                  : box.localToGlobal(Offset.zero) & box.size,
             );
           },
-          child: AppFlowyEditor(
-            autoFocus: true,
-            editable: false,
-
-            // disableSelectionService: true,
-            // disableKeyboardService: true,
-            // disableScrollService: false,
-            // showMagnifier: false,
-
+        ),
+      ],
+      editorState: editorState,
+      child: MobileFloatingToolbar(
+        editorState: editorState,
+        editorScrollController: editorScrollController,
+        floatingToolbarHeight: 32,
+        toolbarBuilder: (context, anchor, closeToolbar) {
+          return AdaptiveTextSelectionToolbar.editable(
+            clipboardStatus: ClipboardStatus.pasteable,
+            onCopy: () {
+              copyCommand.execute(editorState);
+              closeToolbar();
+            },
+            onCut: () => cutCommand.execute(editorState),
+            onPaste: () => pasteCommand.execute(editorState),
+            onSelectAll: () => selectAllCommand.execute(editorState),
+            onLiveTextInput: () {},
+            onLookUp: () {},
+            onSearchWeb: () {},
+            onShare: () {},
+            anchors: TextSelectionToolbarAnchors(
+              primaryAnchor: anchor,
+            ),
+          );
+        },
+        // Rebuild AppFlowyEditor whenever the appearance sheet bumps
+        // [editorAppearanceTick]. Without this the cached editor widget in
+        // home_page doesn't get rebuilt by setState, so heading
+        // textStyleBuilder closures and body fontWeight changes wouldn't
+        // reach the editor subtree.
+        child: ValueListenableBuilder<int>(
+          valueListenable: editorAppearanceTick,
+          builder: (context, _, __) => AppFlowyEditor(
             editorStyle: editorStyle,
             editorState: editorState,
             editorScrollController: editorScrollController,
             blockComponentBuilders: blockComponentBuilders,
+            showMagnifier: false,
             // showcase 3: customize the header and footer.
-
-            autoScrollEdgeOffset: 8,
             header: Padding(
               padding: const EdgeInsets.only(bottom: 10.0),
-              child: Image.asset('assets/images/header.png'),
+              child: Image.asset(
+                'assets/images/header.png',
+              ),
             ),
-            footer: const SizedBox(height: 100),
+            footer: const SizedBox(
+              height: 100,
+            ),
           ),
         ),
       ),
@@ -287,12 +173,7 @@ class _MobileEditorState extends State<MobileEditor> {
       textScaleFactor: 1.0,
       cursorColor: const Color.fromARGB(255, 134, 46, 247),
       dragHandleColor: const Color.fromARGB(255, 134, 46, 247),
-      highlightColor: Colors.amber,
-      defaultNodeBackgroundColor: CupertinoColors.systemGrey6,
-      seperatorPadding: const EdgeInsets.all(0),
-      inBlockPadding: const EdgeInsets.all(0),
-      padding: const EdgeInsets.symmetric(horizontal: 0),
-      // selectionColor: const Color.fromARGB(50, 134, 46, 247),
+      selectionColor: const Color.fromARGB(50, 134, 46, 247),
       textStyleConfiguration: TextStyleConfiguration(
         text: GoogleFonts.poppins(
           fontSize: 14,
@@ -302,6 +183,7 @@ class _MobileEditorState extends State<MobileEditor> {
           backgroundColor: Colors.grey.shade200,
         ),
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
       magnifierSize: const Size(144, 96),
       mobileDragHandleBallSize: UniversalPlatform.isIOS
           ? const Size.square(12)
@@ -316,20 +198,35 @@ class _MobileEditorState extends State<MobileEditor> {
     final map = {
       ...standardBlockComponentBuilderMap,
     };
-    // customize the heading block component
-    final levelToFontSize = [
-      24.0,
-      22.0,
-      20.0,
-      18.0,
-      16.0,
-      14.0,
-    ];
+    // Heading sizes scale off the current body font size in
+    // `editorState.editorStyle.textStyleConfiguration.text`, so the
+    // appearance sheet's font-size slider also moves the headings.
+    // Ratios derive from the pre-existing hardcoded table normalized
+    // against the previous body default (14): [24, 22, 20, 18, 16, 14]
+    // → [1.71, 1.57, 1.43, 1.29, 1.14, 1.0].
+    const headingRatios = <double>[1.71, 1.57, 1.43, 1.29, 1.14, 1.0];
     map[HeadingBlockKeys.type] = HeadingBlockComponentBuilder(
-      textStyleBuilder: (level) => GoogleFonts.poppins(
-        fontSize: levelToFontSize.elementAtOrNull(level - 1) ?? 14.0,
-        fontWeight: FontWeight.w600,
-      ),
+      textStyleBuilder: (level) {
+        final text = editorState.editorStyle.textStyleConfiguration.text;
+        final baseSize = text.fontSize ?? 14.0;
+        final family = text.fontFamily?.split('_').first ?? 'Poppins';
+        final ratio = headingRatios.elementAtOrNull(level - 1) ?? 1.0;
+        try {
+          return GoogleFonts.getFont(
+            family,
+            fontSize: baseSize * ratio,
+            fontWeight: FontWeight.w600,
+            color: text.color,
+          );
+        } catch (_) {
+          return TextStyle(
+            fontFamily: family,
+            fontSize: baseSize * ratio,
+            fontWeight: FontWeight.w600,
+            color: text.color,
+          );
+        }
+      },
     );
     map[ParagraphBlockKeys.type] = ParagraphBlockComponentBuilder(
       configuration: BlockComponentConfiguration(

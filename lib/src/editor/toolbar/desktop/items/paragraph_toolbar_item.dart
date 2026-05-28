@@ -12,7 +12,7 @@ final ToolbarItem paragraphItem = ToolbarItem(
     final isHighlight = node.type == 'paragraph';
     final delta = (node.delta ?? Delta()).toJson();
     final child = SVGIconItemWidget(
-      iconName: 'toolbar/text',
+      icon: ToolbarIcons.text,
       isHighlight: isHighlight,
       highlightColor: highlightColor,
       iconColor: iconColor,
@@ -35,7 +35,7 @@ final ToolbarItem paragraphItem = ToolbarItem(
       return tooltipBuilder(
         context,
         _kParagraphItemId,
-        AppFlowyEditorL10n.current.text,
+        aft.text,
         child,
       );
     }

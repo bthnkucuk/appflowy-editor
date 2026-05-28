@@ -1,6 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/toolbar/desktop/items/link/link_menu.dart';
-import 'package:appflowy_editor/src/editor/util/link_util.dart';
+import 'link_menu.dart';
+import '../../../../util/link_util.dart';
 import 'package:flutter/material.dart';
 
 const _menuWidth = 300;
@@ -22,7 +22,7 @@ final linkItem = ToolbarItem(
     });
 
     final child = SVGIconItemWidget(
-      iconName: 'toolbar/link',
+      icon: ToolbarIcons.link,
       isHighlight: isHref,
       highlightColor: highlightColor,
       iconColor: iconColor,
@@ -35,7 +35,7 @@ final linkItem = ToolbarItem(
       return tooltipBuilder(
         context,
         _kLinkItemId,
-        AppFlowyEditorL10n.current.link,
+        aft.link,
         child,
       );
     }
@@ -75,18 +75,18 @@ void showLinkMenu(
   OverlayEntry? overlay;
 
   void dismissOverlay() {
-    keepEditorFocusNotifier.decrease();
+    editorState.keepFocusNotifier.decrease();
     overlay?.remove();
     overlay = null;
   }
 
-  keepEditorFocusNotifier.increase();
+  editorState.keepFocusNotifier.increase();
   overlay = FullScreenOverlayEntry(
     top: top,
     bottom: bottom,
     left: left,
     right: right,
-    dismissCallback: () => keepEditorFocusNotifier.decrease(),
+    dismissCallback: () => editorState.keepFocusNotifier.decrease(),
     builder: (context) {
       return LinkMenu(
         linkText: linkText,
@@ -108,12 +108,7 @@ void showLinkMenu(
         },
         onRemoveLink: () {
           final transaction = editorState.transaction
-            ..formatText(
-              node,
-              index,
-              length,
-              {BuiltInAttributeKey.href: null},
-            );
+            ..formatText(node, index, length, {BuiltInAttributeKey.href: null});
           editorState.apply(transaction);
           dismissOverlay();
         },

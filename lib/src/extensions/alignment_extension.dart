@@ -5,7 +5,6 @@ extension AppFlowyTextAlign on Alignment {
     switch (this) {
       case Alignment.center:
         return TextAlign.center;
-
       case Alignment.centerRight:
         return TextAlign.right;
       case Alignment.centerLeft:

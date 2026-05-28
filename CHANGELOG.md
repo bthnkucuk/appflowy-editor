@@ -1,3 +1,132 @@
+## 7.0.0
+
+First major release of this fork. **Not** a drop-in replacement for upstream 6.1.x.
+See [MIGRATION.md](MIGRATION.md) for the full migration guide.
+
+### Breaking
+
+* **Localization moved from `intl_utils` to `slang`.** `AppFlowyEditorLocalizations.of(context)`
+  no longer exists; strings are accessed through slang's `Translations.of(context)` / `aft`
+  helpers, and the app must be wrapped in `AppFlowyTranslationProvider` (a typedef
+  alias for slang's `TranslationProvider`, exported under a prefixed name so it
+  doesn't clash with the consumer app's own slang `TranslationProvider`). ARB
+  files under `lib/l10n/` are replaced by `*.i18n.json` under `assets/i18n/`.
+* **Removed deprecated `EditorState` symbols** (commit `81660abe`):
+  `EditorState.empty()`, `EditorState.toolbarItems`, `ApplyOptions.recordUndo` /
+  `recordRedo` / `resolvedSource`, `CursorUpdateReason`, `updateCursorSelection`.
+  Use `EditorState.blank()`, `ApplyOptions(source:)`, and
+  `updateSelectionWithReason` respectively.
+* **Removed `UndoManager.getUndoHistoryItem`** (`0334fe64`).
+* **`keepEditorFocusNotifier` is no longer a top-level global.** It now lives
+  per-editor as `editorState.keepFocusNotifier`. The notifier class itself is
+  private — only `increase()` / `decrease()` / `reset()` / `shouldKeepFocus`
+  are public.
+* **`AFMobileIcons` registry removed.** Mobile toolbar icons now ship through
+  `iconifyx_ph` (Phosphor) via a `ToolbarIcon` widget. The `EditorSvg` /
+  `flowy_svg` re-export is gone.
+* **`MobileToolbarItem` trimmed to `{icon, action}`.** A new
+  `MobileToolbarItem.sheet(...)` factory covers the common bottom-sheet pattern.
+  `text_and_background_color_tool_bar_item` and the legacy
+  `list_mobile_toolbar_item` were removed.
+* **Removed `FilePicker` / `FilePickerService`
+  (`lib/src/editor/util/file_picker/`).** Those were thin wrappers around the
+  `file_picker` package, added for dependency injection in tests. Nothing in
+  this codebase ever swapped the implementation and consumers were calling the
+  wrapper directly anyway. They're gone now — use the `file_picker` package
+  directly.
+
+  **Migration:**
+
+  ```dart
+  // Before
+  import 'package:appflowy_editor/src/editor/util/file_picker/file_picker_impl.dart';
+
+  final _filePicker = FilePicker();
+  final result = await _filePicker.pickFiles(
+    type: FileType.image,
+    allowMultiple: false,
+  );
+
+  // After
+  import 'package:file_picker/file_picker.dart';
+
+  final result = await FilePicker.pickFiles(
+    type: FileType.image,
+    allowMultiple: false,
+  );
+  ```
+
+  Method signatures (`pickFiles` / `saveFile` / `getDirectoryPath`) already
+  mirrored the upstream package one-to-one, so this is a mechanical
+  search-and-replace. If you had a `class MyMockFilePicker implements
+  FilePickerService` for tests, replace it with a regular `file_picker` mock.
+
+### Dependencies
+
+* **Removed:** `flutter_svg`, `flutter_animate`, `keyboard_height_plugin`, `intl`,
+  `intl_utils`, `scroll_to_index`, `scrollable_positioned_list`, `awesome_lints`,
+  `custom_lint`, `mockito`.
+* **Added:** `slang` / `slang_flutter`, `super_sliver_list` (replaces
+  `scrollable_positioned_list` + `scroll_to_index`), `google_fonts`, `cross_file`,
+  `stupid_simple_sheet`, and `iconifyx_ph` as a **git path dependency** to
+  [`github.com/bthnkucuk/iconifyx`](https://github.com/bthnkucuk/iconifyx) — this
+  is the reason the package is now marked `publish_to: none`.
+* **Minimum SDKs bumped:** Dart `>=3.12.0`, Flutter `>=3.44.0`.
+
+### Internal restructure
+
+* `lib/appflowy_editor.dart` now re-exports four sub-libraries — `core.dart`,
+  `blocks.dart`, `plugins.dart`, `mobile.dart` — for consumers that want tighter
+  dependencies. The full barrel is still backwards-compatible. Several internal
+  paths moved as part of the split (`src/history/undo_manager.dart` →
+  `src/editor_state/undo_manager.dart`, `src/l10n/*` → `src/localizations/*`).
+  See MIGRATION.md §5.
+* `EditorState` was decomposed into focused mixins
+  (`EditorChromeMixin`, `HistoryMixin`, `SelectionStyleMixin`,
+  `ScrollCoordinatorMixin`, `TransactionPipelineMixin`, `EditorServiceMixin`,
+  `_DocumentRulesMixin`, `_DocumentQueryMixin`) behind a private
+  `_EditorStateBase`. The public surface is preserved, but the file dropped from
+  ~900 lines to ~150.
+
+### New features (additive)
+
+* **Outline (auto TOC) block** with persistent collapse state.
+* **Per-block margin** attribute (`blockComponentMargin`).
+* **`EditorExport` extension on `EditorState`** plus an `ExportSheet` mobile
+  surface — markdown / html / pdf export with share support.
+* **Reactive table of contents** (`editorState.tableOfContents`) and
+  **dirty tracking** (`editorState.isDirty` / `markClean()`).
+* **Mobile sheet scaffold** (`EditorToolbarSheetScaffold`), horizontal-scroll
+  block picker, alignment / extras / appearance / fonts sheets, undo/redo +
+  list sheet toolbar items, and a `MobileToolbarItem.sheet(...)` factory.
+* **Read-along TTS reader example** page.
+
+### Performance
+
+* H2.1 / H2.2 / H2.3 series — selection-area updates driven from listeners
+  rather than every frame, identical-selection assignments short-circuited,
+  per-block paint notifiers for `BlockSelectionArea` / `BlockHighlightArea`,
+  auto-scroller cursor-mode ping-pong fix, IME re-attach skipped during
+  Android cursor drag.
+* H2.8 series — scroll extent precalc disabled during mobile drag,
+  `cachedLeft` post-frame skipped for blocks with no decoration, BSA/BHA
+  `initState` post-frame skipped for out-of-selection blocks.
+* `Node` caches `path`, dedupes the attributes view, and JSON shims are
+  deprecated.
+* Per-block-type extent hints fed to `SuperListView`; `Table` cells indexed
+  in one pass instead of N² where-scans.
+
+### Fixes (selected — full list in commit history)
+
+* Mobile: stop selection handles from collapsing on tap, expand touch target,
+  disable magnifier for mobile selection, prevent IME re-attach loop on
+  no-op selection updates, Android Gboard select-all non-text update.
+* Selection: skip invisible children in `getNodeInOffset`.
+* Find/replace: bundled upstream `#1196` fixes; old `SearchService` v1 + v2
+  dropped.
+* Selection menu: guard `_deleteSlash` with try/catch (upstream `#1188`).
+* Lifecycle: dispose four `EditorState` notifiers; hoist root `OverlayEntry`.
+
 ## 6.1.0
 * fix: unable to input text on windows desktop by @imaachman in https://github.com/AppFlowy-IO/appflowy-editor/pull/1126
 * feat: open html decoder for custom parser by @richardshiue in https://github.com/AppFlowy-IO/appflowy-editor/pull/1145

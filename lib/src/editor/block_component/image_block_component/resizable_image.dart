@@ -75,9 +75,7 @@ class _ResizableImageState extends State<ResizableImage> {
     final src = widget.src;
     if (isBase64(src)) {
       // load base64 image (url is raw base64 from web)
-      _cacheImage ??= Image.memory(
-        dataFromBase64String(src),
-      );
+      _cacheImage ??= Image.memory(dataFromBase64String(src));
       child = _cacheImage!;
     } else if (isURL(src)) {
       // load network image
@@ -146,10 +144,8 @@ class _ResizableImageState extends State<ResizableImage> {
             size: const Size(18, 18),
             child: const CircularProgressIndicator(),
           ),
-          SizedBox.fromSize(
-            size: const Size(10, 10),
-          ),
-          Text(AppFlowyEditorL10n.current.loading),
+          SizedBox.fromSize(size: const Size(10, 10)),
+          Text(aft.loading),
         ],
       ),
     );
@@ -165,7 +161,7 @@ class _ResizableImageState extends State<ResizableImage> {
         borderRadius: const BorderRadius.all(Radius.circular(4.0)),
         border: Border.all(width: 1, color: Colors.black),
       ),
-      child: Text(AppFlowyEditorL10n.current.imageLoadFailed),
+      child: Text(aft.imageLoadFailed),
     );
   }
 
@@ -198,8 +194,10 @@ class _ResizableImageState extends State<ResizableImage> {
           }
         },
         onHorizontalDragEnd: (details) {
-          imageWidth =
-              max(_kImageBlockComponentMinWidth, imageWidth - moveDistance);
+          imageWidth = max(
+            _kImageBlockComponentMinWidth,
+            imageWidth - moveDistance,
+          );
           initialOffset = 0;
           moveDistance = 0;
 

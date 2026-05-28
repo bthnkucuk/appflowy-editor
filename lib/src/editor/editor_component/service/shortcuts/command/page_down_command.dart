@@ -11,13 +11,13 @@ import 'package:flutter/material.dart';
 ///
 final CommandShortcutEvent pageDownCommand = CommandShortcutEvent(
   key: 'scroll one page down',
-  getDescription: () => AppFlowyEditorL10n.current.cmdScrollPageDown,
+  getDescription: () => aft.cmdScrollPageDown,
   command: 'page down',
   handler: _pageUpCommandHandler,
 );
 
 CommandShortcutEventHandler _pageUpCommandHandler = (editorState) {
-  final scrollService = editorState.service.scrollService;
+  final scrollService = editorState.scrollService;
   if (scrollService == null) {
     return KeyEventResult.ignored;
   }

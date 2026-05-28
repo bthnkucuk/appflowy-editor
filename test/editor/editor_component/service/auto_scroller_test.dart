@@ -26,14 +26,13 @@ void main() {
     Future<void> buildScrollable(WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: SingleChildScrollView(
-            child: SizedBox(height: 2000),
-          ),
+          home: SingleChildScrollView(child: SizedBox(height: 2000)),
         ),
       );
       await tester.pumpAndSettle();
-      scrollableState =
-          tester.state<ScrollableState>(find.byType(Scrollable).first);
+      scrollableState = tester.state<ScrollableState>(
+        find.byType(Scrollable).first,
+      );
     }
 
     // Regression test for:
@@ -52,10 +51,7 @@ void main() {
         const offset = Offset(100, 500);
         const edgeOffset = 200.0;
 
-        scroller.startAutoScroll(
-          offset,
-          direction: AxisDirection.up,
-        );
+        scroller.startAutoScroll(offset, direction: AxisDirection.up);
 
         expect(scroller.capturedRect, isNotNull);
 
@@ -93,10 +89,7 @@ void main() {
         const offset = Offset(100, 300);
         const edgeOffset = 200.0;
 
-        scroller.startAutoScroll(
-          offset,
-          direction: AxisDirection.down,
-        );
+        scroller.startAutoScroll(offset, direction: AxisDirection.down);
 
         expect(scroller.capturedRect, isNotNull);
 
@@ -115,22 +108,21 @@ void main() {
       },
     );
 
-    testWidgets(
-      'no direction — proxy rect is centered on offset',
-      (tester) async {
-        await buildScrollable(tester);
+    testWidgets('no direction — proxy rect is centered on offset', (
+      tester,
+    ) async {
+      await buildScrollable(tester);
 
-        final scroller = _CapturingAutoScroller(scrollableState);
-        const offset = Offset(50, 200);
-        const edgeOffset = 100.0;
+      final scroller = _CapturingAutoScroller(scrollableState);
+      const offset = Offset(50, 200);
+      const edgeOffset = 100.0;
 
-        scroller.startAutoScroll(offset, edgeOffset: edgeOffset);
+      scroller.startAutoScroll(offset, edgeOffset: edgeOffset);
 
-        expect(scroller.capturedRect, isNotNull);
-        expect(scroller.capturedRect!.center, offset);
-        expect(scroller.capturedRect!.width, edgeOffset);
-        expect(scroller.capturedRect!.height, edgeOffset);
-      },
-    );
+      expect(scroller.capturedRect, isNotNull);
+      expect(scroller.capturedRect!.center, offset);
+      expect(scroller.capturedRect!.width, edgeOffset);
+      expect(scroller.capturedRect!.height, edgeOffset);
+    });
   });
 }

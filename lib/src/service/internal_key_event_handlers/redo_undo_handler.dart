@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:appflowy_editor/src/service/shortcut_event/shortcut_event_handler.dart';
+import '../shortcut_event/shortcut_event_handler.dart';
 
 ShortcutEventHandler redoEventHandler = (editorState, event) {
   editorState.undoManager.redo();

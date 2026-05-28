@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/shared.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
-import 'package:appflowy_editor/src/service/selection/mobile_selection_gesture.dart';
-import 'package:flutter/material.dart' hide Overlay, OverlayEntry;
+import 'shared.dart';
+import '../../../util/platform_extension.dart';
+import '../../../../service/selection/mobile_selection_gesture.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class MobileHighlightServiceWidget extends StatefulWidget {
@@ -220,7 +219,7 @@ class _MobileHighlightServiceWidgetState
     MobileSelectionDragMode mode,
   ) {
     _panStartOffset = details.globalPosition.translate(-3.0, 0);
-    _panStartScrollDy = editorState.service.scrollService?.dy;
+    _panStartScrollDy = editorState.scrollService?.dy;
 
     final selection = editorState.selection;
     _panStartSelection = selection;
@@ -247,14 +246,13 @@ class _MobileHighlightServiceWidgetState
 
     final panEndOffset = details.globalPosition;
 
-    final dy = editorState.service.scrollService?.dy;
+    final dy = editorState.scrollService?.dy;
     final panStartOffset = dy == null
         ? _panStartOffset!
         : _panStartOffset!.translate(0, _panStartScrollDy! - dy);
-    final end = getNodeInOffset(panEndOffset)
-        ?.selectable
-        ?.getSelectionInRange(panStartOffset, panEndOffset)
-        .end;
+    final end = getNodeInOffset(
+      panEndOffset,
+    )?.selectable?.getSelectionInRange(panStartOffset, panEndOffset).end;
 
     Selection? newSelection;
 
@@ -310,13 +308,15 @@ class _MobileHighlightServiceWidgetState
 
     currentSelectedNodes = nodes;
 
-    final backwardNodes =
-        selection.isBackward ? nodes : nodes.reversed.toList(growable: false);
+    final backwardNodes = selection.isBackward
+        ? nodes
+        : nodes.reversed.toList(growable: false);
     final normalizedSelection = selection.normalized;
     assert(normalizedSelection.isBackward);
 
-    AppFlowyEditorLog.selection
-        .debug('update selection areas, $normalizedSelection');
+    AppFlowyEditorLog.selection.debug(
+      'update selection areas, $normalizedSelection',
+    );
 
     for (var i = 0; i < backwardNodes.length; i++) {
       final node = backwardNodes[i];
@@ -381,6 +381,5 @@ class _MobileHighlightServiceWidgetState
   DropTargetRenderData? getDropTargetRenderData(
     Offset offset, {
     DragTargetNodeInterceptor? interceptor,
-  }) =>
-      null;
+  }) => null;
 }

@@ -1,6 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/table_block_component/util.dart';
-import 'package:appflowy_editor/src/editor/toolbar/desktop/items/utils/overlay_util.dart';
+import 'util.dart';
+import '../../toolbar/desktop/items/utils/overlay_util.dart';
 import 'package:flutter/material.dart';
 
 void showActionMenu(
@@ -10,8 +10,9 @@ void showActionMenu(
   int position,
   TableDirection dir,
 ) {
-  final Offset pos =
-      (context.findRenderObject() as RenderBox).localToGlobal(Offset.zero);
+  final Offset pos = (context.findRenderObject() as RenderBox).localToGlobal(
+    Offset.zero,
+  );
   final rect = Rect.fromLTWH(
     pos.dx,
     pos.dy,
@@ -39,48 +40,56 @@ void showActionMenu(
         height: 230,
         children: [
           _menuItem(
-              context,
-              dir == TableDirection.col
-                  ? AppFlowyEditorL10n.current.colAddBefore
-                  : AppFlowyEditorL10n.current.rowAddBefore,
-              dir == TableDirection.col
-                  ? Icons.first_page
-                  : Icons.vertical_align_top, () {
-            TableActions.add(node, position, editorState, dir);
-            dismissOverlay();
-          }),
-          _menuItem(
-              context,
-              dir == TableDirection.col
-                  ? AppFlowyEditorL10n.current.colAddAfter
-                  : AppFlowyEditorL10n.current.rowAddAfter,
-              dir == TableDirection.col
-                  ? Icons.last_page
-                  : Icons.vertical_align_bottom, () {
-            TableActions.add(node, position + 1, editorState, dir);
-            dismissOverlay();
-          }),
-          _menuItem(
-              context,
-              dir == TableDirection.col
-                  ? AppFlowyEditorL10n.current.colRemove
-                  : AppFlowyEditorL10n.current.rowRemove,
-              Icons.delete, () {
-            TableActions.delete(node, position, editorState, dir);
-            dismissOverlay();
-          }),
-          _menuItem(
-              context,
-              dir == TableDirection.col
-                  ? AppFlowyEditorL10n.current.colDuplicate
-                  : AppFlowyEditorL10n.current.rowDuplicate,
-              Icons.content_copy, () {
-            TableActions.duplicate(node, position, editorState, dir);
-            dismissOverlay();
-          }),
+            context,
+            dir == TableDirection.col
+                ? aft.colAddBefore
+                : aft.rowAddBefore,
+            dir == TableDirection.col
+                ? Icons.first_page
+                : Icons.vertical_align_top,
+            () {
+              TableActions.add(node, position, editorState, dir);
+              dismissOverlay();
+            },
+          ),
           _menuItem(
             context,
-            AppFlowyEditorL10n.current.backgroundColor,
+            dir == TableDirection.col
+                ? aft.colAddAfter
+                : aft.rowAddAfter,
+            dir == TableDirection.col
+                ? Icons.last_page
+                : Icons.vertical_align_bottom,
+            () {
+              TableActions.add(node, position + 1, editorState, dir);
+              dismissOverlay();
+            },
+          ),
+          _menuItem(
+            context,
+            dir == TableDirection.col
+                ? aft.colRemove
+                : aft.rowRemove,
+            Icons.delete,
+            () {
+              TableActions.delete(node, position, editorState, dir);
+              dismissOverlay();
+            },
+          ),
+          _menuItem(
+            context,
+            dir == TableDirection.col
+                ? aft.colDuplicate
+                : aft.rowDuplicate,
+            Icons.content_copy,
+            () {
+              TableActions.duplicate(node, position, editorState, dir);
+              dismissOverlay();
+            },
+          ),
+          _menuItem(
+            context,
+            aft.backgroundColor,
             Icons.format_color_fill,
             () {
               final cell = dir == TableDirection.col
@@ -110,14 +119,16 @@ void showActionMenu(
             },
           ),
           _menuItem(
-              context,
-              dir == TableDirection.col
-                  ? AppFlowyEditorL10n.current.colClear
-                  : AppFlowyEditorL10n.current.rowClear,
-              Icons.clear, () {
-            TableActions.clear(node, position, editorState, dir);
-            dismissOverlay();
-          }),
+            context,
+            dir == TableDirection.col
+                ? aft.colClear
+                : aft.rowClear,
+            Icons.clear,
+            () {
+              TableActions.clear(node, position, editorState, dir);
+              dismissOverlay();
+            },
+          ),
         ],
       );
     },
@@ -180,15 +191,15 @@ void _showColorMenu(
     left: left,
     builder: (context) {
       return ColorPicker(
-        title: AppFlowyEditorL10n.current.highlightColor,
+        title: aft.highlightColor,
         selectedColorHex: selectedColorHex,
         colorOptions: generateHighlightColorOptions(),
         onSubmittedColorHex: (color, _) {
           action(color);
           dismissOverlay();
         },
-        resetText: AppFlowyEditorL10n.current.clearHighlightColor,
-        resetIconName: 'clear_highlight_color',
+        resetText: aft.clearHighlightColor,
+        resetIcon: ToolbarIcons.clearHighlightColor,
       );
     },
   ).build();

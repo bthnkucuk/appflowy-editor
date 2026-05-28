@@ -10,8 +10,7 @@ void main() async {
   /// - bulleted list
   /// - todo list
   /// - quote
-  await AppFlowyEditorLocalizations.load(
-    const Locale.fromSubtags(languageCode: 'en'),
+  await LocaleSettings.setLocaleRaw((const Locale.fromSubtags(languageCode: 'en').toLanguageTag()),
   );
   testWidgets('custom block icon', (tester) async {
     await mockNetworkImagesFor(() async {

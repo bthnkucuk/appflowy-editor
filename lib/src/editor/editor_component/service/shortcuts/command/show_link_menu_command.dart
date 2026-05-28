@@ -1,5 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
+import '../../../../util/platform_extension.dart';
 import 'package:flutter/material.dart';
 
 /// Cmd / Ctrl + K: show link menu
@@ -8,15 +8,13 @@ import 'package:flutter/material.dart';
 ///   - web
 final CommandShortcutEvent showLinkMenuCommand = CommandShortcutEvent(
   key: 'link menu',
-  getDescription: () => AppFlowyEditorL10n.current.cmdConvertToLink,
+  getDescription: () => aft.cmdConvertToLink,
   command: 'ctrl+k',
   macOSCommand: 'cmd+k',
   handler: _showLinkMenu,
 );
 
-KeyEventResult _showLinkMenu(
-  EditorState editorState,
-) {
+KeyEventResult _showLinkMenu(EditorState editorState) {
   if (PlatformExtension.isMobile) {
     assert(false, 'showLinkMenuCommand is not supported on mobile platform.');
 
@@ -27,8 +25,10 @@ KeyEventResult _showLinkMenu(
   if (selection == null || selection.isCollapsed) {
     return KeyEventResult.ignored;
   }
-  final context =
-      editorState.getNodeAtPath(selection.end.path)?.key.currentContext;
+  final context = editorState
+      .getNodeAtPath(selection.end.path)
+      ?.key
+      .currentContext;
   if (context == null) {
     return KeyEventResult.ignored;
   }
@@ -39,12 +39,7 @@ KeyEventResult _showLinkMenu(
     );
   });
 
-  showLinkMenu(
-    context,
-    editorState,
-    selection,
-    isHref,
-  );
+  showLinkMenu(context, editorState, selection, isHref);
 
   return KeyEventResult.handled;
 }

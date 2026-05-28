@@ -21,12 +21,11 @@ void main() {
       Material(
         child: MobileAppWithToolbarWidget(
           editorState: editor.editorState,
-          toolbarItems: [
-            todoListMobileToolbarItem,
-          ],
+          toolbarItems: [todoListMobileToolbarItem],
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap todoList toolbar item
     final todoListBtn = find.byType(IconButton).first;
@@ -34,9 +33,6 @@ void main() {
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
     // Check if the text becomes quote node
     final node = editor.editorState.getNodeAtPath([1]);
-    expect(
-      node?.type == TodoListBlockKeys.type,
-      true,
-    );
+    expect(node?.type == TodoListBlockKeys.type, true);
   });
 }

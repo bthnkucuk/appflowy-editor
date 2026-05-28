@@ -16,12 +16,10 @@ void main() async {
     const url =
         'https://images.unsplash.com/photo-1682961941145-e73336a53bc6?dl=katsuma-tanaka-cWpkMDSQbWQ-unsplash.jpg';
     testWidgets('render image node', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
-          ..addNode(
-            imageNode(url: url),
-          )
+          ..addNode(imageNode(url: url))
           ..addParagraph(initialText: text);
         await editor.startTesting();
         await tester.pumpAndSettle();
@@ -34,17 +32,13 @@ void main() async {
     });
 
     testWidgets('cannot see action menu when not editable', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
-          ..addNode(
-            imageNode(url: url),
-          )
+          ..addNode(imageNode(url: url))
           ..addParagraph(initialText: text);
 
-        await editor.startTesting(
-          editable: false,
-        );
+        await editor.startTesting(editable: false);
         await tester.pumpAndSettle();
 
         expect(editor.documentRootLen, 3);
@@ -60,19 +54,17 @@ void main() async {
         await gesture.moveTo(tester.getCenter(find.byType(Image)));
         await tester.pumpAndSettle();
 
-        expect(find.byType(EditorSvg), findsNothing);
+        expect(find.byType(ToolbarIcon), findsNothing);
 
         await editor.dispose();
       });
     });
 
     testWidgets('can see action menu when editable', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
-          ..addNode(
-            imageNode(url: url),
-          )
+          ..addNode(imageNode(url: url))
           ..addParagraph(initialText: text);
 
         await editor.startTesting();
@@ -98,30 +90,12 @@ void main() async {
     });
 
     testWidgets('render image align', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
-          ..addNode(
-            imageNode(
-              url: url,
-              align: 'left',
-              width: 100,
-            ),
-          )
-          ..addNode(
-            imageNode(
-              url: url,
-              align: 'center',
-              width: 100,
-            ),
-          )
-          ..addNode(
-            imageNode(
-              url: url,
-              align: 'right',
-              width: 100,
-            ),
-          )
+          ..addNode(imageNode(url: url, align: 'left', width: 100))
+          ..addNode(imageNode(url: url, align: 'center', width: 100))
+          ..addNode(imageNode(url: url, align: 'right', width: 100))
           ..addParagraph(initialText: text);
         await editor.startTesting();
         await tester.pumpAndSettle();
@@ -134,10 +108,7 @@ void main() async {
         final editorRect = tester.getRect(editorFinder);
 
         final leftImageRect = tester.getRect(imageFinder.at(0));
-        expect(
-          leftImageRect.left,
-          editor.editorState.editorStyle.padding.left,
-        );
+        expect(leftImageRect.left, editor.editorState.editorStyle.padding.left);
         final rightImageRect = tester.getRect(imageFinder.at(2));
         expect(
           rightImageRect.right,
@@ -170,12 +141,10 @@ void main() async {
     });
 
     testWidgets('render image copy', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
-          ..addNode(
-            imageNode(url: url),
-          )
+          ..addNode(imageNode(url: url))
           ..addParagraph(initialText: text);
         await editor.startTesting();
 
@@ -191,12 +160,10 @@ void main() async {
     });
 
     testWidgets('render image delete', (tester) async {
-      mockNetworkImagesFor(() async {
+      await mockNetworkImagesFor(() async {
         final editor = tester.editor
           ..addParagraph(initialText: text)
-          ..addNode(
-            imageNode(url: url),
-          )
+          ..addNode(imageNode(url: url))
           ..addParagraph(initialText: text);
         await editor.startTesting();
         await tester.pumpAndSettle();

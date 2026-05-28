@@ -1,5 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/base_component/block_icon_builder.dart';
+import '../base_component/block_icon_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -25,21 +25,17 @@ Node bulletedListNode({
   return Node(
     type: BulletedListBlockKeys.type,
     attributes: {
-      BulletedListBlockKeys.delta:
-          (delta ?? (Delta()..insert(text ?? ''))).toJson(),
-      if (attributes != null) ...attributes,
-      if (textDirection != null)
-        BulletedListBlockKeys.textDirection: textDirection,
+      BulletedListBlockKeys.delta: (delta ?? (Delta()..insert(text ?? '')))
+          .toJson(),
+      ...?attributes,
+      BulletedListBlockKeys.textDirection: ?textDirection,
     },
     children: children ?? [],
   );
 }
 
 class BulletedListBlockComponentBuilder extends BlockComponentBuilder {
-  BulletedListBlockComponentBuilder({
-    super.configuration,
-    this.iconBuilder,
-  });
+  BulletedListBlockComponentBuilder({super.configuration, this.iconBuilder});
 
   final BlockIconBuilder? iconBuilder;
 
@@ -53,19 +49,16 @@ class BulletedListBlockComponentBuilder extends BlockComponentBuilder {
       configuration: configuration,
       iconBuilder: iconBuilder,
       showActions: showActions(node),
-      actionBuilder: (context, state) => actionBuilder(
-        blockComponentContext,
-        state,
-      ),
-      actionTrailingBuilder: (context, state) => actionTrailingBuilder(
-        blockComponentContext,
-        state,
-      ),
+      actionBuilder: (context, state) =>
+          actionBuilder(blockComponentContext, state),
+      actionTrailingBuilder: (context, state) =>
+          actionTrailingBuilder(blockComponentContext, state),
     );
   }
 
   @override
-  BlockComponentValidate get validate => (node) => node.delta != null;
+  BlockComponentValidate get validate =>
+      (node) => node.delta != null;
 }
 
 class BulletedListBlockComponentWidget extends BlockComponentStatefulWidget {
@@ -150,8 +143,8 @@ class _BulletedListBlockComponentWidgetState
               ),
               placeholderTextSpanDecorator: (textSpan) =>
                   textSpan.updateTextStyle(
-                placeholderTextStyleWithTextSpan(textSpan: textSpan),
-              ),
+                    placeholderTextStyleWithTextSpan(textSpan: textSpan),
+                  ),
               textDirection: textDirection,
               cursorColor: editorState.editorStyle.cursorColor,
               selectionColor: editorState.editorStyle.selectionColor,
@@ -180,9 +173,7 @@ class _BulletedListBlockComponentWidgetState
       blockColor: editorState.editorStyle.selectionColor,
       highlightColor: editorState.editorStyle.highlightColor,
       highlightAreaColor: editorState.editorStyle.highlightAreaColor,
-      supportTypes: const [
-        BlockSelectionType.block,
-      ],
+      supportTypes: const [BlockSelectionType.block],
       child: child,
     );
 
@@ -200,19 +191,12 @@ class _BulletedListBlockComponentWidgetState
 }
 
 class _BulletedListIcon extends StatelessWidget {
-  const _BulletedListIcon({
-    required this.node,
-    required this.textStyle,
-  });
+  const _BulletedListIcon({required this.node, required this.textStyle});
 
   final Node node;
   final TextStyle textStyle;
 
-  static final bulletedListIcons = [
-    '●',
-    '◯',
-    '□',
-  ];
+  static final bulletedListIcons = ['●', '◯', '□'];
 
   int get level {
     var level = 0;
@@ -231,18 +215,30 @@ class _BulletedListIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textScaleFactor =
-        context.read<EditorState>().editorStyle.textScaleFactor;
+    // Marker box height tracks the body's first-line height so the glyph
+    // visually centers with the surrounding text at any font size — the
+    // hardcoded 22×textScaleFactor used to lag behind when the user
+    // changed `textStyleConfiguration.text.fontSize` via the appearance
+    // sheet. The glyph itself is rendered at 0.5× the body size, same
+    // ratio as before.
+    final style = context.read<EditorState>().editorStyle;
+    final baseFontSize =
+        style.textStyleConfiguration.text.fontSize ?? 14.0;
+    final scaled = baseFontSize * style.textScaleFactor;
+    const lineHeightFactor = 1.5;
+    final lineHeight = scaled * lineHeightFactor;
 
-    return Container(
-      constraints:
-          const BoxConstraints(minWidth: 26, minHeight: 22) * textScaleFactor,
-      padding: const EdgeInsets.only(right: 4.0),
-      child: Center(
-        child: Text(
-          icon,
-          style: textStyle,
-          textScaler: TextScaler.linear(0.5 * textScaleFactor),
+    return SizedBox(
+      width: lineHeight,
+      height: lineHeight,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 4.0),
+        child: Center(
+          child: Text(
+            icon,
+            style: textStyle,
+            textScaler: TextScaler.linear(0.5 * style.textScaleFactor),
+          ),
         ),
       ),
     );

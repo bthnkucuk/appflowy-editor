@@ -1,5 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
+import '../../../../util/platform_extension.dart';
 import 'package:flutter/material.dart';
 
 /// Toggle Color Commands
@@ -10,44 +10,34 @@ import 'package:flutter/material.dart';
 ///   - desktop
 ///   - web
 
-List<CommandShortcutEvent> toggleColorCommands({
-  ToggleColorsStyle? style,
-}) =>
-    [
-      customToggleHighlightCommand(
-        style: style ?? ToggleColorsStyle(),
-      ),
-    ];
+List<CommandShortcutEvent> toggleColorCommands({ToggleColorsStyle? style}) => [
+  customToggleHighlightCommand(style: style ?? ToggleColorsStyle()),
+];
 
 class ToggleColorsStyle {
-  ToggleColorsStyle({
-    this.highlightColor = const Color(0x60FFCE00),
-  });
+  ToggleColorsStyle({this.highlightColor = const Color(0x60FFCE00)});
 
   final Color highlightColor;
 }
 
 final CommandShortcutEvent toggleHighlightCommand = CommandShortcutEvent(
   key: 'toggle highlight',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleHighlight,
+  getDescription: () => aft.cmdToggleHighlight,
   command: 'ctrl+shift+h',
   macOSCommand: 'cmd+shift+h',
-  handler: (editorState) => _toggleHighlight(
-    editorState,
-    style: ToggleColorsStyle(),
-  ),
+  handler: (editorState) =>
+      _toggleHighlight(editorState, style: ToggleColorsStyle()),
 );
 
 CommandShortcutEvent customToggleHighlightCommand({
   required ToggleColorsStyle style,
-}) =>
-    CommandShortcutEvent(
-      key: 'toggle highlight',
-      getDescription: () => AppFlowyEditorL10n.current.cmdToggleHighlight,
-      command: 'ctrl+shift+h',
-      macOSCommand: 'cmd+shift+h',
-      handler: (editorState) => _toggleHighlight(editorState, style: style),
-    );
+}) => CommandShortcutEvent(
+  key: 'toggle highlight',
+  getDescription: () => aft.cmdToggleHighlight,
+  command: 'ctrl+shift+h',
+  macOSCommand: 'cmd+shift+h',
+  handler: (editorState) => _toggleHighlight(editorState, style: style),
+);
 
 KeyEventResult _toggleHighlight(
   EditorState editorState, {
@@ -72,13 +62,11 @@ KeyEventResult _toggleHighlight(
     );
   });
 
-  editorState.formatDelta(
-    selection,
-    {
-      AppFlowyRichTextKeys.backgroundColor:
-          isHighlighted ? null : style.highlightColor.toHex(),
-    },
-  );
+  editorState.formatDelta(selection, {
+    AppFlowyRichTextKeys.backgroundColor: isHighlighted
+        ? null
+        : style.highlightColor.toHex(),
+  });
 
   return KeyEventResult.handled;
 }

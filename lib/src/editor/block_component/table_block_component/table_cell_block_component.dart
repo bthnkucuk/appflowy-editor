@@ -1,6 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/table_block_component/table_action_handler.dart';
-import 'package:appflowy_editor/src/editor/block_component/table_block_component/util.dart';
+import 'table_action_handler.dart';
+import 'util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -22,10 +22,8 @@ class TableCellBlockKeys {
   static const String colBackgroundColor = 'colBackgroundColor';
 }
 
-typedef TableBlockCellComponentColorBuilder = Color? Function(
-  BuildContext context,
-  Node node,
-);
+typedef TableBlockCellComponentColorBuilder =
+    Color? Function(BuildContext context, Node node);
 
 Node tableCellNode(String text, int rowPosition, int colPosition) {
   return Node(
@@ -34,9 +32,7 @@ Node tableCellNode(String text, int rowPosition, int colPosition) {
       TableCellBlockKeys.rowPosition: rowPosition,
       TableCellBlockKeys.colPosition: colPosition,
     },
-    children: [
-      paragraphNode(text: text),
-    ],
+    children: [paragraphNode(text: text)],
   );
 }
 
@@ -61,22 +57,19 @@ class TableCellBlockComponentBuilder extends BlockComponentBuilder {
       menuBuilder: menuBuilder,
       colorBuilder: colorBuilder,
       showActions: showActions(node),
-      actionBuilder: (context, state) => actionBuilder(
-        blockComponentContext,
-        state,
-      ),
-      actionTrailingBuilder: (context, state) => actionTrailingBuilder(
-        blockComponentContext,
-        state,
-      ),
+      actionBuilder: (context, state) =>
+          actionBuilder(blockComponentContext, state),
+      actionTrailingBuilder: (context, state) =>
+          actionTrailingBuilder(blockComponentContext, state),
     );
   }
 
   @override
-  BlockComponentValidate get validate => (node) =>
-      node.attributes.isNotEmpty &&
-      node.attributes.containsKey(TableCellBlockKeys.rowPosition) &&
-      node.attributes.containsKey(TableCellBlockKeys.colPosition);
+  BlockComponentValidate get validate =>
+      (node) =>
+          node.attributes.isNotEmpty &&
+          node.attributes.containsKey(TableCellBlockKeys.rowPosition) &&
+          node.attributes.containsKey(TableCellBlockKeys.colPosition);
 }
 
 class TableCelBlockWidget extends BlockComponentStatefulWidget {
@@ -146,9 +139,11 @@ class _TableCeBlockWidgetState extends State<TableCelBlockWidget> {
             final int col = n.attributes[TableCellBlockKeys.colPosition];
             double left = -12;
             for (var i = 0; i < col; i++) {
-              left -= getCellNode(n.parent!, i, 0)?.cellWidth ??
+              left -=
+                  getCellNode(n.parent!, i, 0)?.cellWidth ??
                   TableDefaults.colWidth;
-              left -= n.parent!.attributes['borderWidth'] ??
+              left -=
+                  n.parent!.attributes['borderWidth'] ??
                   TableDefaults.borderWidth;
             }
 

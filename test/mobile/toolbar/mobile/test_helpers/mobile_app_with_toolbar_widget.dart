@@ -2,7 +2,7 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 
 /// Used in testing mobile app with toolbar
-class MobileAppWithToolbarWidget extends StatelessWidget {
+class MobileAppWithToolbarWidget extends StatefulWidget {
   const MobileAppWithToolbarWidget({
     required this.editorState,
     this.toolbarItems,
@@ -12,32 +12,31 @@ class MobileAppWithToolbarWidget extends StatelessWidget {
   final List<MobileToolbarItem>? toolbarItems;
 
   @override
+  State<MobileAppWithToolbarWidget> createState() =>
+      _MobileAppWithToolbarWidgetState();
+}
+
+class _MobileAppWithToolbarWidgetState
+    extends State<MobileAppWithToolbarWidget> {
+  @override
   Widget build(BuildContext context) {
-    final localToolbarItems = toolbarItems ??
+    final localToolbarItems =
+        widget.toolbarItems ??
         [
-          textDecorationMobileToolbarItem,
-          headingMobileToolbarItem,
           todoListMobileToolbarItem,
-          listMobileToolbarItem,
-          linkMobileToolbarItem,
+          linkMobileToolbarItemSheet,
           quoteMobileToolbarItem,
           codeMobileToolbarItem,
         ];
 
     return MaterialApp(
-      home: Column(
-        children: [
-          Expanded(
-            child: AppFlowyEditor(
-              editorStyle: const EditorStyle.mobile(),
-              editorState: editorState,
-            ),
-          ),
-          MobileToolbar(
-            editorState: editorState,
-            toolbarItems: localToolbarItems,
-          ),
-        ],
+      home: MobileToolbarV2(
+        editorState: widget.editorState,
+        toolbarItems: localToolbarItems,
+        child: AppFlowyEditor(
+          editorStyle: const EditorStyle.mobile(),
+          editorState: widget.editorState,
+        ),
       ),
     );
   }

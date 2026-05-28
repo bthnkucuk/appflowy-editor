@@ -1,6 +1,7 @@
 export 'document/attributes.dart';
 export 'document/diff.dart';
 export 'document/document.dart';
+export 'document/document_outline.dart';
 export 'document/node.dart';
 export 'document/node_iterator.dart';
 export 'document/path.dart';

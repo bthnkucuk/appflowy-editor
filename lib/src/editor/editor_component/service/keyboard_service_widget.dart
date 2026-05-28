@@ -1,6 +1,6 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/ime/delta_input_on_floating_cursor_update.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
+import 'ime/delta_input_on_floating_cursor_update.dart';
+import '../../util/platform_extension.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -64,29 +64,30 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
         return true;
       },
     );
-    editorState.service.selectionService
-        .registerGestureInterceptor(interceptor);
+    editorState.selectionService.registerGestureInterceptor(
+      interceptor,
+    );
 
     textInputService = buildTextInputService();
 
     focusNode = widget.focusNode ?? FocusNode(debugLabel: 'keyboard service');
     focusNode.addListener(_onFocusChanged);
 
-    keepEditorFocusNotifier.addListener(_onKeepEditorFocusChanged);
+    editorState.keepFocusNotifier.addListener(_onKeepEditorFocusChanged);
   }
 
   @override
   void dispose() {
     textInputService.close();
     editorState.selectionNotifier.removeListener(_onSelectionChanged);
-    editorState.service.selectionService.unregisterGestureInterceptor(
+    editorState.selectionService.unregisterGestureInterceptor(
       'keyboard',
     );
     focusNode.removeListener(_onFocusChanged);
     if (widget.focusNode == null) {
       focusNode.dispose();
     }
-    keepEditorFocusNotifier.removeListener(_onKeepEditorFocusChanged);
+    editorState.keepFocusNotifier.removeListener(_onKeepEditorFocusChanged);
     super.dispose();
   }
 
@@ -209,8 +210,29 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
       return;
     }
 
+    // editable: false means the editor is a pure viewer — no caret, no
+    // text input. Don't attach the IME on selection updates in that
+    // case. A read-only document tapped by the user should NOT make
+    // the soft keyboard appear (consistent with web, with read-only
+    // TextFields, and with how other rich-text viewers behave).
+    if (!editorState.editable) {
+      textInputService.close();
+      return;
+    }
+
     // attach the delta text input service if needed
     final selection = editorState.selection;
+
+    // selectionNotifier is a PropertyValueNotifier, which fires listeners on
+    // every set — including transactions that don't change the selection
+    // itself. Re-attaching the IME in that case re-opens the soft keyboard,
+    // which fights with code that just intentionally closed it (e.g. the
+    // mobile toolbar opening a menu). Skip the no-op re-attach.
+    if (selection != null &&
+        selection == previousSelection &&
+        editorState.selectionUpdateReason != SelectionUpdateReason.uiEvent) {
+      return;
+    }
 
     enableIMEShortcuts = true;
 
@@ -272,7 +294,7 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
     // we should clear the composing range on Android.
     final shouldClearComposingRange =
         editorState.selectionType == SelectionType.inline &&
-            editorState.selectionUpdateReason == SelectionUpdateReason.uiEvent;
+        editorState.selectionUpdateReason == SelectionUpdateReason.uiEvent;
 
     if (PlatformExtension.isAndroid && shouldClearComposingRange) {
       textInputService.clearComposingTextRange();
@@ -316,7 +338,7 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
 
     // clear the selection when the focus is lost.
     if (!focusNode.hasFocus) {
-      if (keepEditorFocusNotifier.shouldKeepFocus) {
+      if (editorState.keepFocusNotifier.shouldKeepFocus) {
         return;
       }
 
@@ -331,10 +353,10 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
 
   void _onKeepEditorFocusChanged() {
     AppFlowyEditorLog.editor.debug(
-      'keyboard service - on keep editor focus changed: ${keepEditorFocusNotifier.value}}',
+      'keyboard service - on keep editor focus changed: ${editorState.keepFocusNotifier.value}}',
     );
 
-    if (!keepEditorFocusNotifier.shouldKeepFocus) {
+    if (!editorState.keepFocusNotifier.shouldKeepFocus) {
       focusNode.requestFocus();
     }
   }
@@ -365,6 +387,7 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
 
   NonDeltaTextInputService buildTextInputService() {
     return NonDeltaTextInputService(
+      onClose: editorState.keepFocusNotifier.reset,
       onInsert: (insertion) async {
         for (final interceptor in interceptors) {
           final result = await interceptor.interceptInsert(
@@ -381,11 +404,7 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
           }
         }
 
-        await onInsert(
-          insertion,
-          editorState,
-          widget.characterShortcutEvents,
-        );
+        await onInsert(insertion, editorState, widget.characterShortcutEvents);
 
         return true;
       },
@@ -404,10 +423,7 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
           }
         }
 
-        await onDelete(
-          deletion,
-          editorState,
-        );
+        await onDelete(deletion, editorState);
 
         return true;
       },
@@ -474,10 +490,7 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
           }
         }
 
-        await onPerformAction(
-          action,
-          editorState,
-        );
+        await onPerformAction(action, editorState);
       },
       onFloatingCursor: (point) async {
         for (final interceptor in interceptors) {
@@ -494,10 +507,7 @@ class KeyboardServiceWidgetState extends State<KeyboardServiceWidget>
           }
         }
 
-        await onFloatingCursorUpdate(
-          point,
-          editorState,
-        );
+        await onFloatingCursorUpdate(point, editorState);
       },
       contentInsertionConfiguration: widget.contentInsertionConfiguration,
     );

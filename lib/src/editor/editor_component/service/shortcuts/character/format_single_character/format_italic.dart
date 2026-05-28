@@ -1,4 +1,4 @@
-import 'package:appflowy_editor/src/editor/editor_component/service/shortcuts/character_shortcut_event.dart';
+import '../../character_shortcut_event.dart';
 import 'format_single_character.dart';
 
 const _underscore = '_';

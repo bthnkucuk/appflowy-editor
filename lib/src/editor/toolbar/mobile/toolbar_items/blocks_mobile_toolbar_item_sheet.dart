@@ -1,0 +1,183 @@
+import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:flutter/material.dart';
+
+/// Sheet-based variant of [blocksMobileToolbarItem]. Opens the heading/list/
+/// todo/quote grid in a [StupidSimpleSheetRoute] instead of the inline
+/// keyboard-height menu used by MobileToolbarV2.
+final blocksMobileToolbarItemSheet = MobileToolbarItem.sheet(
+  itemIconBuilder: (context, _) => ToolbarIcon(
+    icon: ToolbarIcons.list,
+    color: MobileToolbarTheme.of(context).iconColor,
+  ),
+  sheetBodyBuilder: (context, editorState, selection) =>
+      _SheetBlocksMenu(editorState, selection),
+);
+
+class _SheetBlocksMenu extends StatefulWidget {
+  const _SheetBlocksMenu(this.editorState, this.selection);
+
+  final EditorState editorState;
+  final Selection selection;
+
+  @override
+  State<_SheetBlocksMenu> createState() => _SheetBlocksMenuState();
+}
+
+class _SheetBlocksMenuState extends State<_SheetBlocksMenu> {
+  @override
+  void initState() {
+    super.initState();
+    widget.editorState.selectionNotifier.addListener(_pinSelection);
+  }
+
+  @override
+  void dispose() {
+    widget.editorState.selectionNotifier.removeListener(_pinSelection);
+    super.dispose();
+  }
+
+  void _pinSelection() {
+    if (!mounted) return;
+    if (widget.editorState.selection == widget.selection) return;
+    widget.editorState.updateSelectionWithReason(
+      widget.selection,
+      extraInfo: {
+        selectionExtraInfoDisableMobileToolbarKey: true,
+        selectionExtraInfoDisableFloatingToolbar: true,
+        selectionExtraInfoDoNotAttachTextService: true,
+      },
+    );
+  }
+
+  final _lists = [
+    _SheetListUnit(
+      icon: ToolbarIcons.h1,
+      label: aft.mobileHeading1,
+      name: HeadingBlockKeys.type,
+      level: 1,
+    ),
+    _SheetListUnit(
+      icon: ToolbarIcons.h2,
+      label: aft.mobileHeading2,
+      name: HeadingBlockKeys.type,
+      level: 2,
+    ),
+    _SheetListUnit(
+      icon: ToolbarIcons.h3,
+      label: aft.mobileHeading3,
+      name: HeadingBlockKeys.type,
+      level: 3,
+    ),
+    _SheetListUnit(
+      icon: ToolbarIcons.bulletedList,
+      label: aft.bulletedList,
+      name: BulletedListBlockKeys.type,
+    ),
+    _SheetListUnit(
+      icon: ToolbarIcons.numberedList,
+      label: aft.numberedList,
+      name: NumberedListBlockKeys.type,
+    ),
+    _SheetListUnit(
+      icon: ToolbarIcons.checkbox,
+      label: aft.checkbox,
+      name: TodoListBlockKeys.type,
+    ),
+    _SheetListUnit(
+      icon: ToolbarIcons.quote,
+      label: aft.quote,
+      name: QuoteBlockKeys.type,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final node = widget.editorState.getNodeAtPath(widget.selection.start.path)!;
+    // _lists has 7 fixed entries; SingleChildScrollView + Row is enough
+    // (no virtualization needed — never enough items to warrant a
+    // ListView).
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: Row(
+        children: [
+          for (var i = 0; i < _lists.length; i++) ...[
+            if (i > 0) const SizedBox(width: 12),
+            _buildCell(_lists[i], node),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCell(_SheetListUnit list, Node node) {
+    final isSelected =
+        node.type == list.name &&
+        (list.level == null ||
+            node.attributes[HeadingBlockKeys.level] == list.level);
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 76,
+      child: EditorToolbarMenuButton(
+        isSelected: isSelected,
+        backgroundColor: Colors.transparent,
+        iconPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        onTap: () => setState(() => _toggle(list, isSelected)),
+        // Border wraps both the icon and the label below it as one unit.
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          spacing: 6,
+          children: [
+            ToolbarIcon(
+              icon: list.icon,
+              selected: isSelected,
+              color: theme.textTheme.bodyLarge?.color,
+            ),
+            Text(
+              list.label,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _toggle(_SheetListUnit list, bool isSelected) {
+    widget.editorState.formatNode(
+      widget.selection,
+      (node) => node.copyWith(
+        type: isSelected ? ParagraphBlockKeys.type : list.name,
+        attributes: {
+          ParagraphBlockKeys.delta: (node.delta ?? Delta()).toJson(),
+          blockComponentBackgroundColor:
+              node.attributes[blockComponentBackgroundColor],
+          if (!isSelected && list.name == TodoListBlockKeys.type)
+            TodoListBlockKeys.checked: false,
+          if (!isSelected && list.name == HeadingBlockKeys.type)
+            HeadingBlockKeys.level: list.level,
+        },
+      ),
+      selectionExtraInfo: {selectionExtraInfoDoNotAttachTextService: true},
+    );
+  }
+}
+
+class _SheetListUnit {
+  final ToolbarIcons icon;
+  final String label;
+  final String name;
+  final int? level;
+
+  _SheetListUnit({
+    required this.icon,
+    required this.label,
+    required this.name,
+    this.level,
+  });
+}

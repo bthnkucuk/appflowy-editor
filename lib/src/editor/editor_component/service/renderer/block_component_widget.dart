@@ -82,7 +82,8 @@ class _BlockComponentStatefulWidgetState
 }
 
 mixin NestedBlockComponentStatefulWidgetMixin<
-        T extends BlockComponentStatefulWidget>
+  T extends BlockComponentStatefulWidget
+>
     on State<T>, BlockComponentBackgroundColorMixin {
   late final editorState = Provider.of<EditorState>(context, listen: false);
 
@@ -117,9 +118,22 @@ mixin NestedBlockComponentStatefulWidgetMixin<
   void initState() {
     super.initState();
 
+    // H2.8.c: `cachedLeft` is only consumed by the `Positioned.fill` in
+    // [buildComponentWithChildren] to align an optional background
+    // decoration. When the block has no decoration (the default for
+    // ~all paragraphs/headings) the entire mechanism is dead weight —
+    // a postFrame `getBlockRect` walk plus a forced second build/layout
+    // on frame N+1 (Ajan #2's predicted "spike on the frame after the
+    // mount"). Skip it when there's nothing to paint.
+    if (decoration == null) {
+      return;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      final left =
-          node.selectable?.getBlockRect(shiftWithBaseOffset: true).left;
+      if (!mounted) return;
+      final left = node.selectable
+          ?.getBlockRect(shiftWithBaseOffset: true)
+          .left;
       if (cachedLeft != left) {
         setState(() => cachedLeft = left);
       }
@@ -128,20 +142,27 @@ mixin NestedBlockComponentStatefulWidgetMixin<
 
   @override
   Widget build(BuildContext context) {
-    return node.children.isEmpty
-        ? buildComponent(context, withBackgroundColor: true)
-        : buildComponentWithChildren(context);
+    return Padding(
+      padding: configuration.margin(node),
+      child: node.children.isEmpty
+          ? buildComponent(context, withBackgroundColor: true)
+          : buildComponentWithChildren(context),
+    );
   }
 
   Widget buildComponentWithChildren(BuildContext context) {
+    final decoration = this.decoration;
     return Stack(
       children: [
-        Positioned.fill(
-          left: cachedLeft,
-          child: Container(
-            decoration: decoration,
+        // Skip the decoration layer when there's no background to paint
+        // — saves one widget + element + render object per nested block
+        // and lets [initState] skip the cachedLeft postFrame entirely
+        // (see H2.8.c note above).
+        if (decoration != null)
+          Positioned.fill(
+            left: cachedLeft,
+            child: Container(decoration: decoration),
           ),
-        ),
         NestedListWidget(
           indentPadding: indentPadding,
           child: buildComponent(context, withBackgroundColor: false),

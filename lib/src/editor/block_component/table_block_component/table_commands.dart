@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/table_block_component/util.dart';
+import 'util.dart';
 
 final List<CommandShortcutEvent> tableCommands = [
   enterInTableCell,
@@ -16,23 +16,21 @@ final List<CommandShortcutEvent> tableCommands = [
 
 final CommandShortcutEvent enterInTableCell = CommandShortcutEvent(
   key: 'Don\'t add new line in table cell',
-  getDescription: () => AppFlowyEditorL10n.current.cmdTableLineBreak,
+  getDescription: () => aft.cmdTableLineBreak,
   command: 'enter',
   handler: _enterInTableCellHandler,
 );
 
 final CommandShortcutEvent leftInTableCell = CommandShortcutEvent(
   key: 'Move to left cell if its at start of current cell',
-  getDescription: () => AppFlowyEditorL10n
-      .current.cmdTableMoveToLeftCellIfItsAtStartOfCurrentCell,
+  getDescription: () => aft.cmdTableMoveToLeftCellIfItsAtStartOfCurrentCell,
   command: 'arrow left',
   handler: _leftInTableCellHandler,
 );
 
 final CommandShortcutEvent rightInTableCell = CommandShortcutEvent(
   key: 'Move to right cell if its at the end of current cell',
-  getDescription: () => AppFlowyEditorL10n
-      .current.cmdTableMoveToRightCellIfItsAtTheEndOfCurrentCell,
+  getDescription: () => aft.cmdTableMoveToRightCellIfItsAtTheEndOfCurrentCell,
   command: 'arrow right',
   handler: _rightInTableCellHandler,
 );
@@ -40,7 +38,7 @@ final CommandShortcutEvent rightInTableCell = CommandShortcutEvent(
 final CommandShortcutEvent upInTableCell = CommandShortcutEvent(
   key: 'Move to up cell at same offset',
   getDescription: () =>
-      AppFlowyEditorL10n.current.cmdTableMoveToUpCellAtSameOffset,
+      aft.cmdTableMoveToUpCellAtSameOffset,
   command: 'arrow up',
   handler: _upInTableCellHandler,
 );
@@ -48,21 +46,21 @@ final CommandShortcutEvent upInTableCell = CommandShortcutEvent(
 final CommandShortcutEvent downInTableCell = CommandShortcutEvent(
   key: 'Move to down cell at same offset',
   getDescription: () =>
-      AppFlowyEditorL10n.current.cmdTableMoveToDownCellAtSameOffset,
+      aft.cmdTableMoveToDownCellAtSameOffset,
   command: 'arrow down',
   handler: _downInTableCellHandler,
 );
 
 final CommandShortcutEvent tabInTableCell = CommandShortcutEvent(
   key: 'Navigate around the cells at same offset',
-  getDescription: () => AppFlowyEditorL10n.current.cmdTableNavigateCells,
+  getDescription: () => aft.cmdTableNavigateCells,
   command: 'tab',
   handler: _tabInTableCellHandler,
 );
 
 final CommandShortcutEvent shiftTabInTableCell = CommandShortcutEvent(
   key: 'Navigate around the cells at same offset in reverse',
-  getDescription: () => AppFlowyEditorL10n.current.cmdTableNavigateCellsReverse,
+  getDescription: () => aft.cmdTableNavigateCellsReverse,
   command: 'shift+tab',
   handler: _shiftTabInTableCellHandler,
 );
@@ -70,7 +68,7 @@ final CommandShortcutEvent shiftTabInTableCell = CommandShortcutEvent(
 final CommandShortcutEvent backSpaceInTableCell = CommandShortcutEvent(
   key: 'Stop at the beginning of the cell',
   getDescription: () =>
-      AppFlowyEditorL10n.current.cmdTableStopAtTheBeginningOfTheCell,
+      aft.cmdTableStopAtTheBeginningOfTheCell,
   command: 'backspace',
   handler: _backspaceInTableCellHandler,
 );
@@ -88,8 +86,10 @@ CommandShortcutEventHandler _enterInTableCellHandler = (editorState) {
     if (nextNode == null) {
       final transaction = editorState.transaction;
       transaction.insertNode(cell.parent!.path.next, paragraphNode());
-      transaction.afterSelection =
-          Selection.single(path: cell.parent!.path.next, startOffset: 0);
+      transaction.afterSelection = Selection.single(
+        path: cell.parent!.path.next,
+        startOffset: 0,
+      );
       editorState.apply(transaction);
     } else if (_nodeHasTextChild(nextNode)) {
       editorState.selectionService.updateSelection(
@@ -113,10 +113,7 @@ CommandShortcutEventHandler _leftInTableCellHandler = (editorState) {
     if (_nodeHasTextChild(nextNode)) {
       final target = nextNode!.childAtIndexOrNull(0)!;
       editorState.selectionService.updateSelection(
-        Selection.single(
-          path: target.path,
-          startOffset: target.delta!.length,
-        ),
+        Selection.single(path: target.path, startOffset: target.delta!.length),
       );
     }
 
@@ -262,10 +259,7 @@ Iterable<Node> _inTableNodes(EditorState editorState) {
   );
 }
 
-bool _hasSelectionAndTableCell(
-  Iterable<Node> nodes,
-  Selection? selection,
-) =>
+bool _hasSelectionAndTableCell(Iterable<Node> nodes, Selection? selection) =>
     nodes.length == 1 &&
     selection != null &&
     selection.isCollapsed &&

@@ -9,7 +9,14 @@ void main() {
       final document = markdownToDocument(markdownDocument);
       final data = Map<String, Object>.from(json.decode(testDocument));
 
-      expect(document.toJson(), data);
+      expect(
+        document.toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
+        data,
+      );
     });
 
     test('soft line break with two spaces', () {
@@ -61,8 +68,7 @@ void main() {
     // Regression test for https://github.com/AppFlowy-IO/AppFlowy/issues/8486
     // documentToMarkdown() must not mutate the source document when processing
     // nested (indented) list items.
-    test('documentToMarkdown does not orphan children of nested list items',
-        () {
+    test('documentToMarkdown does not orphan children of nested list items', () {
       final childNode = bulletedListNode(text: 'Child item');
       final parentNode = bulletedListNode(
         text: 'Parent item',

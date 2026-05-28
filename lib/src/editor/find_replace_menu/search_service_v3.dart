@@ -1,14 +1,12 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/find_replace_menu/search_algorithm.dart';
+import 'search_algorithm.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 const selectionExtraInfoDisableToolbar = 'selectionExtraInfoDisableToolbar';
 
 class SearchServiceV3 {
-  SearchServiceV3({
-    required this.editorState,
-  });
+  SearchServiceV3({required this.editorState});
 
   final EditorState editorState;
 
@@ -60,8 +58,9 @@ class SearchServiceV3 {
   }
 
   String _getRegexReplaced(String replaceText, Match match) {
-    List<String?> groups = match
-        .groups(List<int>.generate(match.groupCount + 1, (index) => index));
+    List<String?> groups = match.groups(
+      List<int>.generate(match.groupCount + 1, (index) => index),
+    );
 
     String replacedText = replaceText;
     for (int i = 0; i <= match.groupCount; i++) {
@@ -84,8 +83,7 @@ class SearchServiceV3 {
     try {
       pattern = _getPattern(target);
     } on FormatException {
-      matchWrappers.value.clear();
-
+      matchWrappers.value = [];
       return 'Regex';
     }
 
@@ -93,7 +91,7 @@ class SearchServiceV3 {
       // this means we have a new pattern, but before we highlight the new matches,
       // lets unhighlight the old pattern
       _findAndHighlight(queriedPattern, unHighlight: true);
-      matchWrappers.value.clear();
+      matchWrappers.value = [];
       queriedPattern = pattern;
       targetString = target;
     }
@@ -108,10 +106,7 @@ class SearchServiceV3 {
   /// Finds the pattern in editorState.document and stores it in matchedPositions.
   /// Calls the highlightMatch method to highlight the pattern
   /// if it is found.
-  void _findAndHighlight(
-    Pattern pattern, {
-    bool unHighlight = false,
-  }) {
+  void _findAndHighlight(Pattern pattern, {bool unHighlight = false}) {
     matchWrappers.value = _getMatchWrappers(
       pattern: pattern,
       nodes: editorState.document.root.children,
@@ -121,15 +116,11 @@ class SearchServiceV3 {
       editorState.updateSelectionWithReason(
         null,
         reason: SelectionUpdateReason.searchHighlight,
-        extraInfo: {
-          selectionExtraInfoDoNotAttachTextService: true,
-        },
+        extraInfo: {selectionExtraInfoDoNotAttachTextService: true},
       );
     } else {
       selectedIndex = selectedIndex;
-      _highlightCurrentMatch(
-        pattern,
-      );
+      _highlightCurrentMatch(pattern);
     }
   }
 
@@ -145,22 +136,16 @@ class SearchServiceV3 {
         // we will store this list of offsets along with their path,
         // in a list of positions.
         for (Match match in matches) {
-          result.add(
-            MatchWrapper(match, node.path),
-          );
+          result.add(MatchWrapper(match, node.path));
         }
       }
-      result.addAll(
-        _getMatchWrappers(pattern: pattern, nodes: node.children),
-      );
+      result.addAll(_getMatchWrappers(pattern: pattern, nodes: node.children));
     }
 
     return result;
   }
 
-  void _highlightCurrentMatch(
-    Pattern pattern,
-  ) {
+  void _highlightCurrentMatch(Pattern pattern) {
     final MatchWrapper(:selection, :path) = matchWrappers.value[selectedIndex];
 
     editorState.scrollService?.jumpTo(path.first);
@@ -171,6 +156,8 @@ class SearchServiceV3 {
       extraInfo: {
         selectionExtraInfoDisableToolbar: true,
         selectionExtraInfoDoNotAttachTextService: true,
+        selectionExtraInfoDisableMobileToolbarKey: true,
+        selectionExtraInfoSelectionRadius: 6.0,
       },
     );
   }
@@ -223,15 +210,13 @@ class SearchServiceV3 {
       );
     await editorState.apply(transaction);
 
-    matchWrappers.value.clear();
+    matchWrappers.value = [];
     _findAndHighlight(queriedPattern);
   }
 
   /// Replaces all the found occurrences of pattern with replaceText
   void replaceAllMatches(String replaceText) {
-    if (replaceText.isEmpty ||
-        queriedPattern.isEmpty ||
-        matchWrappers.value.isEmpty) {
+    if (queriedPattern.isEmpty || matchWrappers.value.isEmpty) {
       return;
     }
 
@@ -255,7 +240,7 @@ class SearchServiceV3 {
 
       editorState.apply(transaction);
     }
-    matchWrappers.value.clear();
+    matchWrappers.value = [];
   }
 }
 
@@ -266,9 +251,9 @@ class MatchWrapper {
   final Path path;
 
   Selection get selection => Selection(
-        start: Position(path: path, offset: match.start),
-        end: Position(path: path, offset: match.end),
-      );
+    start: Position(path: path, offset: match.start),
+    end: Position(path: path, offset: match.end),
+  );
 }
 
 extension on Pattern {

@@ -25,7 +25,7 @@ ToolbarItem buildHighlightColorItem({List<ColorOption>? colorOptions}) {
       });
 
       final child = SVGIconItemWidget(
-        iconName: 'toolbar/highlight_color',
+        icon: ToolbarIcons.highlightColor,
         isHighlight: isHighlight,
         highlightColor: highlightColor,
         iconColor: iconColor,
@@ -33,13 +33,11 @@ ToolbarItem buildHighlightColorItem({List<ColorOption>? colorOptions}) {
           bool showClearButton = false;
           nodes.allSatisfyInSelection(selection, (delta) {
             if (!showClearButton) {
-              showClearButton = delta.whereType<TextInsert>().any(
-                (element) {
-                  return element
-                          .attributes?[AppFlowyRichTextKeys.backgroundColor] !=
-                      null;
-                },
-              );
+              showClearButton = delta.whereType<TextInsert>().any((element) {
+                return element.attributes?[AppFlowyRichTextKeys
+                        .backgroundColor] !=
+                    null;
+              });
             }
 
             return true;
@@ -60,7 +58,7 @@ ToolbarItem buildHighlightColorItem({List<ColorOption>? colorOptions}) {
         return tooltipBuilder(
           context,
           _kHighlightColorItemId,
-          AppFlowyEditorL10n.current.highlightColor,
+          aft.highlightColor,
           child,
         );
       }

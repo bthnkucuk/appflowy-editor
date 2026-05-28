@@ -135,3 +135,6 @@ app.*.symbols
 
 
 **/.cxx/
+
+# Local benchmark fixtures — drop your own `.md` files here.
+test/plugins/markdown/fixtures/*.md

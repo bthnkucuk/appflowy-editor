@@ -11,15 +11,14 @@ final ToolbarItem bulletedListItem = ToolbarItem(
     final node = editorState.getNodeAtPath(selection.start.path)!;
     final isHighlight = node.type == 'bulleted_list';
     final child = SVGIconItemWidget(
-      iconName: 'toolbar/bulleted_list',
+      icon: ToolbarIcons.bulletedList,
       isHighlight: isHighlight,
       highlightColor: highlightColor,
       iconColor: iconColor,
       onPressed: () => editorState.formatNode(
         selection,
-        (node) => node.copyWith(
-          type: isHighlight ? 'paragraph' : 'bulleted_list',
-        ),
+        (node) =>
+            node.copyWith(type: isHighlight ? 'paragraph' : 'bulleted_list'),
       ),
     );
 
@@ -27,7 +26,7 @@ final ToolbarItem bulletedListItem = ToolbarItem(
       return tooltipBuilder(
         context,
         _kBulletedListItemId,
-        AppFlowyEditorL10n.current.bulletedList,
+        aft.bulletedList,
         child,
       );
     }

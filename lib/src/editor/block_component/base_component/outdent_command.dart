@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 ///
 final CommandShortcutEvent outdentCommand = CommandShortcutEvent(
   key: 'outdent',
-  getDescription: () => AppFlowyEditorL10n.current.cmdOutdent,
+  getDescription: () => aft.cmdOutdent,
   command: 'shift+tab',
   handler: _outdentCommandHandler,
 );
@@ -43,8 +43,9 @@ bool isOutdentable(EditorState editorState) {
       .where((node) => node.path.length == parent.path.length + 1)
       .toList();
 
-  final isAllIndentable =
-      nodes.every((node) => indentableBlockTypes.contains(node.type));
+  final isAllIndentable = nodes.every(
+    (node) => indentableBlockTypes.contains(node.type),
+  );
   if (!isAllIndentable) {
     return false;
   }

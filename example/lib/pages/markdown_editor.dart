@@ -43,6 +43,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
   @override
   void dispose() {
     controller.dispose();
+    editorState.dispose();
     super.dispose();
   }
 
@@ -64,6 +65,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
         children: [
           Expanded(
             child: AppFlowyEditor(
+              key: ValueKey(editorState),
               editorState: editorState,
               editorStyle: editorStyle,
               editable: false,
@@ -97,6 +99,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
       ],
     );
     setState(() {
+      editorState.dispose();
       editorState = EditorState(document: document);
     });
   }

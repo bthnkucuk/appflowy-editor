@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:appflowy_editor/src/service/shortcut_event/shortcut_event_handler.dart';
+import '../shortcut_event/shortcut_event_handler.dart';
 
 ShortcutEventHandler pageUpHandler = (editorState, _) {
-  final scrollHeight = editorState.service.scrollService?.onePageHeight;
-  final scrollService = editorState.service.scrollService;
+  final scrollHeight = editorState.scrollService?.onePageHeight;
+  final scrollService = editorState.scrollService;
   if (scrollHeight != null && scrollService != null) {
     scrollService.scrollTo(scrollService.dy - scrollHeight);
   }
@@ -12,8 +12,8 @@ ShortcutEventHandler pageUpHandler = (editorState, _) {
 };
 
 ShortcutEventHandler pageDownHandler = (editorState, _) {
-  final scrollHeight = editorState.service.scrollService?.onePageHeight;
-  final scrollService = editorState.service.scrollService;
+  final scrollHeight = editorState.scrollService?.onePageHeight;
+  final scrollService = editorState.scrollService;
   if (scrollHeight != null && scrollService != null) {
     scrollService.scrollTo(scrollService.dy + scrollHeight);
   }

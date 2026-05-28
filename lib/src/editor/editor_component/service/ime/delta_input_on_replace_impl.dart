@@ -1,7 +1,7 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/ime/character_shortcut_event_helper.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/ime/delta_input_impl.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
+import 'character_shortcut_event_helper.dart';
+import 'delta_input_impl.dart';
+import '../../../util/platform_extension.dart';
 import 'package:flutter/services.dart';
 
 Future<void> onReplace(
@@ -33,8 +33,10 @@ Future<void> onReplace(
       if (replacement.replacementText.endsWith('\n')) {
         replacement = TextEditingDeltaReplacement(
           oldText: replacement.oldText,
-          replacementText: replacement.replacementText
-              .substring(0, replacement.replacementText.length - 1),
+          replacementText: replacement.replacementText.substring(
+            0,
+            replacement.replacementText.length - 1,
+          ),
           replacedRange: replacement.replacedRange,
           selection: replacement.selection,
           composing: replacement.composing,
@@ -64,11 +66,7 @@ Future<void> onReplace(
     await editorState.deleteSelection(selection);
     // insert the replacement
     final insertion = replacement.toInsertion();
-    await onInsert(
-      insertion,
-      editorState,
-      characterShortcutEvents,
-    );
+    await onInsert(insertion, editorState, characterShortcutEvents);
   }
 }
 

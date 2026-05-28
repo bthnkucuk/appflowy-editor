@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/table_block_component/table_action_menu.dart';
+import 'table_action_menu.dart';
 import 'package:flutter/material.dart';
 
 class TableActionHandler extends StatefulWidget {
@@ -44,7 +44,8 @@ class _TableActionHandlerState extends State<TableActionHandler> {
       transform: widget.transform,
       height: widget.height,
       child: Visibility(
-        visible: (widget.visible || _visible || _menuShown) &&
+        visible:
+            (widget.visible || _visible || _menuShown) &&
             widget.editorState.editable,
         child: MouseRegion(
           onEnter: (_) => setState(() => _visible = true),
@@ -83,13 +84,7 @@ Widget defaultMenuBuilder(
     child: MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => showActionMenu(
-          context,
-          node,
-          editorState,
-          position,
-          dir,
-        ),
+        onTap: () => showActionMenu(context, node, editorState, position, dir),
         child: dir == TableDirection.col
             ? Transform.rotate(
                 angle: math.pi / 2,

@@ -1,11 +1,22 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/base_component/selection/selection_area_painter.dart';
-import 'package:appflowy_editor/src/render/selection/cursor.dart';
-import 'package:collection/collection.dart';
+import 'selection_area_painter.dart';
+import '../../../../render/selection/cursor.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-final _deepEqual = const DeepCollectionEquality().equals;
+// Cheap equality for `List<Rect>?` — see selection_area_painter.dart.
+// Replaces a `DeepCollectionEquality` call (~3-5x slower for this shape,
+// measured in test/performance/render_layer_benchmark_test.dart).
+bool _rectListEq(List<Rect>? a, List<Rect>? b) {
+  if (identical(a, b)) return true;
+  if (a == null || b == null) return false;
+  final n = a.length;
+  if (b.length != n) return false;
+  for (var i = 0; i < n; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
 
 class RemoteBlockSelectionsArea extends StatelessWidget {
   const RemoteBlockSelectionsArea({
@@ -188,7 +199,7 @@ class _RemoteBlockSelectionAreaState extends State<RemoteBlockSelectionArea> {
         }
       } else if (widget.supportTypes.contains(BlockSelectionType.selection)) {
         final rects = widget.delegate.getRectsInSelection(selection);
-        if (!_deepEqual(rects, prevSelectionRects)) {
+        if (!_rectListEq(rects, prevSelectionRects)) {
           setState(() {
             prevSelectionRects = rects;
             prevCursorRect = null;

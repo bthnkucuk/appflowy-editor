@@ -11,13 +11,10 @@ extension BuildAndPump on WidgetTester {
           GlobalMaterialLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
-          AppFlowyEditorLocalizations.delegate,
         ],
-        supportedLocales: AppFlowyEditorLocalizations.delegate.supportedLocales,
+        supportedLocales: AppLocaleUtils.supportedLocales,
         locale: const Locale('en'),
-        home: Scaffold(
-          body: child,
-        ),
+        home: Scaffold(body: child),
       ),
     );
     await pump();

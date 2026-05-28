@@ -1,20 +1,13 @@
 import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart';
+import '../../../editor_component/service/selection/mobile_selection_service.dart';
 import 'package:flutter/material.dart';
 
 const selectionExtraInfoDisableFloatingToolbar = 'disableFloatingToolbar';
 
-class MobileFloatingToolbarItem {
-  const MobileFloatingToolbarItem({
-    required this.builder,
-  });
-
-  final WidgetBuilder builder;
-}
-
-/// A mobile floating toolbar that displays at the top of the editor when the selection is not collapsed.
+/// A mobile floating toolbar that displays at the top of the editor when the
+/// selection is not collapsed.
 ///   and will be hidden when the selection is collapsed.
 ///
 /// Normally, it will show copy, cut, paste.
@@ -36,7 +29,8 @@ class MobileFloatingToolbar extends StatefulWidget {
     BuildContext context,
     Offset anchor,
     VoidCallback closeToolbar,
-  ) toolbarBuilder;
+  )
+  toolbarBuilder;
 
   @override
   State<MobileFloatingToolbar> createState() => _MobileFloatingToolbarState();
@@ -44,11 +38,11 @@ class MobileFloatingToolbar extends StatefulWidget {
 
 class _MobileFloatingToolbarState extends State<MobileFloatingToolbar>
     with WidgetsBindingObserver {
-  OverlayEntry? _toolbarContainer;
+  final OverlayPortalController _portalController = OverlayPortalController();
 
   EditorState get editorState => widget.editorState;
 
-  bool _isToolbarVisible = false;
+  Offset _anchor = Offset.zero;
 
   // use for skipping the first build for the toolbar when the selection is collapsed.
   Selection? prevSelection;
@@ -66,10 +60,10 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar>
     widget.editorScrollController.offsetNotifier.addListener(
       _onScrollPositionChanged,
     );
-    _onTapSelectionAreaSubscription =
-        appFlowyEditorOnTapSelectionArea.stream.listen((event) {
-      _isToolbarVisible ? _clear() : _showAfterDelay();
-    });
+    _onTapSelectionAreaSubscription = appFlowyEditorOnTapSelectionArea.stream
+        .listen((event) {
+          _portalController.isShowing ? _clear() : _showAfterDelay();
+        });
   }
 
   @override
@@ -83,10 +77,9 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar>
 
   @override
   void dispose() {
-    _toolbarContainer?.remove();
-    _toolbarContainer?.dispose();
-    _toolbarContainer = null;
-
+    if (_portalController.isShowing) {
+      _portalController.hide();
+    }
     editorState.selectionNotifier.removeListener(_onSelectionChanged);
     widget.editorScrollController.offsetNotifier.removeListener(
       _onScrollPositionChanged,
@@ -115,7 +108,13 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar>
 
         return false;
       },
-      child: widget.child,
+      child: OverlayPortal(
+        controller: _portalController,
+        overlayChildBuilder: (overlayContext) {
+          return widget.toolbarBuilder(overlayContext, _anchor, _clear);
+        },
+        child: widget.child,
+      ),
     );
   }
 
@@ -125,12 +124,12 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar>
     if (selection == null || selectionType == SelectionType.block) {
       _clear();
     } else if (selection.isCollapsed) {
-      if (_isToolbarVisible) {
+      if (_portalController.isShowing) {
         _clear();
       } else if (prevSelection == selection &&
           editorState.selectionUpdateReason == SelectionUpdateReason.uiEvent &&
-          editorState.selectionExtraInfo?[
-                  selectionExtraInfoDisableFloatingToolbar] !=
+          editorState
+                  .selectionExtraInfo?[selectionExtraInfoDisableFloatingToolbar] !=
               true) {
         _showAfterDelay();
       }
@@ -154,69 +153,68 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar>
   }
 
   void _onScrollPositionChanged() {
-    _toolbarContainer?.remove();
-    _toolbarContainer = null;
-    prevSelection = null;
-
-    if (_isToolbarVisible && _onScrollEnd == null) {
-      _onScrollEnd = () => _showAfterDelay(const Duration(milliseconds: 50));
+    // ignore: avoid_print
+    print(
+      '[FLOAT-DBG] _onScrollPositionChanged '
+      'isShowing=${_portalController.isShowing} '
+      'dy=${widget.editorScrollController.offsetNotifier.value}',
+    );
+    // Hide while scrolling, re-show once the scroll comes to rest. Cheaper
+    // than continuously re-computing the anchor each scroll tick — and
+    // matches the old OverlayEntry-based behavior.
+    if (_portalController.isShowing) {
+      _portalController.hide();
+      prevSelection = null;
+      _onScrollEnd ??= () => _showAfterDelay(const Duration(milliseconds: 50));
     }
   }
 
   final String _debounceKey = 'show the toolbar';
 
   void _clear() {
+    // ignore: avoid_print
+    print('[FLOAT-DBG] _clear (isShowing=${_portalController.isShowing})');
     Debounce.cancel(_debounceKey);
 
-    _toolbarContainer?.remove();
-    _toolbarContainer = null;
-    _isToolbarVisible = false;
+    if (_portalController.isShowing) {
+      _portalController.hide();
+    }
     prevSelection = null;
   }
 
   void _showAfterDelay([Duration duration = Duration.zero]) {
     // uses debounce to avoid the computing the rects too frequently.
-    Debounce.debounce(
-      _debounceKey,
-      duration,
-      () {
-        _clear(); // clear the previous toolbar.
-        _showToolbar();
-      },
-    );
+    Debounce.debounce(_debounceKey, duration, () {
+      if (!mounted) return;
+      _showToolbar();
+    });
   }
 
   void _showToolbar() {
     final rects = editorState.selectionRects();
     if (rects.isEmpty) {
+      // ignore: avoid_print
+      print('[FLOAT-DBG] _showToolbar skipped (no rects)');
       return;
     }
     final rect = _findSuitableRect(rects);
     // Empty is determined only if there is only one selection area
     if (rects.length <= 1 && rect.isEmpty) {
+      // ignore: avoid_print
+      print('[FLOAT-DBG] _showToolbar skipped (empty single rect)');
       return;
     }
-    _toolbarContainer = OverlayEntry(
-      builder: (context) {
-        return _buildToolbar(
-          context,
-          rect.topCenter,
-        );
-      },
+    // ignore: avoid_print
+    print(
+      '[FLOAT-DBG] _showToolbar SHOW anchor=${rect.topCenter} '
+      'wasShowing=${_portalController.isShowing}',
     );
-    Overlay.of(context, rootOverlay: true).insert(_toolbarContainer!);
-    _isToolbarVisible = true;
-  }
-
-  Widget _buildToolbar(
-    BuildContext context,
-    Offset offset,
-  ) {
-    return widget.toolbarBuilder(
-      context,
-      offset,
-      _clear,
-    );
+    setState(() {
+      _anchor = rect.topCenter;
+    });
+    if (!_portalController.isShowing) {
+      _portalController.show();
+    }
   }
 
   Rect _findSuitableRect(Iterable<Rect> rects) {
@@ -245,29 +243,5 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar>
     });
 
     return minRect;
-  }
-
-  (double? left, double top, double? right) calculateToolbarOffset(Rect rect) {
-    final editorOffset =
-        editorState.renderBox?.localToGlobal(Offset.zero) ?? Offset.zero;
-    final editorSize = editorState.renderBox?.size ?? Size.zero;
-    final editorRect = editorOffset & editorSize;
-    final left = (rect.left - editorOffset.dx).abs();
-    final right = (rect.right - editorOffset.dx).abs();
-    final width = editorSize.width;
-    final threshold = width / 3.0;
-    final top = rect.top < widget.floatingToolbarHeight
-        ? rect.bottom + widget.floatingToolbarHeight
-        : rect.top;
-    if (left <= threshold) {
-      // show in left
-      return (rect.left, top, null);
-    } else if (left >= threshold && right <= threshold * 2.0) {
-      // show in center
-      return (threshold, top, null);
-    } else {
-      // show in right
-      return (null, top, editorRect.right - rect.right);
-    }
   }
 }

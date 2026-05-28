@@ -5,6 +5,9 @@ class MarkdownUnorderedListParserV2 extends CustomMarkdownParser {
   const MarkdownUnorderedListParserV2();
 
   @override
+  Set<String> get supportedTags => const {'ul'};
+
+  @override
   List<Node> transform(
     md.Node element,
     List<CustomMarkdownParser> parsers, {

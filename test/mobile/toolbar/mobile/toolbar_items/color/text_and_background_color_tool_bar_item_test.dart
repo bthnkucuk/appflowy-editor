@@ -6,8 +6,9 @@ import '../../../../../new/infra/testable_editor.dart';
 import '../../test_helpers/mobile_app_with_toolbar_widget.dart';
 
 void main() {
-  testWidgets('textAndBackgroundColorMobileToolbarItem',
-      (WidgetTester tester) async {
+  testWidgets('textAndBackgroundColorMobileToolbarItem', (
+    WidgetTester tester,
+  ) async {
     const text = 'Welcome to Appflowy 😁';
     final editor = tester.editor..addParagraphs(3, initialText: text);
     await editor.startTesting();
@@ -23,25 +24,21 @@ void main() {
       Material(
         child: MobileAppWithToolbarWidget(
           editorState: editor.editorState,
-          toolbarItems: [
-            buildTextAndBackgroundColorMobileToolbarItem(),
-          ],
+          toolbarItems: [buildTextAndBackgroundColorMobileToolbarItemSheet()],
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap color toolbar item
     await tester.tap(find.byType(IconButton).first);
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
-    // Show its menu and it has a tabbar to switch between text and background color
-    expect(find.byType(MobileToolbarItemMenu), findsOneWidget);
+    // Sheet hosts a tabbar to switch between text and background color
+    expect(find.byType(EditorToolbarSheetScaffold), findsOneWidget);
+    expect(find.text(aft.textColor), findsOneWidget);
     expect(
-      find.text(AppFlowyEditorL10n.current.textColor),
-      findsOneWidget,
-    );
-    expect(
-      find.text(AppFlowyEditorL10n.current.backgroundColor),
+      find.text(aft.backgroundColor),
       findsOneWidget,
     );
 
@@ -57,10 +54,10 @@ void main() {
     expect(
       node?.allSatisfyInSelection(selection, (delta) {
         return delta.whereType<TextInsert>().every(
-              (element) =>
-                  element.attributes?[AppFlowyRichTextKeys.textColor] ==
-                  Colors.red.toHex(),
-            );
+          (element) =>
+              element.attributes?[AppFlowyRichTextKeys.textColor] ==
+              Colors.red.toHex(),
+        );
       }),
       true,
     );
@@ -70,19 +67,16 @@ void main() {
     expect(
       node?.allSatisfyInSelection(selection, (delta) {
         return delta.whereType<TextInsert>().every(
-              (element) =>
-                  element.attributes?[AppFlowyRichTextKeys.textColor] == null,
-            );
+          (element) =>
+              element.attributes?[AppFlowyRichTextKeys.textColor] == null,
+        );
       }),
       true,
     );
 
     // Test background color tab
     await tester.tap(
-      find.widgetWithText(
-        TabBar,
-        AppFlowyEditorL10n.current.backgroundColor,
-      ),
+      find.widgetWithText(TabBar, aft.backgroundColor),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
     // Tap red color button
@@ -92,10 +86,10 @@ void main() {
     expect(
       node?.allSatisfyInSelection(selection, (delta) {
         return delta.whereType<TextInsert>().every(
-              (element) =>
-                  element.attributes?[AppFlowyRichTextKeys.backgroundColor] ==
-                  Colors.red.withValues(alpha: 0.3).toHex(),
-            );
+          (element) =>
+              element.attributes?[AppFlowyRichTextKeys.backgroundColor] ==
+              Colors.red.withValues(alpha: 0.3).toHex(),
+        );
       }),
       true,
     );
@@ -105,10 +99,9 @@ void main() {
     expect(
       node?.allSatisfyInSelection(selection, (delta) {
         return delta.whereType<TextInsert>().every(
-              (element) =>
-                  element.attributes?[AppFlowyRichTextKeys.backgroundColor] ==
-                  null,
-            );
+          (element) =>
+              element.attributes?[AppFlowyRichTextKeys.backgroundColor] == null,
+        );
       }),
       true,
     );

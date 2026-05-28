@@ -49,8 +49,7 @@ void main() {
     });
 
     testWidgets('imageLoadError', (tester) async {
-      await AppFlowyEditorLocalizations.load(
-        const Locale.fromSubtags(languageCode: 'en'),
+      await LocaleSettings.setLocaleRaw((const Locale.fromSubtags(languageCode: 'en').toLanguageTag()),
       );
 
       await tester.buildAndPump(

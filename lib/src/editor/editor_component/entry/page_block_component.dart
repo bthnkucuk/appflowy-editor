@@ -1,11 +1,88 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/base_component/widget/ignore_parent_gesture.dart';
-import 'package:appflowy_editor/src/flutter/scrollable_positioned_list/scrollable_positioned_list.dart';
+import '../../block_component/base_component/widget/ignore_parent_gesture.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 
 class PageBlockKeys {
   static const String type = 'page';
+}
+
+// ----------------------------------------------------------------------------
+// SuperListView extent hinting
+//
+// SuperListView measures each child the first time it lays out, but until
+// then it has to guess every item's height. A rough per-block-type guess
+// keeps `maxScrollExtent`, scrollbar positioning, and index-based jumps
+// stable from the first frame. The numbers below are intentionally
+// approximate — they're hints, not contracts; real layout still wins.
+// ----------------------------------------------------------------------------
+
+const double _defaultBlockExtent = 28.0; // paragraph-ish
+const double _headerExtent = 150.0;
+const double _footerExtent = 100.0;
+
+const Map<String, double> _blockExtentByType = <String, double>{
+  'paragraph': 28.0,
+  'todo_list': 32.0,
+  'bulleted_list': 28.0,
+  'numbered_list': 28.0,
+  'quote': 36.0,
+  'heading': 44.0, // average across h1–h6
+  'divider': 16.0,
+  'image': 220.0,
+  'table': 180.0,
+  'table/cell': 40.0,
+  'page': _defaultBlockExtent,
+};
+
+double _estimateExtentForNode(Node node) {
+  // Heading rows are dramatically different per level; if we have a level
+  // attribute, refine. `attributes['level']` is `1..6`. (Reads through the
+  // unmodifiable view; cheap.)
+  if (node.type == 'heading') {
+    final level = node.attributes['level'];
+    if (level is int) {
+      // Empirical Material-ish line heights, tighter for deeper levels.
+      const headingByLevel = <double>[64, 52, 44, 36, 32, 28];
+      final idx = (level - 1).clamp(0, headingByLevel.length - 1);
+      return headingByLevel[idx];
+    }
+  }
+  return _blockExtentByType[node.type] ?? _defaultBlockExtent;
+}
+
+class _SmallDocumentPrecalcPolicy extends ExtentPrecalculationPolicy {
+  _SmallDocumentPrecalcPolicy(this.editorState);
+
+  // Threshold borrowed from the package's own example: precalculate the
+  // remaining extents only while the list is short enough that the
+  // estimation error per item visibly affects the scrollbar. Above this,
+  // the cost outweighs the benefit (see package README's "Advanced"
+  // section).
+  static const int _precalcThreshold = 100;
+
+  final EditorState editorState;
+
+  @override
+  bool shouldPrecalculateExtents(ExtentPrecalculationContext context) {
+    if (context.numberOfItems >= _precalcThreshold) {
+      return false;
+    }
+    // H2.8: super_sliver_list's `measureExtentForItem` builds and lays
+    // out every newly-dirty item twice (a temp tree for measurement,
+    // then the real one for paint) when precalc is on. During an
+    // auto-scroll-driven mobile selection drag, that doubles the mount
+    // cost of every block scrolling into view — the dominant cause of
+    // the 26-31 ms frame spikes the H2.3 work couldn't explain. Skip
+    // precalc while a drag is in flight; the temporary scrollbar
+    // imprecision is invisible on mobile (scrollbar fades out).
+    final dragMode = editorState.selectionExtraInfo?[selectionDragModeKey];
+    if (dragMode != null && dragMode != MobileSelectionDragMode.none) {
+      return false;
+    }
+    return true;
+  }
 }
 
 Node pageNode({
@@ -66,25 +143,23 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
 
             return Column(
               children: [
-                if (header != null) header!,
-                ...items.map(
-                  (e) {
-                    Widget child = editorState.renderer.build(context, e);
-                    if (wrapper != null) {
-                      child = wrapper!(context, node: e, child: child);
-                    }
+                ?header,
+                ...items.map((e) {
+                  Widget child = editorState.renderer.build(context, e);
+                  if (wrapper != null) {
+                    child = wrapper!(context, node: e, child: child);
+                  }
 
-                    return Container(
-                      constraints: BoxConstraints(
-                        maxWidth:
-                            editorState.editorStyle.maxWidth ?? double.infinity,
-                      ),
-                      padding: editorState.editorStyle.padding,
-                      child: child,
-                    );
-                  },
-                ),
-                if (footer != null) footer!,
+                  return Container(
+                    constraints: BoxConstraints(
+                      maxWidth:
+                          editorState.editorStyle.maxWidth ?? double.infinity,
+                    ),
+                    padding: editorState.editorStyle.padding,
+                    child: child,
+                  );
+                }),
+                ?footer,
               ],
             );
           },
@@ -95,29 +170,51 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
       if (header != null) extentCount++;
       if (footer != null) extentCount++;
 
-      return ScrollablePositionedList.builder(
+      return SuperListView.builder(
         shrinkWrap: scrollController.shrinkWrap,
         scrollDirection: Axis.vertical,
+        controller: scrollController.scrollController,
+        listController: scrollController.listController,
+        // Without an estimator SuperListView starts every unmeasured item at
+        // its `kDefaultEstimatedItemExtent` (~100 px), then refines as each
+        // item lays out. For a long document that initial guess is way off,
+        // causing the scrollbar to skitter around and `jumpToIndex` /
+        // `pageDown` to land in the wrong place until enough items have
+        // been measured. Feeding back a per-block-type estimate lets the
+        // list stabilize from the first frame.
+        extentEstimation: (index, _) {
+          if (index == null) {
+            // All-same-extent fast path; return non-zero so the package
+            // doesn't ask per index when the list is huge.
+            return _defaultBlockExtent;
+          }
+          if (header != null && index == 0) return _headerExtent;
+          if (footer != null && index == (items.length - 1) + extentCount) {
+            return _footerExtent;
+          }
+          final node = items[index - (header != null ? 1 : 0)];
+          return _estimateExtentForNode(node);
+        },
+        // Small-document precision: precalculate real extents when there
+        // aren't many items, so the scrollbar tracks exactly. For long
+        // documents the package's docs note this has diminishing returns;
+        // we skip it. The policy is also drag-aware (see H2.8 notes in
+        // _SmallDocumentPrecalcPolicy) — instantiated per build so it
+        // closes over the live editorState.
+        extentPrecalculationPolicy: _SmallDocumentPrecalcPolicy(editorState),
         itemCount: items.length + extentCount,
         itemBuilder: (context, index) {
           editorState.updateAutoScroller(Scrollable.of(context));
           if (header != null && index == 0) {
-            return IgnoreEditorSelectionGesture(
-              child: header!,
-            );
+            return IgnoreEditorSelectionGesture(child: header!);
           }
 
           if (footer != null && index == (items.length - 1) + extentCount) {
-            return IgnoreEditorSelectionGesture(
-              child: footer!,
-            );
+            return IgnoreEditorSelectionGesture(child: footer!);
           }
 
           final node = items[index - (header != null ? 1 : 0)];
-          Widget child = editorState.renderer.build(
-            context,
-            node,
-          );
+          Widget child = editorState.renderer.build(context, node);
           if (wrapper != null) {
             child = wrapper!(context, node: node, child: child);
           }
@@ -134,10 +231,6 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
             ),
           );
         },
-        itemScrollController: scrollController.itemScrollController,
-        scrollOffsetController: scrollController.scrollOffsetController,
-        itemPositionsListener: scrollController.itemPositionsListener,
-        scrollOffsetListener: scrollController.scrollOffsetListener,
       );
     }
   }

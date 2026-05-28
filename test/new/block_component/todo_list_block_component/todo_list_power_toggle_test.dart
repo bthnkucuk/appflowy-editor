@@ -43,7 +43,7 @@ void main() async {
       expect(n2.attributes[TodoListBlockKeys.checked], false);
       expect(n3.attributes[TodoListBlockKeys.checked], false);
 
-      final finder = find.byType(EditorSvg).first;
+      final finder = find.byType(ToolbarIcon).first;
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
       await tester.tap(finder);
       await tester.pumpAndSettle();

@@ -17,12 +17,14 @@ import 'package:example/pages/editor_list.dart';
 import 'package:example/pages/fixed_toolbar_editor.dart';
 import 'package:example/pages/focus_example_for_editor.dart';
 import 'package:example/pages/markdown_editor.dart';
+import 'package:example/pages/tts_reader_page.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:universal_platform/universal_platform.dart';
 
@@ -62,6 +64,18 @@ class _HomePageState extends State<HomePage> {
   late Future<String> _jsonString;
   late Editor _editor;
 
+  /// Surfaces the live [EditorState] to the app bar so it can render
+  /// an `isDirty` indicator. `null` until the editor calls
+  /// `onEditorStateChange` for the first time.
+  final ValueNotifier<EditorState?> _editorStateNotifier =
+      ValueNotifier<EditorState?>(null);
+
+  @override
+  void dispose() {
+    _editorStateNotifier.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -74,6 +88,7 @@ class _HomePageState extends State<HomePage> {
           jsonString: _jsonString,
           onEditorStateChange: (editorState) {
             _editorState = editorState;
+            _publishEditorState(editorState);
           },
         );
   }
@@ -86,6 +101,7 @@ class _HomePageState extends State<HomePage> {
       jsonString: _jsonString,
       onEditorStateChange: (editorState) {
         _editorState = editorState;
+        _publishEditorState(editorState);
         _jsonString = Future.value(
           jsonEncode(_editorState.document.toJson()),
         );
@@ -93,6 +109,19 @@ class _HomePageState extends State<HomePage> {
     );
 
     _widgetBuilder = (context) => _editor;
+  }
+
+  /// `onEditorStateChange` fires from inside the editor's build phase
+  /// (FutureBuilder → Editor build), so writing to a ValueNotifier
+  /// synchronously would call `setState` mid-build on any listening
+  /// ValueListenableBuilder. Defer the write to the next frame.
+  void _publishEditorState(EditorState editorState) {
+    if (_editorStateNotifier.value == editorState) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_editorStateNotifier.value == editorState) return;
+      _editorStateNotifier.value = editorState;
+    });
   }
 
   @override
@@ -106,7 +135,42 @@ class _HomePageState extends State<HomePage> {
         foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         title: const Text('AppFlowy Editor'),
-        actions: const [],
+        actions: [
+          ValueListenableBuilder<EditorState?>(
+            valueListenable: _editorStateNotifier,
+            builder: (context, editorState, _) {
+              if (editorState == null) return const SizedBox.shrink();
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Appearance',
+                    icon: const Icon(Icons.text_format),
+                    onPressed: () => showModalBottomSheet<void>(
+                      context: context,
+                      showDragHandle: true,
+                      isScrollControlled: true,
+                      builder: (_) =>
+                          AppearanceMobileSheet(editorState: editorState),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Table of contents',
+                    icon: const Icon(Icons.format_list_bulleted),
+                    onPressed: () => _openTocSheet(editorState),
+                  ),
+                  _DirtyIndicator(editorState: editorState),
+                ],
+              );
+            },
+          ),
+          if (UniversalPlatform.isMobile)
+            IconButton(
+              tooltip: 'Export & share',
+              icon: const Icon(Icons.ios_share),
+              onPressed: _openExportSheet,
+            ),
+        ],
       ),
       body: SafeArea(
         maintainBottomViewPadding: true,
@@ -204,6 +268,14 @@ class _HomePageState extends State<HomePage> {
               context,
               MaterialPageRoute(
                 builder: (context) => const AutoCompleteEditor(),
+              ),
+            );
+          }),
+          _buildListTile(context, 'TTS Reader (read-along)', () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const TtsReaderPage(),
               ),
             );
           }),
@@ -363,6 +435,7 @@ class _HomePageState extends State<HomePage> {
               jsonString: _jsonString,
               onEditorStateChange: (editorState) {
                 _editorState = editorState;
+                _publishEditorState(editorState);
               },
               textDirection: textDirection,
             );
@@ -372,6 +445,64 @@ class _HomePageState extends State<HomePage> {
       completer.complete();
     });
     return completer.future;
+  }
+
+  Future<void> _openTocSheet(EditorState editorState) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => OutlineMobileSheet(editorState: editorState),
+    );
+  }
+
+  Future<void> _openExportSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => AppFlowyEditorExportSheet(
+        editorState: _editorState,
+        fileName: 'appflowy-document',
+        // Primary font MUST be a real TTF (not the default Helvetica) — the
+        // pdf package's built-in Helvetica claims to cover WinAnsi codepoints
+        // like U+2019 (’) and renders them as the wrong glyph, never falling
+        // through to pdfFontFallback. A TTF's CMap routes missing glyphs to
+        // the fallback chain correctly.
+        pdfFont: () => PdfGoogleFonts.notoSansRegular(),
+        // Order matters — pdf consults these in order for any codepoint Noto
+        // Sans Regular doesn't have. Each family covers a disjoint range, so
+        // there is no overlap; placement is for fast-path locality only.
+        pdfFontFallback: () async => await Future.wait([
+          // Color emoji — must come BEFORE the symbol fonts. The B&W
+          // notoEmojiRegular is missing many SMP emoji codepoints (e.g.
+          // U+1F389, U+1F680); with it first, those fall through to
+          // notoSansSymbols/Symbols2 which render them as random dingbat
+          // outlines. notoColorEmoji has full coverage and the pdf package
+          // renders its glyph table even if the CBDT color layer is dropped.
+          PdfGoogleFonts.notoColorEmoji(),
+          // Arrows, geometric shapes, misc dingbats.
+          PdfGoogleFonts.notoSansSymbolsRegular(),
+          PdfGoogleFonts.notoSansSymbols2Regular(),
+          // Mathematical operators, blackboard, integrals, summations.
+          PdfGoogleFonts.notoSansMathRegular(),
+
+          // CJK scripts — large fonts (~10MB each), pulled from Google Fonts
+          // on first export and disk-cached by the printing package thereafter.
+          PdfGoogleFonts.notoSansSCRegular(),
+          PdfGoogleFonts.notoSansJPRegular(),
+          PdfGoogleFonts.notoSansKRRegular(),
+        ]),
+        onExport: (callbackContext, file) async {
+          final box = callbackContext.findRenderObject() as RenderBox?;
+          await Share.shareXFiles(
+            [file],
+            subject: file.name,
+            sharePositionOrigin:
+                box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+          );
+        },
+      ),
+    );
   }
 
   void _exportFile(
@@ -497,3 +628,47 @@ String generateRandomString(int len) {
     List.generate(len, (index) => r.nextInt(33) + 89),
   );
 }
+
+/// AppBar action that shows whether the document has unsaved changes
+/// and lets the user mark it clean. Wired to
+/// [EditorState.isDirtyNotifier], which the editor maintains via an
+/// operation-incremental content hash (see
+/// `_TransactionPipelineMixin._applyHashDelta`).
+class _DirtyIndicator extends StatelessWidget {
+  const _DirtyIndicator({required this.editorState});
+
+  final EditorState editorState;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: editorState.isDirtyNotifier,
+      builder: (context, isDirty, _) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isDirty)
+              const Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: Text(
+                  '• Unsaved',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            IconButton(
+              tooltip: isDirty ? 'Mark as saved' : 'Saved',
+              icon: Icon(
+                isDirty ? Icons.save_outlined : Icons.check_circle_outline,
+              ),
+              onPressed: isDirty ? editorState.markClean : null,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+

@@ -1,35 +1,23 @@
-import 'package:appflowy_editor/src/core/document/node.dart';
-import 'package:appflowy_editor/src/core/location/position.dart';
-import 'package:appflowy_editor/src/core/location/selection.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart';
-import 'package:flutter/material.dart' hide Overlay, OverlayEntry;
+import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:flutter/material.dart';
 
 class DragAreaBuilderData {
-  DragAreaBuilderData({
-    required this.targetNode,
-    required this.dragOffset,
-  });
+  DragAreaBuilderData({required this.targetNode, required this.dragOffset});
 
   final Node targetNode;
   final Offset dragOffset;
 }
 
-typedef DragAreaBuilder = Widget Function(
-  BuildContext context,
-  DragAreaBuilderData data,
-);
+typedef DragAreaBuilder = Widget Function(BuildContext context, DragAreaBuilderData data);
 
-typedef DragTargetNodeInterceptor = Node Function(
-  BuildContext context,
-  Node node,
-);
+typedef DragTargetNodeInterceptor = Node Function(BuildContext context, Node node);
 
 /// [AppFlowySelectionService] is responsible for processing
 /// the [Selection] changes and updates.
 ///
 /// Usually, this service can be obtained by the following code.
 /// ```dart
-/// final selectionService = editorState.service.selectionService;
+/// final selectionService = editorState.selectionService;
 ///
 /// /** get current selection value*/
 /// final selection = selectionService.currentSelection.value;
@@ -90,20 +78,11 @@ abstract class AppFlowySelectionService {
   void unregisterGestureInterceptor(String key);
 
   /// The functions below are only for mobile.
-  Selection? onPanStart(
-    DragStartDetails details,
-    MobileSelectionDragMode mode,
-  );
+  Selection? onPanStart(DragStartDetails details, MobileSelectionDragMode mode);
 
-  Selection? onPanUpdate(
-    DragUpdateDetails details,
-    MobileSelectionDragMode mode,
-  );
+  Selection? onPanUpdate(DragUpdateDetails details, MobileSelectionDragMode mode);
 
-  void onPanEnd(
-    DragEndDetails details,
-    MobileSelectionDragMode mode,
-  );
+  void onPanEnd(DragEndDetails details, MobileSelectionDragMode mode);
 
   /// Draws a horizontal line between the nearest nodes to the [offset].
   ///
@@ -115,11 +94,7 @@ abstract class AppFlowySelectionService {
   /// Otherwise, the line will be drawn by default [DropTargetStyle].
   ///
   /// If [interceptor] is provided, the node will be intercepted by [interceptor].
-  void renderDropTargetForOffset(
-    Offset offset, {
-    DragAreaBuilder? builder,
-    DragTargetNodeInterceptor? interceptor,
-  });
+  void renderDropTargetForOffset(Offset offset, {DragAreaBuilder? builder, DragTargetNodeInterceptor? interceptor});
 
   /// Removes the horizontal line drawn by [renderDropTargetForOffset].
   ///
@@ -127,10 +102,7 @@ abstract class AppFlowySelectionService {
 
   /// Returns the [DropTargetRenderData] for the [offset].
   ///
-  DropTargetRenderData? getDropTargetRenderData(
-    Offset offset, {
-    DragTargetNodeInterceptor? interceptor,
-  });
+  DropTargetRenderData? getDropTargetRenderData(Offset offset, {DragTargetNodeInterceptor? interceptor});
 }
 
 class SelectionGestureInterceptor {

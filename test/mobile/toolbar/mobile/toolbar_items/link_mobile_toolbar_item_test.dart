@@ -27,12 +27,11 @@ void main() {
       Material(
         child: MobileAppWithToolbarWidget(
           editorState: editor.editorState,
-          toolbarItems: [
-            linkMobileToolbarItem,
-          ],
+          toolbarItems: [linkMobileToolbarItemSheet],
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap link toolbar item
     await tester.tap(find.byType(IconButton).first);
@@ -53,9 +52,9 @@ void main() {
     expect(
       node?.allSatisfyInSelection(selection, (delta) {
         return delta.whereType<TextInsert>().every(
-              (element) =>
-                  element.attributes?[AppFlowyRichTextKeys.href] == linkAddress,
-            );
+          (element) =>
+              element.attributes?[AppFlowyRichTextKeys.href] == linkAddress,
+        );
       }),
       true,
     );

@@ -41,16 +41,14 @@ void main() async {
     });
 
     test('test insert operation', () {
-      final node = Node(type: 'example');
+      final node = Node(type: 'example', id: 'n1');
       final op = InsertOperation([0], [node]);
       final json = op.toJson();
       expect(json, {
         'op': 'insert',
         'path': [0],
         'nodes': [
-          {
-            'type': 'example',
-          }
+          {'id': 'n1', 'databaseIndex': -1.0, 'type': 'example'},
         ],
       });
       expect(InsertOperation.fromJson(json), op);
@@ -73,16 +71,14 @@ void main() async {
     });
 
     test('test delete operation', () {
-      final node = Node(type: 'example');
+      final node = Node(type: 'example', id: 'n1');
       final op = DeleteOperation([0], [node]);
       final json = op.toJson();
       expect(json, {
         'op': 'delete',
         'path': [0],
         'nodes': [
-          {
-            'type': 'example',
-          }
+          {'id': 'n1', 'databaseIndex': -1.0, 'type': 'example'},
         ],
       });
       expect(DeleteOperation.fromJson(json), op);

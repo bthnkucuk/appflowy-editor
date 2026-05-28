@@ -1,12 +1,11 @@
+import 'dart:math';
+
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class MobileScrollService extends StatefulWidget {
-  const MobileScrollService({
-    super.key,
-    required this.child,
-  });
+  const MobileScrollService({super.key, required this.child});
 
   final Widget child;
 
@@ -57,23 +56,21 @@ class _MobileScrollServiceState extends State<MobileScrollService>
   @override
   void scrollTo(
     double dy, {
-    Duration duration = const Duration(
-      milliseconds: 150,
-    ),
+    Duration duration = const Duration(milliseconds: 150),
   }) {
-    dy = dy.clamp(
-      minScrollExtent,
-      maxScrollExtent,
-    );
-    editorScrollController.scrollOffsetController.animateScroll(
-      offset: dy,
-      duration: duration,
-    );
+    dy = dy.clamp(minScrollExtent, maxScrollExtent);
+    editorScrollController.animateScroll(offset: dy, duration: duration);
   }
 
   @override
   void jumpTo(int index) {
-    editorScrollController.itemScrollController.jumpTo(index: index);
+    // Skip the jump when the target index is already inside the viewport.
+    // Without this, navigating between find/replace matches that all sit
+    // on-screen still triggers a viewport scroll on every step.
+    final (start, end) = editorScrollController.visibleRangeNotifier.value;
+    if (index < start || index > end) {
+      editorScrollController.jumpToIndex(index: max(0, index));
+    }
   }
 
   @override
@@ -97,13 +94,11 @@ class _MobileScrollServiceState extends State<MobileScrollService>
     Offset offset, {
     double edgeOffset = 200,
     AxisDirection? direction,
-    Duration? duration,
   }) {
     autoScroller?.startAutoScroll(
       offset,
       edgeOffset: edgeOffset,
       direction: direction,
-      duration: duration,
     );
   }
 

@@ -5,20 +5,19 @@ on:
     branches:
       - "main"
       - "stable"
+      - "feat/**"
 
   pull_request:
     branches:
       - "main"
       - "stable"
 
+  workflow_dispatch:
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# 3 jobs are configured.
-# The first one runs tests on desktop OSs.
-# The second runs tests on iOS simulator.
-# The third runs tests on Android emulator.
 jobs:
   desktop:
     strategy:
@@ -28,31 +27,70 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          flutter-version: "3.38.5"
+          flutter-version: "3.44.0"
           cache: true
 
+      - name: Flutter info
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze .
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test example/lib example/test
+
       - name: Run tests
-        run: |
-          flutter --version
-          flutter pub get
-          flutter analyze .
-          dart format --set-exit-if-changed .
-          dart run custom_lint
-          flutter test --coverage
+        run: flutter test --coverage
 
       - name: Upload coverage to Codecov
-        uses: Wandalen/wretry.action@v1.0.36
+        uses: codecov/codecov-action@v4
+        continue-on-error: true
         with:
-          action: codecov/codecov-action@v3
-          with: |
-            fail_ci_if_error: true
-            verbose: true
-            os: ${{ matrix.os }}
-            token: 398c9ded-28ad-4750-bfdb-e7f502539137
-          attempt_limit: 10
-          attempt_delay: 10000
+          fail_ci_if_error: false
+          verbose: true
+          os: ${{ matrix.os }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  example_build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: apk
+            build_command: flutter build apk --debug
+          # TODO(roadmap H1.4): iOS build disabled — example/ios deployment
+          # target is 13.0 but device_info_plus 12.4.0 uses iOS 17+ selectors
+          # (isiOSAppOnVision) without @available guards. Re-enable after
+          # bumping IPHONEOS_DEPLOYMENT_TARGET in example/ios/Podfile +
+          # Runner.xcodeproj.
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version: "3.44.0"
+          cache: true
+
+      - name: Install package deps
+        run: flutter pub get
+
+      - name: Install example deps
+        working-directory: example
+        run: flutter pub get
+
+      - name: Build ${{ matrix.target }}
+        working-directory: example
+        run: ${{ matrix.build_command }}

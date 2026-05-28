@@ -53,7 +53,7 @@ TextSpan mobileTextSpanDecoratorForAttribute(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text(AppFlowyEditorL10n.current.editLink),
+              title: Text(aft.editLink),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(4),
               ),
@@ -107,10 +107,12 @@ class _LinkEditFormState extends State<LinkEditForm> {
 
   @override
   Widget build(BuildContext context) {
-    var hrefAddressTextEditingController =
-        TextEditingController(text: widget.hrefAddress);
-    var hrefTextTextEditingController =
-        TextEditingController(text: widget.hrefText);
+    var hrefAddressTextEditingController = TextEditingController(
+      text: widget.hrefAddress,
+    );
+    var hrefTextTextEditingController = TextEditingController(
+      text: widget.hrefText,
+    );
 
     return Form(
       key: _formKey,
@@ -124,18 +126,15 @@ class _LinkEditFormState extends State<LinkEditForm> {
             keyboardType: TextInputType.text,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return AppFlowyEditorL10n.current.linkTextHint;
+                return aft.linkTextHint;
               }
 
               return null;
             },
             decoration: InputDecoration(
-              hintText: AppFlowyEditorL10n.current.linkText,
+              hintText: aft.linkText,
               suffixIcon: IconButton(
-                icon: const Icon(
-                  Icons.clear_rounded,
-                  size: 16,
-                ),
+                icon: const Icon(Icons.clear_rounded, size: 16),
                 onPressed: hrefTextTextEditingController.clear,
               ),
             ),
@@ -146,18 +145,15 @@ class _LinkEditFormState extends State<LinkEditForm> {
             keyboardType: TextInputType.url,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return AppFlowyEditorL10n.current.linkAddressHint;
+                return aft.linkAddressHint;
               }
 
               return null;
             },
             decoration: InputDecoration(
-              hintText: AppFlowyEditorL10n.current.urlHint,
+              hintText: aft.urlHint,
               suffixIcon: IconButton(
-                icon: const Icon(
-                  Icons.clear_rounded,
-                  size: 16,
-                ),
+                icon: const Icon(Icons.clear_rounded, size: 16),
                 onPressed: hrefAddressTextEditingController.clear,
               ),
             ),
@@ -168,7 +164,7 @@ class _LinkEditFormState extends State<LinkEditForm> {
             children: [
               TextButton(
                 child: Text(
-                  AppFlowyEditorL10n.current.removeLink,
+                  aft.removeLink,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
                 onPressed: () async {
@@ -190,14 +186,14 @@ class _LinkEditFormState extends State<LinkEditForm> {
                 style: TextButton.styleFrom(
                   textStyle: Theme.of(context).textTheme.labelLarge,
                 ),
-                child: Text(AppFlowyEditorL10n.current.done),
+                child: Text(aft.done),
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     final bool textChanged =
                         hrefTextTextEditingController.text != widget.hrefText;
                     final bool addressChanged =
                         hrefAddressTextEditingController.text !=
-                            widget.hrefAddress;
+                        widget.hrefAddress;
 
                     if (textChanged && addressChanged) {
                       final transaction = widget.editorState.transaction
@@ -234,14 +230,16 @@ class _LinkEditFormState extends State<LinkEditForm> {
                         },
                       );
                     } else if (!textChanged && addressChanged) {
-                      await widget.editorState.formatDelta(widget.selection, {
-                        AppFlowyRichTextKeys.href:
-                            hrefAddressTextEditingController.value.text,
-                      }).whenComplete(() {
-                        if (context.mounted) {
-                          Navigator.of(context).pop();
-                        }
-                      });
+                      await widget.editorState
+                          .formatDelta(widget.selection, {
+                            AppFlowyRichTextKeys.href:
+                                hrefAddressTextEditingController.value.text,
+                          })
+                          .whenComplete(() {
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                          });
                     } else {
                       Navigator.of(context).pop();
                     }

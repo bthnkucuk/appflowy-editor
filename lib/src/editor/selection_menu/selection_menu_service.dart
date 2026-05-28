@@ -48,8 +48,8 @@ class SelectionMenu extends SelectionMenuService {
   @override
   void dismiss() {
     if (_selectionMenuEntry != null) {
-      editorState.service.keyboardService?.enable();
-      editorState.service.scrollService?.enable();
+      editorState.keyboardService?.enable();
+      editorState.scrollService?.enable();
     }
 
     _selectionMenuEntry?.remove();
@@ -57,9 +57,9 @@ class SelectionMenu extends SelectionMenuService {
 
     // workaround: SelectionService has been released after hot reload.
     final isSelectionDisposed =
-        editorState.service.selectionServiceKey.currentState == null;
+        editorState.selectionServiceKey.currentState == null;
     if (!isSelectionDisposed) {
-      final selectionService = editorState.service.selectionService;
+      final selectionService = editorState.selectionService;
       // focus to reload the selection after the menu dismissed.
       editorState.selection = editorState.selection;
       selectionService.currentSelection.removeListener(_onSelectionChange);
@@ -80,7 +80,7 @@ class SelectionMenu extends SelectionMenuService {
   void _show() {
     dismiss();
 
-    final selectionService = editorState.service.selectionService;
+    final selectionService = editorState.selectionService;
     final selectionRects = selectionService.selectionRects;
     if (selectionRects.isEmpty) {
       return;
@@ -145,8 +145,8 @@ class SelectionMenu extends SelectionMenuService {
 
     Overlay.of(context, rootOverlay: true).insert(_selectionMenuEntry!);
 
-    editorState.service.keyboardService?.disable(showCursor: true);
-    editorState.service.scrollService?.disable();
+    editorState.keyboardService?.disable(showCursor: true);
+    editorState.scrollService?.disable();
     selectionService.currentSelection.addListener(_onSelectionChange);
   }
 
@@ -163,9 +163,9 @@ class SelectionMenu extends SelectionMenuService {
   void _onSelectionChange() {
     // workaround: SelectionService has been released after hot reload.
     final isSelectionDisposed =
-        editorState.service.selectionServiceKey.currentState == null;
+        editorState.selectionServiceKey.currentState == null;
     if (!isSelectionDisposed) {
-      final selectionService = editorState.service.selectionService;
+      final selectionService = editorState.selectionService;
       if (selectionService.currentSelection.value == null) {
         return;
       }
@@ -247,9 +247,9 @@ class SelectionMenu extends SelectionMenuService {
 
 final List<SelectionMenuItem> standardSelectionMenuItems = [
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.text,
+    getName: () => aft.text,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'text',
+      name: ToolbarIcons.text,
       isSelected: isSelected,
       style: style,
     ),
@@ -259,9 +259,9 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.heading1,
+    getName: () => aft.heading1,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'h1',
+      name: ToolbarIcons.h1,
       isSelected: isSelected,
       style: style,
     ),
@@ -271,9 +271,9 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.heading2,
+    getName: () => aft.heading2,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'h2',
+      name: ToolbarIcons.h2,
       isSelected: isSelected,
       style: style,
     ),
@@ -283,9 +283,9 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.heading3,
+    getName: () => aft.heading3,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'h3',
+      name: ToolbarIcons.h3,
       isSelected: isSelected,
       style: style,
     ),
@@ -295,9 +295,9 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.image,
+    getName: () => aft.image,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'image',
+      name: ToolbarIcons.selectionMenuImage,
       isSelected: isSelected,
       style: style,
     ),
@@ -308,9 +308,9 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.bulletedList,
+    getName: () => aft.bulletedList,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'bulleted_list',
+      name: ToolbarIcons.bulletedList,
       isSelected: isSelected,
       style: style,
     ),
@@ -320,9 +320,9 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.numberedList,
+    getName: () => aft.numberedList,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'number',
+      name: ToolbarIcons.numberedList,
       isSelected: isSelected,
       style: style,
     ),
@@ -332,9 +332,9 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.checkbox,
+    getName: () => aft.checkbox,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'checkbox',
+      name: ToolbarIcons.checkbox,
       isSelected: isSelected,
       style: style,
     ),
@@ -344,9 +344,9 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.quote,
+    getName: () => aft.quote,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'quote',
+      name: ToolbarIcons.quote,
       isSelected: isSelected,
       style: style,
     ),
@@ -357,13 +357,29 @@ final List<SelectionMenuItem> standardSelectionMenuItems = [
   ),
   dividerMenuItem,
   tableMenuItem,
+  outlineMenuItem,
 ];
+
+/// Slash-menu entry that inserts an [outlineBlockNode] (auto
+/// table-of-contents) after the current selection.
+final SelectionMenuItem outlineMenuItem = SelectionMenuItem(
+  getName: () => 'Outline',
+  icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
+    name: ToolbarIcons.outline,
+    isSelected: isSelected,
+    style: style,
+  ),
+  keywords: ['outline', 'toc', 'table of contents'],
+  handler: (editorState, _, _) {
+    insertNodeAfterSelection(editorState, outlineBlockNode());
+  },
+);
 
 final List<SelectionMenuItem> singleColumnVisibleMenuItems = [
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.text,
+    getName: () => aft.text,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'text',
+      name: ToolbarIcons.text,
       isSelected: isSelected,
       style: style,
     ),
@@ -373,9 +389,9 @@ final List<SelectionMenuItem> singleColumnVisibleMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.heading1,
+    getName: () => aft.heading1,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'h1',
+      name: ToolbarIcons.h1,
       isSelected: isSelected,
       style: style,
     ),
@@ -385,9 +401,9 @@ final List<SelectionMenuItem> singleColumnVisibleMenuItems = [
     },
   ),
   SelectionMenuItem(
-    getName: () => AppFlowyEditorL10n.current.heading2,
+    getName: () => aft.heading2,
     icon: (editorState, isSelected, style) => SelectionMenuIconWidget(
-      name: 'h2',
+      name: ToolbarIcons.h2,
       isSelected: isSelected,
       style: style,
     ),

@@ -1,5 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/base_component/block_icon_builder.dart';
+import '../base_component/block_icon_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -25,19 +25,13 @@ Node quoteNode({
 
   return Node(
     type: QuoteBlockKeys.type,
-    attributes: {
-      ...attributes,
-      if (textDirection != null) QuoteBlockKeys.textDirection: textDirection,
-    },
+    attributes: {...attributes, QuoteBlockKeys.textDirection: ?textDirection},
     children: children ?? [],
   );
 }
 
 class QuoteBlockComponentBuilder extends BlockComponentBuilder {
-  QuoteBlockComponentBuilder({
-    super.configuration,
-    this.iconBuilder,
-  });
+  QuoteBlockComponentBuilder({super.configuration, this.iconBuilder});
 
   final BlockIconBuilder? iconBuilder;
 
@@ -51,19 +45,16 @@ class QuoteBlockComponentBuilder extends BlockComponentBuilder {
       configuration: configuration,
       iconBuilder: iconBuilder,
       showActions: showActions(node),
-      actionBuilder: (context, state) => actionBuilder(
-        blockComponentContext,
-        state,
-      ),
-      actionTrailingBuilder: (context, state) => actionTrailingBuilder(
-        blockComponentContext,
-        state,
-      ),
+      actionBuilder: (context, state) =>
+          actionBuilder(blockComponentContext, state),
+      actionTrailingBuilder: (context, state) =>
+          actionTrailingBuilder(blockComponentContext, state),
     );
   }
 
   @override
-  BlockComponentValidate get validate => (node) => node.delta != null;
+  BlockComponentValidate get validate =>
+      (node) => node.delta != null;
 }
 
 class QuoteBlockComponentWidget extends BlockComponentStatefulWidget {
@@ -144,8 +135,8 @@ class _QuoteBlockComponentWidgetState extends State<QuoteBlockComponentWidget>
                 ),
                 placeholderTextSpanDecorator: (textSpan) =>
                     textSpan.updateTextStyle(
-                  placeholderTextStyleWithTextSpan(textSpan: textSpan),
-                ),
+                      placeholderTextStyleWithTextSpan(textSpan: textSpan),
+                    ),
                 textDirection: textDirection,
                 cursorColor: editorState.editorStyle.cursorColor,
                 selectionColor: editorState.editorStyle.selectionColor,
@@ -175,9 +166,7 @@ class _QuoteBlockComponentWidgetState extends State<QuoteBlockComponentWidget>
       blockColor: editorState.editorStyle.selectionColor,
       highlightColor: editorState.editorStyle.highlightColor,
       highlightAreaColor: editorState.editorStyle.highlightAreaColor,
-      supportTypes: const [
-        BlockSelectionType.block,
-      ],
+      supportTypes: const [BlockSelectionType.block],
       child: child,
     );
 
@@ -190,6 +179,11 @@ class _QuoteBlockComponentWidgetState extends State<QuoteBlockComponentWidget>
       );
     }
 
+    child = Padding(
+      padding: margin,
+      child: child,
+    );
+
     return child;
   }
 }
@@ -199,8 +193,10 @@ class _QuoteIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textScaleFactor =
-        context.read<EditorState>().editorStyle.textScaleFactor;
+    final textScaleFactor = context
+        .read<EditorState>()
+        .editorStyle
+        .textScaleFactor;
 
     return Container(
       alignment: Alignment.center,

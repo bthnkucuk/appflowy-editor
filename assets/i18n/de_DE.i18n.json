@@ -1,0 +1,18 @@
+{
+  "bold": "Fett gedruckt",
+  "bulletedList": "Aufzählungsliste",
+  "checkbox": "Kontrollkästchen",
+  "embedCode": "Code einbetten",
+  "heading1": "Überschrift 1",
+  "heading2": "Überschrift 2",
+  "heading3": "Überschrift 3",
+  "highlight": "Markieren",
+  "image": "Bild",
+  "italic": "kursiv",
+  "link": "Verknüpfung",
+  "numberedList": "NummerierteListe",
+  "quote": "zitieren",
+  "strikethrough": "durchgestrichen",
+  "text": "Text",
+  "underline": "unterstreichen"
+}

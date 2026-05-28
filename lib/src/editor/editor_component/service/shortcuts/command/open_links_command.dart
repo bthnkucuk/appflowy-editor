@@ -8,14 +8,12 @@ import 'package:flutter/material.dart';
 ///
 final CommandShortcutEvent openLinksCommand = CommandShortcutEvent(
   key: 'open links',
-  getDescription: () => AppFlowyEditorL10n.current.cmdOpenLinks,
+  getDescription: () => aft.cmdOpenLinks,
   command: 'alt+shift+enter',
   handler: _openLinksHandler,
 );
 
-KeyEventResult _openLinksHandler(
-  EditorState editorState,
-) {
+KeyEventResult _openLinksHandler(EditorState editorState) {
   final selection = editorState.selection;
   if (selection == null || selection.isCollapsed) {
     return KeyEventResult.ignored;

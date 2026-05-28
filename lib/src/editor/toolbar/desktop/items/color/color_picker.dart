@@ -1,5 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/toolbar/desktop/items/utils/overlay_util.dart';
+import '../utils/overlay_util.dart';
 import 'package:flutter/material.dart';
 
 class ColorPicker extends StatefulWidget {
@@ -11,7 +11,7 @@ class ColorPicker extends StatefulWidget {
     required this.colorOptions,
     this.resetText,
     this.customColorHex,
-    this.resetIconName,
+    this.resetIcon,
     this.showClearButton = false,
   });
 
@@ -20,7 +20,7 @@ class ColorPicker extends StatefulWidget {
   final String? customColorHex;
   final void Function(String? color, bool isCustomColor) onSubmittedColorHex;
   final String? resetText;
-  final String? resetIconName;
+  final ToolbarIcons? resetIcon;
   final bool showClearButton;
 
   final List<ColorOption> colorOptions;
@@ -62,10 +62,10 @@ class _ColorPickerState extends State<ColorPicker> {
         const SizedBox(height: 6),
         widget.showClearButton &&
                 widget.resetText != null &&
-                widget.resetIconName != null
+                widget.resetIcon != null
             ? ResetColorButton(
                 resetText: widget.resetText!,
-                resetIconName: widget.resetIconName!,
+                resetIcon: widget.resetIcon!,
                 onPressed: (color) =>
                     widget.onSubmittedColorHex.call(color, false),
               )
@@ -76,18 +76,12 @@ class _ColorPickerState extends State<ColorPicker> {
           onSubmittedColorHex: (color) =>
               widget.onSubmittedColorHex.call(color, true),
         ),
-        _buildColorItems(
-          widget.colorOptions,
-          widget.selectedColorHex,
-        ),
+        _buildColorItems(widget.colorOptions, widget.selectedColorHex),
       ],
     );
   }
 
-  Widget _buildColorItems(
-    List<ColorOption> options,
-    String? selectedColor,
-  ) {
+  Widget _buildColorItems(List<ColorOption> options, String? selectedColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.start,
@@ -129,7 +123,8 @@ class _ColorPickerState extends State<ColorPicker> {
               ),
             ),
             // checkbox
-            if (isChecked) const EditorSvg(name: 'checkmark'),
+            if (isChecked)
+              const ToolbarIcon(icon: ToolbarIcons.checkmark, size: 20),
           ],
         ),
       ),
@@ -155,13 +150,13 @@ class ResetColorButton extends StatelessWidget {
   const ResetColorButton({
     super.key,
     required this.resetText,
-    required this.resetIconName,
+    required this.resetIcon,
     required this.onPressed,
   });
 
   final Function(String? color) onPressed;
   final String resetText;
-  final String resetIconName;
+  final ToolbarIcons resetIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -170,29 +165,26 @@ class ResetColorButton extends StatelessWidget {
       height: 32,
       child: TextButton.icon(
         onPressed: () => onPressed(null),
-        icon: EditorSvg(
-          name: resetIconName,
-          width: 13,
-          height: 13,
+        icon: ToolbarIcon(
+          icon: resetIcon,
+          size: 13,
           color: Theme.of(context).iconTheme.color,
         ),
         label: Text(
           resetText,
-          style: TextStyle(
-            color: Theme.of(context).hintColor,
-          ),
+          style: TextStyle(color: Theme.of(context).hintColor),
           textAlign: TextAlign.left,
         ),
         style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.resolveWith<Color>(
-            (Set<WidgetState> states) {
-              if (states.contains(WidgetState.hovered)) {
-                return Theme.of(context).hoverColor;
-              }
+          backgroundColor: WidgetStateProperty.resolveWith<Color>((
+            Set<WidgetState> states,
+          ) {
+            if (states.contains(WidgetState.hovered)) {
+              return Theme.of(context).hoverColor;
+            }
 
-              return Colors.transparent;
-            },
-          ),
+            return Colors.transparent;
+          }),
           alignment: Alignment.centerLeft,
         ),
       ),
@@ -247,7 +239,7 @@ class _CustomColorItemState extends State<CustomColorItem> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              AppFlowyEditorL10n.current.customColor,
+              aft.customColor,
               style: Theme.of(context).textTheme.labelLarge,
               // same style as TextButton.icon
             ),
@@ -257,7 +249,7 @@ class _CustomColorItemState extends State<CustomColorItem> {
       children: [
         const SizedBox(height: 6),
         _customColorDetailsTextField(
-          labelText: AppFlowyEditorL10n.current.hexValue,
+          labelText: aft.hexValue,
           controller: widget.colorController,
           // update the color sample box when the text changes
           onChanged: (_) => setState(() {}),
@@ -265,7 +257,7 @@ class _CustomColorItemState extends State<CustomColorItem> {
         ),
         const SizedBox(height: 10),
         _customColorDetailsTextField(
-          labelText: AppFlowyEditorL10n.current.opacity,
+          labelText: aft.opacity,
           controller: widget.opacityController,
           // update the color sample box when the text changes
           onChanged: (_) => setState(() {}),

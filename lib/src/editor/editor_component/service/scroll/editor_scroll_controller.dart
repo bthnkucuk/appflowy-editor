@@ -1,28 +1,28 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/flutter/scrollable_positioned_list/scrollable_positioned_list.dart';
-import 'package:appflowy_editor/src/flutter/scrollable_positioned_list/src/item_positions_notifier.dart';
 import 'package:flutter/material.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 
 /// This class controls the scroll behavior of the editor.
 ///
 /// It must be provided in the widget tree above the [PageComponent].
 ///
-/// You can use [offsetNotifier] to get the current scroll offset.
-/// And, you can use [visibleRangeNotifier] to get the first level visible items.
+/// You can use [offsetNotifier] to get the current scroll offset, and
+/// [visibleRangeNotifier] to get the first level visible items.
 ///
-/// If the shrinkWrap is true, the scrollController must not be null
-///   and the editor should be wrapped in a SingleChildScrollView.
+/// If [shrinkWrap] is true the editor is wrapped in a `SingleChildScrollView`
+/// and the document is laid out as a `Column`. Otherwise it is rendered with
+/// `SuperListView` and items are virtualized.
 class EditorScrollController {
   EditorScrollController({
     required this.editorState,
     this.shrinkWrap = false,
     ScrollController? scrollController,
   }) {
-    // if shrinkWrap is true, we will render the document with Column layout.
-    // otherwise, we will render the document with ScrollablePositionedList.
+    shouldDisposeScrollController = scrollController == null;
+    this.scrollController = scrollController ?? ScrollController();
+
     if (shrinkWrap) {
       void updateVisibleRange() {
         visibleRangeNotifier.value = (
@@ -33,158 +33,71 @@ class EditorScrollController {
 
       updateVisibleRange();
       editorState.document.root.addListener(updateVisibleRange);
+    }
 
-      shouldDisposeScrollController = scrollController == null;
-      this.scrollController = scrollController ?? ScrollController();
-      // listen to the scroll offset
-      this.scrollController.addListener(
-            () => offsetNotifier.value = this.scrollController.offset,
-          );
-    } else {
-      // listen to the scroll offset
-      _scrollOffsetSubscription = _scrollOffsetListener.changes.listen((value) {
-        // the value from changes is the delta offset, so we add it to the current
-        // offset to get the total offset.
-        offsetNotifier.value = offsetNotifier.value + value;
-      });
+    this.scrollController.addListener(_syncOffsetNotifier);
 
-      _itemPositionsListener.itemPositions.addListener(_listenItemPositions);
+    if (!shrinkWrap) {
+      listController.addListener(_onVisibleRangeChanged);
     }
   }
 
   final EditorState editorState;
   final bool shrinkWrap;
 
-  // provide the current scroll offset
-  final ValueNotifier<double> offsetNotifier = ValueNotifier(0);
-
-  // provide the first level visible items, for example, if there're texts like this:
-  //
-  // 1. text1
-  // 2. text2 ---
-  //  2.1 text21|
-  // ...        |
-  // 5. text5   | screen
-  // ...        |
-  // 9. text9 ---
-  // 10. text10
-  //
-  // So the visible range is (2-1, 9-1) = (1, 8), index start from 0.
-  final ValueNotifier<(int, int)> visibleRangeNotifier =
-      ValueNotifier((-1, -1));
-
-  // these value is required by SingleChildScrollView
-  // notes: don't use them if shrinkWrap is false
-  // ------------ start ----------------
+  /// Used by `SingleChildScrollView` when shrinkWrap is true and by the
+  /// underlying `SuperListView` when shrinkWrap is false.
   late final ScrollController scrollController;
   bool shouldDisposeScrollController = false;
-  // ------------ end ----------------
 
-  // these values are required by ScrollablePositionedList
-  // notes: don't use them if shrinkWrap is true
-  // ------------ start ----------------
-  ItemScrollController get itemScrollController {
-    if (shrinkWrap) {
-      throw UnsupportedError(
-        'ItemScrollController is not supported '
-        'when shrinkWrap is true',
-      );
-    }
+  /// Drives the `SuperListView` used in non-shrinkWrap mode. Useful for
+  /// jumping/animating to a specific item by index.
+  final ListController listController = ListController();
 
-    return _itemScrollController;
-  }
+  /// Current scroll offset in pixels. Updated whenever the underlying
+  /// scrollable reports a new position.
+  final ValueNotifier<double> offsetNotifier = ValueNotifier(0);
 
-  final ItemScrollController _itemScrollController = ItemScrollController();
+  /// First-level visible items as `(min, max)` indices.
+  ///
+  /// Example: with the viewport showing nodes 2..9 of a longer document,
+  /// the value would be `(1, 8)` (0-indexed).
+  final ValueNotifier<(int, int)> visibleRangeNotifier = ValueNotifier((
+    -1,
+    -1,
+  ));
 
-  ScrollOffsetController get scrollOffsetController {
-    if (shrinkWrap) {
-      throw UnsupportedError(
-        'ScrollOffsetController is not supported '
-        'when shrinkWrap is true',
-      );
-    }
-
-    return _scrollOffsetController;
-  }
-
-  final ScrollOffsetController _scrollOffsetController =
-      ScrollOffsetController();
-
-  ItemPositionsListener get itemPositionsListener {
-    if (shrinkWrap) {
-      throw UnsupportedError(
-        'ItemPositionsListener is not supported '
-        'when shrinkWrap is true',
-      );
-    }
-
-    return _itemPositionsListener;
-  }
-
-  final ItemPositionsListener _itemPositionsListener =
-      ItemPositionsListener.create();
-
-  ScrollOffsetListener get scrollOffsetListener {
-    if (shrinkWrap) {
-      throw UnsupportedError(
-        'ScrollOffsetListener is not supported '
-        'when shrinkWrap is true',
-      );
-    }
-
-    return _scrollOffsetListener;
-  }
-
-  final ScrollOffsetListener _scrollOffsetListener =
-      ScrollOffsetListener.create();
-  // ------------ end ----------------
-
-  late final StreamSubscription<double> _scrollOffsetSubscription;
-
-  // dispose the subscription
   void dispose() {
+    scrollController.removeListener(_syncOffsetNotifier);
     if (shouldDisposeScrollController) {
       scrollController.dispose();
     }
-
     if (!shrinkWrap) {
-      _scrollOffsetSubscription.cancel();
-      _itemPositionsListener.itemPositions.removeListener(_listenItemPositions);
-      (_itemPositionsListener as ItemPositionsNotifier?)
-          ?.itemPositions
-          .dispose();
+      listController.removeListener(_onVisibleRangeChanged);
     }
-
+    listController.dispose();
     offsetNotifier.dispose();
     visibleRangeNotifier.dispose();
   }
+
+  // ---------------------------------------------------------------------------
+  // Offset-based scrolling
+  // ---------------------------------------------------------------------------
 
   Future<void> animateTo({
     required double offset,
     required Duration duration,
     Curve curve = Curves.linear,
   }) async {
-    if (shrinkWrap) {
-      await scrollController.animateTo(
-        offset.clamp(
-          scrollController.position.minScrollExtent,
-          scrollController.position.maxScrollExtent,
-        ),
-        duration: duration,
-        curve: curve,
-      );
-    } else {
-      await scrollOffsetController.animateTo(
-        offset: max(0, offset),
-        duration: duration,
-        curve: curve,
-      );
-    }
+    if (!scrollController.hasClients) return;
+    final position = scrollController.position;
+    final target = shrinkWrap
+        ? offset.clamp(position.minScrollExtent, position.maxScrollExtent)
+        : max(0.0, offset);
+    await scrollController.animateTo(target, duration: duration, curve: curve);
   }
 
-  void jumpTo({
-    required double offset,
-  }) async {
+  void jumpTo({required double offset}) {
     if (shrinkWrap) {
       if (scrollController.hasClients) {
         scrollController.jumpTo(
@@ -194,7 +107,6 @@ class EditorScrollController {
           ),
         );
       }
-
       return;
     }
 
@@ -202,65 +114,130 @@ class EditorScrollController {
     final (start, end) = visibleRangeNotifier.value;
 
     if (index < start || index > end) {
-      itemScrollController.jumpTo(
-        index: max(0, index),
-        alignment: 0,
-      );
+      jumpToIndex(index: max(0, index), alignment: 0);
     }
+  }
+
+  /// Relative animated scroll, clamped to `[min, max]ScrollExtent`. The
+  /// "safe" prefix is preserved from the pre-migration API; callers
+  /// (e.g. `editor_state.scrollToHighlight`) use this to nudge the
+  /// viewport by an amount that should never overshoot either edge.
+  Future<void> safeAnimateScroll({
+    required double offset,
+    required Duration duration,
+    Curve curve = Curves.linear,
+  }) async {
+    if (!scrollController.hasClients) return;
+    final position = scrollController.position;
+    final target = (scrollController.offset + offset).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    await scrollController.animateTo(target, duration: duration, curve: curve);
+  }
+
+  /// Relative non-animated scroll, clamped to `maxScrollExtent` (legacy
+  /// behavior — does not clamp at the top).
+  void safeJumpTo({required double offset}) {
+    if (!scrollController.hasClients) return;
+    final target = scrollController.offset + offset;
+    final maxExtent = scrollController.position.maxScrollExtent;
+    scrollController.jumpTo(target > maxExtent ? maxExtent : target);
+  }
+
+  /// Relative animated scroll without clamping. Mirrors the old
+  /// `ScrollOffsetController.animateScroll` semantics, kept because
+  /// `MobileScrollService.scrollTo` still calls it.
+  Future<void> animateScroll({
+    required double offset,
+    required Duration duration,
+    Curve curve = Curves.linear,
+  }) async {
+    if (!scrollController.hasClients) return;
+    await scrollController.animateTo(
+      scrollController.offset + offset,
+      duration: duration,
+      curve: curve,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Index-based scrolling
+  // ---------------------------------------------------------------------------
+
+  /// Jump to the node at [index]. [alignment] is `0` for top, `0.5` for
+  /// middle, `1` for bottom of the viewport.
+  void jumpToIndex({required int index, double alignment = 0}) {
+    if (!listController.isAttached) return;
+    listController.jumpToItem(
+      index: max(0, index),
+      scrollController: scrollController,
+      alignment: alignment,
+    );
+  }
+
+  /// Animate to the node at [index].
+  void scrollToIndex({
+    required int index,
+    double alignment = 0,
+    required Duration duration,
+    Curve curve = Curves.linear,
+  }) {
+    if (!listController.isAttached) return;
+    listController.animateToItem(
+      index: max(0, index),
+      scrollController: scrollController,
+      alignment: alignment,
+      duration: (_) => duration,
+      curve: (_) => curve,
+    );
   }
 
   void jumpToTop() {
     if (shrinkWrap) {
-      scrollController.jumpTo(0);
+      if (scrollController.hasClients) scrollController.jumpTo(0);
     } else {
-      itemScrollController.jumpTo(index: 0);
+      jumpToIndex(index: 0);
     }
   }
 
   void jumpToBottom() {
     if (shrinkWrap) {
-      scrollController.jumpTo(scrollController.position.maxScrollExtent);
+      if (scrollController.hasClients) {
+        scrollController.jumpTo(scrollController.position.maxScrollExtent);
+      }
     } else {
-      itemScrollController.jumpTo(
-        index: editorState.document.root.children.length - 1,
-      );
+      jumpToIndex(index: editorState.document.root.children.length - 1);
     }
   }
 
-  // listen to the visible item positions
-  void _listenItemPositions() {
-    // the value from itemPositions is the list of item positions, we need to filter
-    //  the list to find the first and last visible items.
-    final positions = _itemPositionsListener.itemPositions.value;
+  // ---------------------------------------------------------------------------
+  // Internals
+  // ---------------------------------------------------------------------------
 
-    if (positions.isEmpty) {
+  void _syncOffsetNotifier() {
+    if (!scrollController.hasClients) return;
+    offsetNotifier.value = scrollController.position.pixels;
+  }
+
+  void _onVisibleRangeChanged() {
+    if (!listController.isAttached) {
       visibleRangeNotifier.value = (-1, -1);
-
       return;
     }
 
-    // Determine the first visible item by finding the item with the
-    // smallest trailing edge that is greater than 0.  i.e. the first
-    // item whose trailing edge in visible in the viewport.
-    int min = positions
-        .where((ItemPosition position) => position.itemTrailingEdge > 0)
-        .reduce(
-          (ItemPosition min, ItemPosition position) =>
-              position.itemTrailingEdge < min.itemTrailingEdge ? position : min,
-        )
-        .index;
-    // Determine the last visible item by finding the item with the
-    // greatest leading edge that is less than 1.  i.e. the last
-    // item whose leading edge in visible in the viewport.
-    int max = positions
-        .where((ItemPosition position) => position.itemLeadingEdge < 1)
-        .reduce(
-          (ItemPosition max, ItemPosition position) =>
-              position.itemLeadingEdge > max.itemLeadingEdge ? position : max,
-        )
-        .index;
+    final range = listController.visibleRange;
+    if (range == null) {
+      visibleRangeNotifier.value = (-1, -1);
+      return;
+    }
 
-    // filter the header and footer
+    var (min, max) = range;
+
+    // Convert from "list with optional header/footer" indexing to document
+    // child indexing. Only `max` is adjusted; `min` is left as-is because the
+    // header (if any) at index 0 collapses to the same document min — this
+    // matches the semantics of the pre-migration `_listenItemPositions` code.
     if (editorState.showHeader) {
       max--;
     }
@@ -269,8 +246,6 @@ class EditorScrollController {
         max >= editorState.document.root.children.length) {
       max--;
     }
-
-    // notify the listeners
 
     visibleRangeNotifier.value = (min, max);
   }

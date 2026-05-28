@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/table_block_component/table_config.dart';
+import 'table_config.dart';
 
 class TableNode {
   final TableConfig _config;
@@ -9,9 +9,8 @@ class TableNode {
   final Node node;
   final List<List<Node>> _cells = [];
 
-  TableNode({
-    required this.node,
-  }) : _config = TableConfig.fromJson(node.attributes) {
+  TableNode({required this.node})
+    : _config = TableConfig.fromJson(node.attributes) {
     if (node.type != TableBlockKeys.type) {
       AppFlowyEditorLog.editor.debug('TableNode: node is not a table');
 
@@ -45,24 +44,33 @@ class TableNode {
     for (final child in node.children) {
       if (!child.attributes.containsKey(TableCellBlockKeys.rowPosition) ||
           !child.attributes.containsKey(TableCellBlockKeys.colPosition)) {
-        AppFlowyEditorLog.editor
-            .debug('TableNode: cell has no rowPosition or colPosition');
+        AppFlowyEditorLog.editor.debug(
+          'TableNode: cell has no rowPosition or colPosition',
+        );
 
         return;
       }
     }
 
+    // Index children by (col, row) once instead of scanning the entire
+    // children list for each of the colsLen*rowsLen cells. The original
+    // nested `where` was O(rows*cols * children) — and since
+    // `children.length == rows*cols`, that's O(N²) per TableNode build.
+    // For a 20×20 table that's 160_000 attribute comparisons every time
+    // the block tree rebuilds.
+    final cellByPosition = <int, Map<int, Node>>{};
+    for (final child in node.children) {
+      final col = child.attributes[TableCellBlockKeys.colPosition];
+      final row = child.attributes[TableCellBlockKeys.rowPosition];
+      if (col is! int || row is! int) continue;
+      (cellByPosition[col] ??= <int, Node>{})[row] = child;
+    }
+
     for (var i = 0; i < colsLen; i++) {
       _cells.add([]);
+      final column = cellByPosition[i];
       for (var j = 0; j < rowsLen; j++) {
-        final cell = node.children
-            .where(
-              (n) =>
-                  n.attributes[TableCellBlockKeys.colPosition] == i &&
-                  n.attributes[TableCellBlockKeys.rowPosition] == j,
-            )
-            .firstOrNull;
-
+        final cell = column?[j];
         if (cell == null) {
           AppFlowyEditorLog.editor.debug('TableNode: cell is empty');
           _cells.clear();
@@ -83,9 +91,7 @@ class TableNode {
     assert(
       T == String ||
           (T == Node &&
-              cols.every(
-                (col) => col.every((n) => (n as Node).delta != null),
-              )),
+              cols.every((col) => col.every((n) => (n as Node).delta != null))),
     );
     assert(cols.isNotEmpty);
     assert(cols[0].isNotEmpty);
@@ -143,12 +149,16 @@ class TableNode {
       ) ??
       _config.rowDefaultHeight;
 
-  double get colsHeight =>
-      List.generate(rowsLen, (idx) => idx).fold<double>(
-        0,
-        (prev, cur) => prev + getRowHeight(cur) + _config.borderWidth,
-      ) +
-      _config.borderWidth;
+  double get colsHeight {
+    // Plain loop instead of `List.generate(...).fold(...)` — the index
+    // list was a per-call allocation just to drive a fold, with no other
+    // purpose. This getter is read every layout pass.
+    var total = _config.borderWidth;
+    for (var i = 0; i < rowsLen; i++) {
+      total += getRowHeight(i) + _config.borderWidth;
+    }
+    return total;
+  }
 
   double getColWidth(int col) =>
       double.tryParse(
@@ -156,12 +166,14 @@ class TableNode {
       ) ??
       _config.colDefaultWidth;
 
-  double get tableWidth =>
-      List.generate(colsLen, (idx) => idx).fold<double>(
-        0,
-        (prev, cur) => prev + getColWidth(cur) + _config.borderWidth,
-      ) +
-      _config.borderWidth;
+  double get tableWidth {
+    // Same shape as `colsHeight` — plain accumulator, no throwaway list.
+    var total = _config.borderWidth;
+    for (var i = 0; i < colsLen; i++) {
+      total += getColWidth(i) + _config.borderWidth;
+    }
+    return total;
+  }
 
   void setColWidth(
     int col,
@@ -206,14 +218,13 @@ class TableNode {
         }
 
         if (transaction != null) {
-          transaction.updateNode(
-            _cells[i][row],
-            {TableCellBlockKeys.height: maxHeight},
-          );
+          transaction.updateNode(_cells[i][row], {
+            TableCellBlockKeys.height: maxHeight,
+          });
         } else {
-          _cells[i][row].updateAttributes(
-            {TableCellBlockKeys.height: maxHeight},
-          );
+          _cells[i][row].updateAttributes({
+            TableCellBlockKeys.height: maxHeight,
+          });
         }
       }
     }

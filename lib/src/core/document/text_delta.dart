@@ -6,20 +6,16 @@ import 'package:diff_match_patch/diff_match_patch.dart' as diff_match_patch;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-typedef AppFlowyEditorSliceAttributes = Attributes? Function(
-  Delta delta,
-  int index,
-);
+typedef AppFlowyEditorSliceAttributes =
+    Attributes? Function(Delta delta, int index);
 
 /// Default slice attributes function.
 ///
 /// For the BIUS attributes, the slice attributes function will slice the attributes from the previous position,
 ///   if the index is 0, it will slice the attributes from the next position.
 /// For the link and code attributes, the slice attributes function will only work if the index is in the range of the link or code.
-AppFlowyEditorSliceAttributes? defaultAppFlowyEditorSliceAttributes = (
-  delta,
-  int index,
-) {
+AppFlowyEditorSliceAttributes?
+defaultAppFlowyEditorSliceAttributes = (delta, int index) {
   if (index < 0) {
     return null;
   }
@@ -42,10 +38,14 @@ AppFlowyEditorSliceAttributes? defaultAppFlowyEditorSliceAttributes = (
   }
 
   // if the index is not 0, slice the attributes from the previous position.
-  final prevAttributes = delta.slice(index - 1, index).firstOrNull?.attributes;
-  if (prevAttributes == null) {
+  // Clone the getter's return — `TextInsert.attributes` now hands back an
+  // `UnmodifiableMapView`, but the hook mutates this map below via
+  // `removeWhere`.
+  final prevReadOnly = delta.slice(index - 1, index).firstOrNull?.attributes;
+  if (prevReadOnly == null) {
     return null;
   }
+  final prevAttributes = {...prevReadOnly};
   // if the prevAttributes doesn't include the code/href, return it.
   // Otherwise, check if the nextAttributes includes the code/href.
   if (!prevAttributes.keys.any(
@@ -57,20 +57,18 @@ AppFlowyEditorSliceAttributes? defaultAppFlowyEditorSliceAttributes = (
   // check if the nextAttributes includes the code.
   final nextAttributes = delta.slice(index, index + 1).firstOrNull?.attributes;
   if (nextAttributes == null) {
-    return prevAttributes
-      ..removeWhere(
-        (key, _) => AppFlowyRichTextKeys.partialSliced.contains(key),
-      );
+    return prevAttributes..removeWhere(
+      (key, _) => AppFlowyRichTextKeys.partialSliced.contains(key),
+    );
   }
 
   // if the nextAttributes doesn't include the code/href, exclude the code/href format.
   if (!nextAttributes.keys.any(
     (element) => AppFlowyRichTextKeys.partialSliced.contains(element),
   )) {
-    return prevAttributes
-      ..removeWhere(
-        (key, _) => AppFlowyRichTextKeys.partialSliced.contains(key),
-      );
+    return prevAttributes..removeWhere(
+      (key, _) => AppFlowyRichTextKeys.partialSliced.contains(key),
+    );
   }
 
   return prevAttributes;
@@ -106,10 +104,7 @@ sealed class TextOperation {
 }
 
 class TextInsert extends TextOperation {
-  TextInsert(
-    this.text, {
-    Attributes? attributes,
-  }) : _attributes = attributes;
+  TextInsert(this.text, {this._attributes});
 
   String text;
   final Attributes? _attributes;
@@ -121,15 +116,14 @@ class TextInsert extends TextOperation {
   Object? get data => text;
 
   @override
-  Attributes? get attributes => _attributes != null ? {..._attributes} : null;
+  Attributes? get attributes =>
+      _attributes != null ? UnmodifiableMapView(_attributes) : null;
 
   @override
   Map<String, dynamic> toJson() {
-    final result = <String, dynamic>{
-      'insert': text,
-    };
+    final result = <String, dynamic>{'insert': text};
     if (_attributes != null && _attributes.isNotEmpty) {
-      result['attributes'] = attributes;
+      result['attributes'] = {..._attributes};
     }
 
     return result;
@@ -149,25 +143,21 @@ class TextInsert extends TextOperation {
 }
 
 class TextRetain extends TextOperation {
-  TextRetain(
-    this.length, {
-    Attributes? attributes,
-  }) : _attributes = attributes;
+  TextRetain(this.length, {this._attributes});
 
   @override
   int length;
   final Attributes? _attributes;
 
   @override
-  Attributes? get attributes => _attributes != null ? {..._attributes} : null;
+  Attributes? get attributes =>
+      _attributes != null ? UnmodifiableMapView(_attributes) : null;
 
   @override
   Map<String, dynamic> toJson() {
-    final result = <String, dynamic>{
-      'retain': length,
-    };
+    final result = <String, dynamic>{'retain': length};
     if (_attributes != null && _attributes.isNotEmpty) {
-      result['attributes'] = attributes;
+      result['attributes'] = {..._attributes};
     }
 
     return result;
@@ -187,9 +177,7 @@ class TextRetain extends TextOperation {
 }
 
 class TextDelete extends TextOperation {
-  TextDelete({
-    required this.length,
-  });
+  TextDelete({required this.length});
 
   @override
   int length;
@@ -199,9 +187,7 @@ class TextDelete extends TextOperation {
 
   @override
   Map<String, dynamic> toJson() {
-    return {
-      'delete': length,
-    };
+    return {'delete': length};
   }
 
   @override
@@ -222,9 +208,8 @@ class TextDelete extends TextOperation {
 
 /// Basically borrowed from: https://github.com/quilljs/delta
 class Delta extends Iterable<TextOperation> {
-  Delta({
-    List<TextOperation>? operations,
-  }) : _operations = operations ?? <TextOperation>[];
+  Delta({List<TextOperation>? operations})
+    : _operations = operations ?? <TextOperation>[];
 
   factory Delta.fromJson(List<dynamic> list) {
     final operations = <TextOperation>[];
@@ -346,8 +331,8 @@ class Delta extends Iterable<TextOperation> {
         firstOther is TextRetain &&
         firstOther.attributes == null) {
       int firstLeft = firstOther.length;
-      while (
-          thisIter.peek() is TextInsert && thisIter.peekLength() <= firstLeft) {
+      while (thisIter.peek() is TextInsert &&
+          thisIter.peekLength() <= firstLeft) {
         firstLeft -= thisIter.peekLength();
         final next = thisIter.next();
         operations.add(next);
@@ -595,8 +580,10 @@ class Delta extends Iterable<TextOperation> {
   }
 
   String toPlainText() {
-    _plainText ??=
-        _operations.whereType<TextInsert>().map((op) => op.text).join();
+    _plainText ??= _operations
+        .whereType<TextInsert>()
+        .map((op) => op.text)
+        .join();
 
     return _plainText!;
   }
@@ -627,14 +614,18 @@ class Delta extends Iterable<TextOperation> {
   }
 
   Attributes? sliceAttributes(int index) {
-    return appflowyEditorSliceAttributes?.call(this, index);
+    final attrs = appflowyEditorSliceAttributes?.call(this, index);
+    // Callers (e.g. TextTransaction.insertText) mutate this with `.addAll`,
+    // so the returned map must be mutable. The default hook composes its
+    // result from `TextInsert.attributes` / `TextRetain.attributes`, whose
+    // getters return an `UnmodifiableMapView` for the hot read path.
+    return attrs != null ? {...attrs} : null;
   }
 }
 
 class _OpIterator {
-  _OpIterator(
-    Iterable<TextOperation> operations,
-  ) : _operations = UnmodifiableListView(operations);
+  _OpIterator(Iterable<TextOperation> operations)
+    : _operations = UnmodifiableListView(operations);
 
   final UnmodifiableListView<TextOperation> _operations;
   int _index = 0;
@@ -714,10 +705,17 @@ class _OpIterator {
   }
 }
 
+// Both-null and both-empty are treated as equal, matching the pre-existing
+// helper. For non-empty maps we delegate to `DeepCollectionEquality` so
+// that nested map/list values (which `flutter/foundation`'s `mapEquals`
+// compares shallowly) are handled correctly — and so the editor uses one
+// equality definition (the same `DeepCollectionEquality` is already used
+// in `diff.dart`).
+const _attributeEquality = DeepCollectionEquality();
+
 bool _mapEquals<T, U>(Map<T, U>? a, Map<T, U>? b) {
   if ((a == null || a.isEmpty) && (b == null || b.isEmpty)) {
     return true;
   }
-
-  return mapEquals(a, b);
+  return _attributeEquality.equals(a, b);
 }

@@ -10,7 +10,7 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 
 final CommandShortcutEvent deleteLeftWordCommand = CommandShortcutEvent(
   key: 'delete the left word',
-  getDescription: () => AppFlowyEditorL10n.current.cmdDeleteWordLeft,
+  getDescription: () => aft.cmdDeleteWordLeft,
   command: 'ctrl+backspace',
   macOSCommand: 'alt+backspace',
   handler: _deleteLeftWordCommandHandler,
@@ -18,7 +18,7 @@ final CommandShortcutEvent deleteLeftWordCommand = CommandShortcutEvent(
 
 final CommandShortcutEvent deleteRightWordCommand = CommandShortcutEvent(
   key: 'delete the right word',
-  getDescription: () => AppFlowyEditorL10n.current.cmdDeleteWordRight,
+  getDescription: () => aft.cmdDeleteWordRight,
   command: 'ctrl+delete',
   macOSCommand: 'alt+delete',
   handler: _deleteRightWordCommandHandler,
@@ -56,9 +56,9 @@ CommandShortcutEventHandler _deleteLeftWordCommandHandler = (editorState) {
 
   //check if the selected word is whitespace
   final selectedWord = delta.toPlainText().substring(
-        startOfWord.offset,
-        selection.end.offset,
-      );
+    startOfWord.offset,
+    selection.end.offset,
+  );
 
   // if it is whitespace then we have to update the selection to include
   //  the left word from the whitespace.

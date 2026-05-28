@@ -22,63 +22,50 @@ final List<CommandShortcutEvent> toggleMarkdownCommands = [
 ///
 final CommandShortcutEvent toggleBoldCommand = CommandShortcutEvent(
   key: 'toggle bold',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleBold,
+  getDescription: () => aft.cmdToggleBold,
   command: 'ctrl+b',
   macOSCommand: 'cmd+b',
-  handler: (editorState) => _toggleAttribute(
-    editorState,
-    AppFlowyRichTextKeys.bold,
-  ),
+  handler: (editorState) =>
+      _toggleAttribute(editorState, AppFlowyRichTextKeys.bold),
 );
 
 final CommandShortcutEvent toggleItalicCommand = CommandShortcutEvent(
   key: 'toggle italic',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleItalic,
+  getDescription: () => aft.cmdToggleItalic,
   command: 'ctrl+i',
   macOSCommand: 'cmd+i',
-  handler: (editorState) => _toggleAttribute(
-    editorState,
-    AppFlowyRichTextKeys.italic,
-  ),
+  handler: (editorState) =>
+      _toggleAttribute(editorState, AppFlowyRichTextKeys.italic),
 );
 
 final CommandShortcutEvent toggleUnderlineCommand = CommandShortcutEvent(
   key: 'toggle underline',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleUnderline,
+  getDescription: () => aft.cmdToggleUnderline,
   command: 'ctrl+u',
   macOSCommand: 'cmd+u',
-  handler: (editorState) => _toggleAttribute(
-    editorState,
-    AppFlowyRichTextKeys.underline,
-  ),
+  handler: (editorState) =>
+      _toggleAttribute(editorState, AppFlowyRichTextKeys.underline),
 );
 
 final CommandShortcutEvent toggleStrikethroughCommand = CommandShortcutEvent(
   key: 'toggle strikethrough',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleStrikethrough,
+  getDescription: () => aft.cmdToggleStrikethrough,
   command: 'ctrl+shift+s',
   macOSCommand: 'cmd+shift+s',
-  handler: (editorState) => _toggleAttribute(
-    editorState,
-    AppFlowyRichTextKeys.strikethrough,
-  ),
+  handler: (editorState) =>
+      _toggleAttribute(editorState, AppFlowyRichTextKeys.strikethrough),
 );
 
 final CommandShortcutEvent toggleCodeCommand = CommandShortcutEvent(
   key: 'toggle code',
-  getDescription: () => AppFlowyEditorL10n.current.cmdToggleCode,
+  getDescription: () => aft.cmdToggleCode,
   command: 'ctrl+e',
   macOSCommand: 'cmd+e',
-  handler: (editorState) => _toggleAttribute(
-    editorState,
-    AppFlowyRichTextKeys.code,
-  ),
+  handler: (editorState) =>
+      _toggleAttribute(editorState, AppFlowyRichTextKeys.code),
 );
 
-KeyEventResult _toggleAttribute(
-  EditorState editorState,
-  String key,
-) {
+KeyEventResult _toggleAttribute(EditorState editorState, String key) {
   final selection = editorState.selection;
   if (selection == null) {
     return KeyEventResult.ignored;

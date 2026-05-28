@@ -33,24 +33,17 @@ Node numberedListNode({
     type: NumberedListBlockKeys.type,
     attributes: {
       ...attributes,
-      if (textDirection != null)
-        NumberedListBlockKeys.textDirection: textDirection,
+      NumberedListBlockKeys.textDirection: ?textDirection,
     },
     children: children ?? [],
   );
 }
 
-typedef NumberedListIconBuilder = Widget Function(
-  BuildContext context,
-  Node node,
-  TextDirection direction,
-);
+typedef NumberedListIconBuilder =
+    Widget Function(BuildContext context, Node node, TextDirection direction);
 
 class NumberedListBlockComponentBuilder extends BlockComponentBuilder {
-  NumberedListBlockComponentBuilder({
-    super.configuration,
-    this.iconBuilder,
-  });
+  NumberedListBlockComponentBuilder({super.configuration, this.iconBuilder});
 
   final NumberedListIconBuilder? iconBuilder;
 
@@ -64,19 +57,16 @@ class NumberedListBlockComponentBuilder extends BlockComponentBuilder {
       configuration: configuration,
       iconBuilder: iconBuilder,
       showActions: showActions(node),
-      actionBuilder: (context, state) => actionBuilder(
-        blockComponentContext,
-        state,
-      ),
-      actionTrailingBuilder: (context, state) => actionTrailingBuilder(
-        blockComponentContext,
-        state,
-      ),
+      actionBuilder: (context, state) =>
+          actionBuilder(blockComponentContext, state),
+      actionTrailingBuilder: (context, state) =>
+          actionTrailingBuilder(blockComponentContext, state),
     );
   }
 
   @override
-  BlockComponentValidate get validate => (node) => node.delta != null;
+  BlockComponentValidate get validate =>
+      (node) => node.delta != null;
 }
 
 class NumberedListBlockComponentWidget extends BlockComponentStatefulWidget {
@@ -134,7 +124,8 @@ class _NumberedListBlockComponentWidgetState
     );
 
     Widget child = Align(
-      alignment: alignment ??
+      alignment:
+          alignment ??
           (Directionality.of(context) == TextDirection.rtl
               ? Alignment.centerRight
               : Alignment.centerLeft),
@@ -145,11 +136,7 @@ class _NumberedListBlockComponentWidgetState
         textDirection: textDirection,
         children: [
           widget.iconBuilder != null
-              ? widget.iconBuilder!(
-                  context,
-                  node,
-                  textDirection,
-                )
+              ? widget.iconBuilder!(context, node, textDirection)
               : _NumberedListIcon(
                   node: node,
                   textStyle: textStyleWithTextSpan(),
@@ -168,8 +155,8 @@ class _NumberedListBlockComponentWidgetState
               ),
               placeholderTextSpanDecorator: (textSpan) =>
                   textSpan.updateTextStyle(
-                placeholderTextStyleWithTextSpan(textSpan: textSpan),
-              ),
+                    placeholderTextStyleWithTextSpan(textSpan: textSpan),
+                  ),
               textDirection: textDirection,
               cursorColor: editorState.editorStyle.cursorColor,
               selectionColor: editorState.editorStyle.selectionColor,
@@ -198,9 +185,7 @@ class _NumberedListBlockComponentWidgetState
       blockColor: editorState.editorStyle.selectionColor,
       highlightColor: editorState.editorStyle.highlightColor,
       highlightAreaColor: editorState.editorStyle.highlightAreaColor,
-      supportTypes: const [
-        BlockSelectionType.block,
-      ],
+      supportTypes: const [BlockSelectionType.block],
       child: child,
     );
 
@@ -234,22 +219,30 @@ class _NumberedListIcon extends StatelessWidget {
     final text = editorState.editorStyle.textStyleConfiguration.text;
     final textScaleFactor = editorState.editorStyle.textScaleFactor;
 
-    return Container(
-      constraints:
-          const BoxConstraints(minWidth: 26, minHeight: 22) * textScaleFactor,
-      padding: const EdgeInsets.only(right: 4.0),
-      child: Center(
-        child: Text.rich(
-          textScaler: TextScaler.linear(textScaleFactor),
-          textHeightBehavior: const TextHeightBehavior(
-            applyHeightToFirstAscent: false,
-            applyHeightToLastDescent: false,
+    // Marker box height matches the body's first-line height so the
+    // "1." / "2." / etc. visually centers with the surrounding text at
+    // any font size — the hardcoded 22×textScaleFactor used to drift out
+    // of alignment when `textStyleConfiguration.text.fontSize` changed
+    // via the appearance sheet.
+    final baseFontSize = text.fontSize ?? 14.0;
+    final scaled = baseFontSize * textScaleFactor;
+    const lineHeightFactor = 1.5;
+    final lineHeight = scaled * lineHeightFactor;
+
+    return SizedBox(
+      height: lineHeight,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 4.0),
+        child: Center(
+          child: Text.rich(
+            textScaler: TextScaler.linear(textScaleFactor),
+            textHeightBehavior: const TextHeightBehavior(
+              applyHeightToFirstAscent: false,
+              applyHeightToLastDescent: false,
+            ),
+            TextSpan(text: node.levelString, style: text.combine(textStyle)),
+            textDirection: direction,
           ),
-          TextSpan(
-            text: node.levelString,
-            style: text.combine(textStyle),
-          ),
-          textDirection: direction,
         ),
       ),
     );
@@ -273,9 +266,7 @@ extension on Node {
 }
 
 class _NumberedListIconBuilder {
-  _NumberedListIconBuilder({
-    required this.node,
-  });
+  _NumberedListIconBuilder({required this.node});
 
   final Node node;
 

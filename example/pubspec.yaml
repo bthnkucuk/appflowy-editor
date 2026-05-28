@@ -50,6 +50,7 @@ dependencies:
   printing: ^5.14.3
   # appflowy_editor_plugins: ^0.0.6
   markdown:
+  share_plus: ^10.1.4
   universal_platform: ^1.1.0
 
   defer_pointer: ^0.0.2

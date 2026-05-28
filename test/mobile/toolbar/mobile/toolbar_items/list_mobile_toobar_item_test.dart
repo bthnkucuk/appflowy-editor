@@ -6,7 +6,8 @@ import '../../../../new/infra/testable_editor.dart';
 import '../test_helpers/mobile_app_with_toolbar_widget.dart';
 
 void main() {
-  testWidgets('listMobileToolbarItem', (WidgetTester tester) async {
+  testWidgets('blocksMobileToolbarItemSheet — list options',
+      (WidgetTester tester) async {
     const text = 'Welcome to Appflowy 😁';
     final editor = tester.editor..addParagraphs(3, initialText: text);
     await editor.startTesting();
@@ -22,55 +23,36 @@ void main() {
       Material(
         child: MobileAppWithToolbarWidget(
           editorState: editor.editorState,
-          toolbarItems: [
-            listMobileToolbarItem,
-          ],
+          toolbarItems: [blocksMobileToolbarItemSheet],
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Tap text decoration toolbar item
     await tester.tap(find.byType(IconButton).first);
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
-    // Show its menu and it has 2 buttons
-    expect(find.byType(MobileToolbarItemMenu), findsOneWidget);
-    expect(
-      find.text(AppFlowyEditorL10n.current.bulletedList),
-      findsOneWidget,
-    );
-    expect(
-      find.text(AppFlowyEditorL10n.current.numberedList),
-      findsOneWidget,
-    );
+    // Sheet renders the curated cells; Bulleted + Numbered are among them.
+    expect(find.byType(EditorToolbarSheetScaffold), findsOneWidget);
+    expect(find.text(aft.bulletedList), findsOneWidget);
+    expect(find.text(aft.numberedList), findsOneWidget);
 
     // Test Bulleted List button
     await tester.tap(
-      find.widgetWithText(
-        MobileToolbarItemMenuBtn,
-        AppFlowyEditorL10n.current.bulletedList,
-      ),
+      find.widgetWithText(EditorToolbarMenuButton, aft.bulletedList),
     );
     var node = editor.editorState.getNodeAtPath([1]);
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
-    expect(
-      node?.type == BulletedListBlockKeys.type,
-      true,
-    );
+    expect(node?.type == BulletedListBlockKeys.type, true);
 
     // Test Numbered List button
     await tester.tap(
-      find.widgetWithText(
-        MobileToolbarItemMenuBtn,
-        AppFlowyEditorL10n.current.numberedList,
-      ),
+      find.widgetWithText(EditorToolbarMenuButton, aft.numberedList),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
     //Get updated node
     node = editor.editorState.getNodeAtPath([1]);
-    expect(
-      node?.type == NumberedListBlockKeys.type,
-      true,
-    );
+    expect(node?.type == NumberedListBlockKeys.type, true);
   });
 }

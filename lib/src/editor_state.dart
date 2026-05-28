@@ -1,101 +1,29 @@
 import 'dart:async';
-import 'dart:collection';
+import 'dart:math' show max;
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/scroll/auto_scroller.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
-import 'package:appflowy_editor/src/history/undo_manager.dart';
+import 'editor/editor_component/service/scroll/auto_scroller.dart';
+import 'editor/util/platform_extension.dart';
+import 'editor_state/undo_manager.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
-typedef EditorTransactionValue = (
-  TransactionTime time,
-  Transaction transaction,
-  ApplyOptions options,
-);
+export 'editor_state/types.dart';
 
-class EditorStateDebugInfo {
-  EditorStateDebugInfo({
-    this.debugPaintSizeEnabled = false,
-  });
-
-  /// Enable the debug paint size for selection handle.
-  ///
-  /// It only available on mobile.
-  bool debugPaintSizeEnabled;
-}
-
-/// the type of this value is bool.
-///
-/// set true to this key to prevent attaching the text service when selection is changed.
-const selectionExtraInfoDoNotAttachTextService =
-    'selectionExtraInfoDoNotAttachTextService';
-const _selectionDragModeKey = 'selection_drag_mode';
-
-class ApplyOptions {
-  const ApplyOptions({
-    this.recordUndo = true,
-    this.recordRedo = false,
-    this.source,
-    this.inMemoryUpdate = false,
-  });
-
-  /// Whether the transaction should be recorded into the undo stack.
-  @Deprecated('Use [source] instead')
-  final bool recordUndo;
-
-  @Deprecated('Use [source] instead')
-  final bool recordRedo;
-
-  /// The source of the transaction. When set, takes precedence over
-  /// the legacy `recordUndo` and `recordRedo` flags for determining
-  /// how the transaction is recorded in the undo/redo history.
-  final TransactionSource? source;
-
-  /// This flag used to determine whether the transaction is in-memory update.
-  final bool inMemoryUpdate;
-
-  /// Returns the resolved [TransactionSource].
-  /// Prefers explicit [source], falls back to legacy boolean flags.
-  ///
-  /// Legacy mapping (for backward compatibility):
-  /// - `recordRedo: true` → [TransactionSource.undo] (records *to* redo stack)
-  /// - `recordUndo: true` → [TransactionSource.userEdit]
-  /// - both false → [TransactionSource.none]
-  TransactionSource get resolvedSource {
-    if (source != null) return source!;
-    // ignore: deprecated_member_use_from_same_package
-    if (recordRedo) return TransactionSource.undo;
-    // ignore: deprecated_member_use_from_same_package
-    if (recordUndo) return TransactionSource.userEdit;
-
-    return TransactionSource.none;
-  }
-}
-
-@Deprecated('use SelectionUpdateReason instead')
-enum CursorUpdateReason {
-  uiEvent,
-  others,
-}
-
-enum SelectionUpdateReason {
-  uiEvent, // like mouse click, keyboard event
-  transaction, // like insert, delete, format
-  remote, // like remote selection
-  selectAll,
-  searchHighlight, // Highlighting search results
-}
-
-enum SelectionType {
-  inline,
-  block,
-}
-
-enum TransactionTime {
-  before,
-  after,
-}
+// Internal mixin files. Kept as `part`/`part of` so they share
+// library-level privacy with EditorState — the mixin types themselves
+// are library-private (`_` prefix) and the implementation details
+// (`_recordRedoOrUndo`, `_disposeXxx`) stay invisible to downstream.
+part 'editor_state/document_query_mixin.dart';
+part 'editor_state/document_rules_mixin.dart';
+part 'editor_state/editor_chrome.dart';
+part 'editor_state/editor_service.dart';
+part 'editor_state/history_mixin.dart';
+part 'editor_state/scroll_coordinator_mixin.dart';
+part 'editor_state/selection_style_mixin.dart';
+part 'editor_state/transaction_pipeline_mixin.dart';
 
 /// The state of the editor.
 ///
@@ -114,198 +42,68 @@ enum TransactionTime {
 /// all the mutations should be applied through [Transaction].
 ///
 /// Mutating the document with document's API is not recommended.
-class EditorState {
+///
+/// Internal: the mixin composition lives on [_EditorStateBase] below;
+/// EditorState only extends it. Downstream consumers see EditorState
+/// as the public API surface — the underscore-prefixed mixin types
+/// (`_EditorChromeMixin`, `_HistoryMixin`, …) are library-private and
+/// can't be applied to anything outside this library.
+abstract class _EditorStateBase
+    with
+        _EditorChromeMixin,
+        _EditorServiceMixin,
+        _HistoryMixin,
+        _SelectionStyleMixin,
+        _ScrollCoordinatorMixin,
+        _DocumentQueryMixin,
+        _TransactionPipelineMixin,
+        _DocumentRulesMixin {}
+
+class EditorState extends _EditorStateBase {
   EditorState({
     required this.document,
     this.minHistoryItemDuration = const Duration(milliseconds: 50),
     int? maxHistoryItemSize,
   }) {
-    undoManager = UndoManager(maxHistoryItemSize ?? 200);
+    _initHistory(maxHistoryItemSize);
     undoManager.state = this;
+    _initDirtyTracking();
   }
 
-  @Deprecated('use EditorState.blank() instead')
-  EditorState.empty() : this(document: Document.blank());
+  EditorState.blank({bool withInitialText = true}) : this(document: Document.blank(withInitialText: withInitialText));
 
-  EditorState.blank({bool withInitialText = true})
-      : this(document: Document.blank(withInitialText: withInitialText));
-
+  // Satisfies [_TransactionPipelineMixin.document] abstract getter.
+  @override
   final Document document;
 
   // the minimum duration for saving the history item.
+  // Satisfies [_HistoryMixin.minHistoryItemDuration] abstract getter.
+  @override
   final Duration minHistoryItemDuration;
 
-  /// Whether the editor is editable.
-  ValueNotifier<bool> editableNotifier = ValueNotifier(true);
+  // Selection/highlight/tap notifiers + selectionType/selectionUpdateReason
+  // + selectionExtraInfo live in [_SelectionStyleMixin].
+  //
+  // Scroll config (disableAutoScroll, autoScrollEdgeOffset),
+  // isAutoScrollHighlight, autoScroller, scrollableState,
+  // selectionRects/highlightRects, scrollToHighlight + friends,
+  // updateAutoScroller, renderBox, and the scroll-view listener set
+  // live in [_ScrollCoordinatorMixin].
 
-  bool get editable => editableNotifier.value;
-
-  set editable(bool value) {
-    if (value == editable) {
-      return;
-    }
-    editableNotifier.value = value;
-  }
-
-  /// Whether the editor should disable auto scroll.
-  bool disableAutoScroll = false;
-
-  /// The edge offset of the auto scroll.
-  double autoScrollEdgeOffset = appFlowyEditorAutoScrollEdgeOffset;
-
-  /// The style of the editor.
-  late EditorStyle editorStyle;
-
-  /// The selection notifier of the editor.
-  final PropertyValueNotifier<Selection?> selectionNotifier =
-      PropertyValueNotifier<Selection?>(null);
-
-  /// The highlight notifier of the editor.
-  final PropertyValueNotifier<Selection?> highlightNotifier =
-      PropertyValueNotifier<Selection?>(null);
-
-  final ValueNotifier<bool> isAutoScrollHighlightNotifier =
-      ValueNotifier(false);
-
-  bool get isAutoScrollHighlight => isAutoScrollHighlightNotifier.value;
-
-  set isAutoScrollHighlight(bool value) {
-    isAutoScrollHighlightNotifier.value = value;
-  }
-
-  /// The tap notifier of the editor.
-  final PropertyValueNotifier<Selection?> tapNotifier =
-      PropertyValueNotifier<Selection?>(null);
-
-  /// The selection of the editor.
-  Selection? get selection => selectionNotifier.value;
-
-  /// The highlight of the editor.
-  Selection? get highlight => highlightNotifier.value;
-
-  Selection? get tap => tapNotifier.value;
-
-  /// Remote selection is the selection from other users.
-  final PropertyValueNotifier<List<RemoteSelection>> remoteSelections =
-      PropertyValueNotifier<List<RemoteSelection>>([]);
-
-  /// Sets the selection of the editor.
-  set selection(Selection? value) {
-    // clear the toggled style when the selection is changed.
-    if (selectionNotifier.value != value) {
-      _toggledStyle.clear();
-    }
-
-    // reset slice flag
-    sliceUpcomingAttributes = true;
-
-    selectionNotifier.value = value;
-  }
-
-  /// Sets the highlight of the editor.
-  set highlight(Selection? value) {
-    if (highlightNotifier.value == value) return;
-
-    highlightNotifier.value = value;
-  }
-
-  /// Sets the highlight of the editor.
-  set tap(Selection? value) {
-    tapNotifier.value = value;
-  }
-
-  SelectionType? _selectionType;
-
-  set selectionType(SelectionType? value) {
-    if (value == _selectionType) {
-      return;
-    }
-    _selectionType = value;
-  }
-
-  SelectionType? get selectionType => _selectionType;
-
-  SelectionUpdateReason _selectionUpdateReason = SelectionUpdateReason.uiEvent;
-
-  SelectionUpdateReason get selectionUpdateReason => _selectionUpdateReason;
-
-  Map? selectionExtraInfo;
-
-  // Service reference.
-  final service = EditorService();
-
-  AppFlowyScrollService? get scrollService => service.scrollService;
-
-  AppFlowySelectionService get selectionService => service.selectionService;
-
-  BlockComponentRendererService get renderer => service.rendererService;
-
-  set renderer(BlockComponentRendererService value) {
-    service.rendererService = value;
-  }
-
-  /// Customize the debug info for the editor state.
-  ///
-  /// Refer to [EditorStateDebugInfo] for more details.
-  EditorStateDebugInfo debugInfo = EditorStateDebugInfo();
-
-  /// store the auto scroller instance in here temporarily.
-  AutoScroller? autoScroller;
-  ScrollableState? scrollableState;
+  // Service-locator surface (selectionService / keyboardService /
+  // scrollService / rendererService + their GlobalKeys) lives in
+  // [_EditorServiceMixin]. Consumers read them as direct members of
+  // EditorState (no `.service.` middleman).
 
   /// Configures log output parameters,
   /// such as log level and log output callbacks,
   /// with this variable.
   AppFlowyLogConfiguration get logConfiguration => AppFlowyLogConfiguration();
 
-  /// Stores the selection menu items.
-  List<SelectionMenuItem> selectionMenuItems = [];
-
-  /// Stores the toolbar items.
-  @Deprecated('use floating toolbar or mobile toolbar instead')
-  List<ToolbarItem> toolbarItems = [];
-
-  /// listen to this stream to get notified when the transaction applies.
-  Stream<EditorTransactionValue> get transactionStream => _observer.stream;
-  final StreamController<EditorTransactionValue> _observer =
-      StreamController.broadcast(sync: true);
-  final StreamController<EditorTransactionValue> _asyncObserver =
-      StreamController.broadcast();
-
-  /// Store the toggled format style, like bold, italic, etc.
-  /// All the values must be the key from [AppFlowyRichTextKeys.supportToggled].
-  ///
-  /// Use the method [updateToggledStyle] to update key-value pairs
-  ///
-  /// NOTES: It only works once;
-  ///   after the selection is changed, the toggled style will be cleared.
-  UnmodifiableMapView<String, dynamic> get toggledStyle =>
-      UnmodifiableMapView<String, dynamic>(_toggledStyle);
-  final _toggledStyle = Attributes();
-  late final toggledStyleNotifier = ValueNotifier<Attributes>(toggledStyle);
-
-  void updateToggledStyle(String key, dynamic value) {
-    _toggledStyle[key] = value;
-    toggledStyleNotifier.value = {..._toggledStyle};
-  }
-
-  /// Whether the upcoming attributes should be sliced.
-  ///
-  /// If the value is true, the upcoming attributes will be sliced.
-  /// If the value is false, the upcoming attributes will be skipped.
-  bool _sliceUpcomingAttributes = true;
-
-  bool get sliceUpcomingAttributes => _sliceUpcomingAttributes;
-
-  set sliceUpcomingAttributes(bool value) {
-    if (value == _sliceUpcomingAttributes) {
-      return;
-    }
-    AppFlowyEditorLog.input.debug('sliceUpcomingAttributes: $value');
-    _sliceUpcomingAttributes = value;
-  }
-
-  late final UndoManager undoManager;
+  // transactionStream + _observer + _asyncObserver +
+  // _broadcastTransaction + cancelSubscription live in
+  // [_TransactionPipelineMixin].
+  // toggledStyle / sliceUpcomingAttributes live in [_SelectionStyleMixin].
 
   Transaction get transaction {
     final transaction = Transaction(document: document);
@@ -314,121 +112,14 @@ class EditorState {
     return transaction;
   }
 
-  bool showHeader = false;
-  bool showFooter = false;
+  // documentRules + _subscription live in [_DocumentRulesMixin].
 
-  bool enableAutoComplete = false;
-  AppFlowyAutoCompleteTextProvider? autoCompleteTextProvider;
+  // updateSelectionWithReason / updateHighlight / updateTap live in
+  // [_SelectionStyleMixin].
+  //
+  // The scroll-view listener set, renderBox, and updateAutoScroller live
+  // in [_ScrollCoordinatorMixin].
 
-  // only used for testing
-  bool disableSealTimer = false;
-
-  /// The rules to apply to the document.
-  List<DocumentRule> get documentRules => _documentRules;
-  List<DocumentRule> _documentRules = [];
-
-  set documentRules(List<DocumentRule> value) {
-    _documentRules = value;
-
-    _subscription?.cancel();
-    _subscription = _asyncObserver.stream.listen((value) async {
-      for (final rule in _documentRules) {
-        if (rule.shouldApply(editorState: this, value: value)) {
-          await rule.apply(editorState: this, value: value);
-        }
-      }
-    });
-  }
-
-  StreamSubscription? _subscription;
-
-  @Deprecated('use editorState.selection instead')
-  Selection? _cursorSelection;
-
-  @Deprecated('use editorState.selection instead')
-  Selection? get cursorSelection {
-    return _cursorSelection;
-  }
-
-  final Set<VoidCallback> _onScrollViewScrolledListeners = {};
-
-  void addScrollViewScrolledListener(VoidCallback callback) =>
-      _onScrollViewScrolledListeners.add(callback);
-
-  void removeScrollViewScrolledListener(VoidCallback callback) =>
-      _onScrollViewScrolledListeners.remove(callback);
-
-  void _notifyScrollViewScrolledListeners() {
-    for (final listener in Set.of(_onScrollViewScrolledListeners)) {
-      listener.call();
-    }
-  }
-
-  RenderBox? get renderBox {
-    final renderObject =
-        service.scrollServiceKey.currentContext?.findRenderObject();
-    if (renderObject != null && renderObject is RenderBox) {
-      return renderObject;
-    }
-
-    return null;
-  }
-
-  Future<void> updateSelectionWithReason(
-    Selection? selection, {
-    SelectionUpdateReason reason = SelectionUpdateReason.transaction,
-    Map? extraInfo,
-    SelectionType? customSelectionType,
-  }) async {
-    final completer = Completer<void>();
-
-    if (reason == SelectionUpdateReason.uiEvent) {
-      _selectionType = customSelectionType ?? SelectionType.inline;
-      WidgetsBinding.instance.addPostFrameCallback(
-        (timeStamp) => completer.complete(),
-      );
-    } else if (customSelectionType != null) {
-      _selectionType = customSelectionType;
-    }
-
-    // broadcast to other users here
-    selectionExtraInfo = extraInfo;
-    _selectionUpdateReason = reason;
-
-    this.selection = selection;
-
-    return completer.future;
-  }
-
-  void updateHighlight(Selection? highlight) {
-    this.highlight = highlight;
-  }
-
-  void updateTap(Selection? tap) {
-    this.tap = tap;
-  }
-
-  @Deprecated('use updateSelectionWithReason or editorState.selection instead')
-  Future<void> updateCursorSelection(
-    Selection? cursorSelection, [
-    CursorUpdateReason reason = CursorUpdateReason.others,
-  ]) {
-    final completer = Completer<void>();
-
-    // broadcast to other users here
-    if (reason != CursorUpdateReason.uiEvent) {
-      service.selectionService.updateSelection(cursorSelection);
-    }
-    _cursorSelection = cursorSelection;
-    selection = cursorSelection;
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      completer.complete();
-    });
-
-    return completer.future;
-  }
-
-  Timer? _debouncedSealHistoryItemTimer;
   final bool _enableCheckIntegrity = false;
 
   // the value of the notifier is meaningless, just for triggering the callbacks.
@@ -437,18 +128,16 @@ class EditorState {
   bool isDisposed = false;
 
   void dispose() {
-    isAutoScrollHighlightNotifier.dispose();
+    _disposeScrollCoordinator();
     isDisposed = true;
-    _observer.close();
-    _asyncObserver.close();
-    _debouncedSealHistoryItemTimer?.cancel();
+    _disposeTransactionPipeline();
+    _disposeHistory();
     onDispose.value += 1;
     onDispose.dispose();
     document.dispose();
-    selectionNotifier.dispose();
-    highlightNotifier.dispose();
-    _subscription?.cancel();
-    _onScrollViewScrolledListeners.clear();
+    _disposeSelectionStyle();
+    disposeChrome();
+    _disposeDocumentRules();
   }
 
   /// Apply the transaction to the state.
@@ -463,11 +152,16 @@ class EditorState {
   Future<void> apply(
     Transaction transaction, {
     bool isRemote = false,
-    ApplyOptions options = const ApplyOptions(recordUndo: true),
+    ApplyOptions options = const ApplyOptions(),
     bool withUpdateSelection = true,
     bool skipHistoryDebounce = false,
+    bool skipEditableCheck = false,
   }) async {
-    if (!editable || isDisposed) {
+    if (isDisposed) {
+      return;
+    }
+
+    if (!editable && !skipEditableCheck) {
       return;
     }
 
@@ -483,30 +177,17 @@ class EditorState {
       selection = _applyTransactionFromRemote(transaction);
     } else {
       // broadcast to other users here, before applying the transaction
-      if (!_observer.isClosed) {
-        _observer.add((TransactionTime.before, transaction, options));
-      }
-
-      if (!_asyncObserver.isClosed) {
-        _asyncObserver.add((TransactionTime.before, transaction, options));
-      }
+      _broadcastTransaction(TransactionTime.before, transaction, options);
 
       _applyTransactionInLocal(transaction);
 
       // broadcast to other users here, after applying the transaction
-      if (!_observer.isClosed) {
-        _observer.add((TransactionTime.after, transaction, options));
-      }
-
-      if (!_asyncObserver.isClosed) {
-        _asyncObserver.add((TransactionTime.after, transaction, options));
-      }
+      _broadcastTransaction(TransactionTime.after, transaction, options);
 
       _recordRedoOrUndo(options, transaction, skipHistoryDebounce);
 
       if (withUpdateSelection) {
-        _selectionUpdateReason =
-            transaction.reason ?? SelectionUpdateReason.transaction;
+        _selectionUpdateReason = transaction.reason ?? SelectionUpdateReason.transaction;
         _selectionType = transaction.customSelectionType;
         if (transaction.selectionExtraInfo != null) {
           selectionExtraInfo = transaction.selectionExtraInfo;
@@ -529,357 +210,15 @@ class EditorState {
   ///
   /// if selection is backward, return nodes in order
   /// if selection is forward, return nodes in reverse order
-  ///
-  List<Node> getNodesInSelection(Selection selection) {
-    // Normalize the selection.
-    final normalized = selection.normalized;
+  // getNodesInSelection, getSelectedNodes, getNodeAtPath live in
+  // [_DocumentQueryMixin].
 
-    // Get the start and end nodes.
-    final startNode = document.nodeAtPath(normalized.start.path);
-    final endNode = document.nodeAtPath(normalized.end.path);
+  // selectionRects, highlightRects, scrollToHighlight,
+  // enableAutoScrollHighlight, disableAutoScrollHighlight,
+  // highlightChanged, updateAutoScroller all live in
+  // [_ScrollCoordinatorMixin].
 
-    // If we have both nodes, we can find the nodes in the selection.
-    if (startNode != null && endNode != null) {
-      final nodes = NodeIterator(
-        document: document,
-        startNode: startNode,
-        endNode: endNode,
-      ).toList();
-
-      return selection.isForward ? nodes.reversed.toList() : nodes;
-    }
-
-    // If we don't have both nodes, we can't find the nodes in the selection.
-    return [];
-  }
-
-  List<Node> getSelectedNodes({
-    Selection? selection,
-    bool withCopy = true,
-  }) {
-    List<Node> res = [];
-    selection ??= this.selection;
-    if (selection == null) {
-      return res;
-    }
-    final nodes = getNodesInSelection(selection);
-    for (final node in nodes) {
-      if (res.any((element) => element.isParentOf(node))) {
-        continue;
-      }
-      res.add(node);
-    }
-
-    if (withCopy) {
-      res = res.map((e) => e.copyWith()).toList();
-    }
-
-    if (res.isNotEmpty) {
-      var delta = res.first.delta;
-      if (delta != null) {
-        res.first.updateAttributes(
-          {
-            ...res.first.attributes,
-            blockComponentDelta: delta
-                .slice(
-                  selection.startIndex,
-                  selection.isSingle ? selection.endIndex : delta.length,
-                )
-                .toJson(),
-          },
-        );
-      }
-
-      var node = res.last;
-      while (node.children.isNotEmpty) {
-        node = node.children.last;
-      }
-      delta = node.delta;
-      if (delta != null && !selection.isSingle) {
-        if (node.parent != null) {
-          node.insertBefore(
-            node.copyWith(
-              attributes: {
-                ...node.attributes,
-                blockComponentDelta: delta
-                    .slice(
-                      0,
-                      selection.endIndex,
-                    )
-                    .toJson(),
-              },
-            ),
-          );
-          node.unlink();
-        } else {
-          node.updateAttributes(
-            {
-              ...node.attributes,
-              blockComponentDelta: delta
-                  .slice(
-                    0,
-                    selection.endIndex,
-                  )
-                  .toJson(),
-            },
-          );
-        }
-      }
-    }
-
-    return res;
-  }
-
-  Node? getNodeAtPath(Path path) {
-    return document.nodeAtPath(path);
-  }
-
-  /// The current selection areas's rect in editor.
-  List<Rect> selectionRects() {
-    final selection = this.selection;
-    if (selection == null) {
-      return [];
-    }
-
-    final nodes = getNodesInSelection(selection);
-    final rects = <Rect>[];
-
-    if (selection.isCollapsed && nodes.length == 1) {
-      final selectable = nodes.first.selectable;
-      if (selectable != null) {
-        final rect = selectable.getCursorRectInPosition(
-          selection.end,
-          shiftWithBaseOffset: true,
-        );
-        if (rect != null) {
-          rects.add(
-            selectable.transformRectToGlobal(
-              rect,
-              shiftWithBaseOffset: true,
-            ),
-          );
-        }
-      }
-    } else {
-      for (final node in nodes) {
-        final selectable = node.selectable;
-        if (selectable == null) {
-          continue;
-        }
-        final nodeRects = selectable.getRectsInSelection(
-          selection,
-          shiftWithBaseOffset: true,
-        );
-        if (nodeRects.isEmpty) {
-          continue;
-        }
-        final renderBox = node.renderBox;
-        if (renderBox == null) {
-          continue;
-        }
-        for (final rect in nodeRects) {
-          final globalOffset = renderBox.localToGlobal(rect.topLeft);
-          rects.add(globalOffset & rect.size);
-        }
-      }
-    }
-
-    return rects;
-  }
-
-  List<Rect> highlightRects(Selection? selection) {
-    if (selection == null) {
-      return [];
-    }
-
-    final nodes = getNodesInSelection(selection);
-    final rects = <Rect>[];
-
-    if (selection.isCollapsed && nodes.length == 1) {
-      final selectable = nodes.first.selectable;
-      if (selectable != null) {
-        final rect = selectable.getCursorRectInPosition(
-          selection.end,
-          shiftWithBaseOffset: true,
-        );
-        if (rect != null) {
-          rects.add(
-            selectable.transformRectToGlobal(
-              rect,
-              shiftWithBaseOffset: true,
-            ),
-          );
-        }
-      }
-    } else {
-      for (final node in nodes) {
-        final selectable = node.selectable;
-        if (selectable == null) {
-          continue;
-        }
-        final nodeRects = selectable.getRectsInSelection(
-          selection,
-          shiftWithBaseOffset: true,
-        );
-        if (nodeRects.isEmpty) {
-          continue;
-        }
-        final renderBox = node.renderBox;
-        if (renderBox == null) {
-          continue;
-        }
-        for (final rect in nodeRects) {
-          final globalOffset = renderBox.localToGlobal(rect.topLeft);
-          rects.add(globalOffset & rect.size);
-        }
-      }
-    }
-
-    return rects;
-  }
-
-  void scrollToHighlight(
-    EditorScrollController editorScrollController, {
-    Selection? selection,
-    bool fromInside = false,
-    bool alignToTop = true,
-  }) {
-    final askedSelection = selection ?? highlight;
-    final highlightRects = this.highlightRects(askedSelection);
-
-    final top = highlightRects.firstOrNull?.top;
-
-    if (top != null) {
-      editorScrollController.scrollOffsetController.safeAnimateScroll(
-        offset: top - 300,
-        duration: const Duration(milliseconds: 700),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      if (fromInside) return;
-      final index = askedSelection?.start.path.firstOrNull;
-      if (index != null) {
-        editorScrollController.itemScrollController.jumpTo(
-          index: index,
-          alignment: alignToTop ? 0 : 1,
-        );
-      }
-
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        Future.delayed(Duration(milliseconds: 0), () {
-          scrollToHighlight(
-            editorScrollController,
-            selection: selection,
-            fromInside: true,
-          );
-        });
-      });
-    }
-  }
-
-  // void jumpToHighlight(EditorScrollController editorScrollController,
-  //     {Selection? selection}) {
-  //   final askedSelection = selection ?? highlight;
-  //   final highlightRects = this.highlightRects(askedSelection);
-
-  //   final top = highlightRects.firstOrNull?.top;
-
-  //   if (top != null) {
-  //     editorScrollController.scrollOffsetController.safeJumpTo(
-  //       offset: top,
-  //     );
-  //   }
-  // }
-
-  void enableAutoScrollHighlight(
-    EditorScrollController editorScrollController,
-  ) {
-    isAutoScrollHighlightNotifier.value = true;
-    highlightChanged(editorScrollController);
-  }
-
-  void disableAutoScrollHighlight() {
-    isAutoScrollHighlightNotifier.value = false;
-  }
-
-  void highlightChanged(EditorScrollController editorScrollController) {
-    if (isAutoScrollHighlightNotifier.value) {
-      scrollToHighlight(editorScrollController);
-    }
-  }
-
-  void cancelSubscription() {
-    _observer.close();
-  }
-
-  void updateAutoScroller(
-    ScrollableState scrollableState,
-  ) {
-    if (this.scrollableState != scrollableState) {
-      autoScroller?.stopAutoScroll();
-      final bool isDesktopOrWeb = PlatformExtension.isDesktopOrWeb;
-      late AutoScroller scroller;
-      scroller = AutoScroller(
-        scrollableState,
-        velocityScalar: 0.15,
-        minimumAutoScrollDelta: 0.07,
-        maxAutoScrollDelta: 3.5,
-        animationDuration: Duration.zero,
-        onScrollViewScrolled: () {
-          _notifyScrollViewScrolledListeners();
-          if (!isDesktopOrWeb) {
-            final dynamic dragMode = selectionExtraInfo?[_selectionDragModeKey];
-            final bool isDraggingSelection = dragMode != null &&
-                dragMode.toString() != 'MobileSelectionDragMode.none';
-            if (!isDraggingSelection) {
-              return;
-            }
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (autoScroller == scroller) {
-                scroller.continueToAutoScroll();
-              }
-            });
-          }
-        },
-      );
-      autoScroller = scroller;
-      this.scrollableState = scrollableState;
-    }
-  }
-
-  void _recordRedoOrUndo(
-    ApplyOptions options,
-    Transaction transaction,
-    bool skipDebounce,
-  ) {
-    final source = options.resolvedSource;
-    undoManager.record(transaction, source);
-
-    // Only debounce-seal for user edits (grouping consecutive keystrokes).
-    if (source == TransactionSource.userEdit) {
-      if (skipDebounce && undoManager.undoStack.isNonEmpty) {
-        AppFlowyEditorLog.editor.debug('Seal history item');
-        final last = undoManager.undoStack.last;
-        last.seal();
-      } else {
-        _debouncedSealHistoryItem();
-      }
-    }
-  }
-
-  void _debouncedSealHistoryItem() {
-    if (disableSealTimer) {
-      return;
-    }
-    _debouncedSealHistoryItemTimer?.cancel();
-    _debouncedSealHistoryItemTimer = Timer(minHistoryItemDuration, () {
-      if (undoManager.undoStack.isNonEmpty) {
-        AppFlowyEditorLog.editor.debug('Seal history item');
-        final last = undoManager.undoStack.last;
-        last.seal();
-      }
-    });
-  }
+  // cancelSubscription lives in [_TransactionPipelineMixin].
 
   void _applyTransactionInLocal(Transaction transaction) {
     for (final op in transaction.operations) {
@@ -911,12 +250,8 @@ class EditorState {
         if (selection != null) {
           if (op.path <= selection.start.path) {
             selection = Selection(
-              start: selection.start.copyWith(
-                path: selection.start.path.nextNPath(op.nodes.length),
-              ),
-              end: selection.end.copyWith(
-                path: selection.end.path.nextNPath(op.nodes.length),
-              ),
+              start: selection.start.copyWith(path: selection.start.path.nextNPath(op.nodes.length)),
+              end: selection.end.copyWith(path: selection.end.path.nextNPath(op.nodes.length)),
             );
           }
         }
@@ -927,12 +262,8 @@ class EditorState {
         if (selection != null) {
           if (op.path <= selection.start.path) {
             selection = Selection(
-              start: selection.start.copyWith(
-                path: selection.start.path.previous,
-              ),
-              end: selection.end.copyWith(
-                path: selection.end.path.previous,
-              ),
+              start: selection.start.copyWith(path: selection.start.path.previous),
+              end: selection.end.copyWith(path: selection.end.path.previous),
             );
           }
         }
@@ -942,5 +273,39 @@ class EditorState {
     }
 
     return selection;
+  }
+
+  /// Scroll the document to the heading represented by [entry] and place
+  /// the caret at the heading's start. Resolves [OutlineEntry.nodeId] to
+  /// the current path; falls back to the cached [OutlineEntry.path] if
+  /// the node was deleted between outline compute and click.
+  ///
+  /// Uses [scrollService.jumpTo] internally so the call site doesn't need
+  /// to thread an `EditorScrollController` through. [scrollService.jumpTo]
+  /// addresses top-level children — a nested heading scrolls to its
+  /// containing top-level block, which is the best the editor's scroll
+  /// API can do today.
+  Future<void> jumpToOutlineEntry(OutlineEntry entry) async {
+    Path? target;
+    final iter = NodeIterator(document: document, startNode: document.root);
+    while (iter.moveNext()) {
+      if (iter.current.id == entry.nodeId) {
+        target = iter.current.path;
+        break;
+      }
+    }
+    final resolvedPath = target ?? entry.path;
+    final topLevelIndex = resolvedPath.firstOrNull ?? 0;
+
+    scrollService?.jumpTo(topLevelIndex);
+
+    // Wait for the scroll-driven layout before placing the caret. Without
+    // this await the selection update and the scroll can race, leaving
+    // the caret in the previous viewport position.
+    await SchedulerBinding.instance.endOfFrame;
+    final node = document.nodeAtPath(resolvedPath);
+    if (node != null) {
+      selectionService.updateSelection(Selection.collapsed(Position(path: node.path)));
+    }
   }
 }

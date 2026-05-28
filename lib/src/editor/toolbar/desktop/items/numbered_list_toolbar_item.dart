@@ -11,15 +11,14 @@ final ToolbarItem numberedListItem = ToolbarItem(
     final node = editorState.getNodeAtPath(selection.start.path)!;
     final isHighlight = node.type == 'numbered_list';
     final child = SVGIconItemWidget(
-      iconName: 'toolbar/numbered_list',
+      icon: ToolbarIcons.numberedList,
       isHighlight: isHighlight,
       highlightColor: highlightColor,
       iconColor: iconColor,
       onPressed: () => editorState.formatNode(
         selection,
-        (node) => node.copyWith(
-          type: isHighlight ? 'paragraph' : 'numbered_list',
-        ),
+        (node) =>
+            node.copyWith(type: isHighlight ? 'paragraph' : 'numbered_list'),
       ),
     );
 
@@ -27,7 +26,7 @@ final ToolbarItem numberedListItem = ToolbarItem(
       return tooltipBuilder(
         context,
         _kNumberedListItemId,
-        AppFlowyEditorL10n.current.numberedList,
+        aft.numberedList,
         child,
       );
     }

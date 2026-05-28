@@ -19,7 +19,7 @@ final convertibleBlockTypes = [
 /// convert the current block to paragraph.
 final CommandShortcutEvent convertToParagraphCommand = CommandShortcutEvent(
   key: 'convert to paragraph',
-  getDescription: () => AppFlowyEditorL10n.current.cmdConvertToParagraph,
+  getDescription: () => aft.cmdConvertToParagraph,
   command: 'backspace',
   handler: _convertToParagraphCommandHandler,
 );
@@ -46,9 +46,7 @@ CommandShortcutEventHandler _convertToParagraphCommandHandler = (editorState) {
     ..insertNode(
       node.path,
       paragraphNode(
-        attributes: {
-          ParagraphBlockKeys.delta: delta.toJson(),
-        },
+        attributes: {ParagraphBlockKeys.delta: delta.toJson()},
         textDirection: textDirection,
         children: node.children.map((e) => e.deepCopy()).toList(),
       ),

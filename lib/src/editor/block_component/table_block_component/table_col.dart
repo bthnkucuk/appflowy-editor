@@ -1,7 +1,7 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/block_component/table_block_component/table_action_handler.dart';
-import 'package:appflowy_editor/src/editor/block_component/table_block_component/table_col_border.dart';
-import 'package:appflowy_editor/src/editor/block_component/table_block_component/util.dart';
+import 'table_action_handler.dart';
+import 'table_col_border.dart';
+import 'util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -101,18 +101,12 @@ class _TableColState extends State<TableCol> {
       addListener(node.children.first, i);
 
       cells.addAll([
-        widget.editorState.renderer.build(
-          context,
-          node,
-        ),
+        widget.editorState.renderer.build(context, node),
         cellBorder,
       ]);
     }
 
-    return [
-      cellBorder,
-      ...cells,
-    ];
+    return [cellBorder, ...cells];
   }
 
   void addListener(Node node, int row) {

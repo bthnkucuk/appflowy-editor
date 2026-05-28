@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
+import '../../../../util/platform_extension.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -23,10 +23,8 @@ const Set<String> _defaultSupportSlashMenuNodeTypes = {
 final CharacterShortcutEvent slashCommand = CharacterShortcutEvent(
   key: 'show the slash menu',
   character: '/',
-  handler: (editorState) async => await _showSlashMenu(
-    editorState,
-    standardSelectionMenuItems,
-  ),
+  handler: (editorState) async =>
+      await _showSlashMenu(editorState, standardSelectionMenuItems),
 );
 
 CharacterShortcutEvent customSlashCommand(
@@ -93,7 +91,7 @@ Future<bool> _showSlashMenu(
 
   // insert the slash character
   if (shouldInsertSlash) {
-    keepEditorFocusNotifier.increase();
+    editorState.keepFocusNotifier.increase();
     await editorState.insertTextAtPosition('/', position: selection.start);
   }
 
@@ -119,7 +117,7 @@ Future<bool> _showSlashMenu(
 
   if (shouldInsertSlash) {
     WidgetsBinding.instance.addPostFrameCallback(
-      (timeStamp) => keepEditorFocusNotifier.decrease(),
+      (timeStamp) => editorState.keepFocusNotifier.decrease(),
     );
   }
 
@@ -137,10 +135,7 @@ bool _isSupportSlashMenuNode(
 
   // If node has a parent and level > 1, recursively check parent nodes
   if (node.level > 1 && node.parent != null) {
-    return _isSupportSlashMenuNode(
-      node.parent!,
-      supportSlashMenuNodeWhiteList,
-    );
+    return _isSupportSlashMenuNode(node.parent!, supportSlashMenuNodeWhiteList);
   }
 
   return true;

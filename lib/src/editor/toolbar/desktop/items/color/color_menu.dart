@@ -37,7 +37,7 @@ void showColorMenu(
     overlay = null;
   }
 
-  keepEditorFocusNotifier.increase();
+  editorState.keepFocusNotifier.increase();
   overlay = FullScreenOverlayEntry(
     top: top,
     bottom: bottom,
@@ -45,8 +45,8 @@ void showColorMenu(
     builder: (context) {
       return ColorPicker(
         title: isTextColor
-            ? AppFlowyEditorL10n.current.textColor
-            : AppFlowyEditorL10n.current.highlightColor,
+            ? aft.textColor
+            : aft.highlightColor,
         showClearButton: showClearButton,
         selectedColorHex: currentColorHex,
         colorOptions: isTextColor
@@ -67,13 +67,14 @@ void showColorMenu(
                   withUpdateSelection: true,
                 );
           dismissOverlay();
-          keepEditorFocusNotifier.decrease();
+          editorState.keepFocusNotifier.decrease();
         },
         resetText: isTextColor
-            ? AppFlowyEditorL10n.current.resetToDefaultColor
-            : AppFlowyEditorL10n.current.clearHighlightColor,
-        resetIconName:
-            isTextColor ? 'reset_text_color' : 'clear_highlight_color',
+            ? aft.resetToDefaultColor
+            : aft.clearHighlightColor,
+        resetIcon: isTextColor
+            ? ToolbarIcons.resetTextColor
+            : ToolbarIcons.clearHighlightColor,
       );
     },
   ).build();

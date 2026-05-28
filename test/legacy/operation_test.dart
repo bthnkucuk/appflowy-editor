@@ -73,11 +73,7 @@ void main() {
     final root = Node(
       type: 'page',
       attributes: {},
-      children: [
-        item1,
-        item2,
-        item3,
-      ],
+      children: [item1, item2, item3],
     );
     final state = EditorState(document: Document(root: root));
 
@@ -103,35 +99,34 @@ void main() {
       final transaction = state.transaction;
       transaction.insertNode([0], item1);
       state.apply(transaction);
+      final insertedNode =
+          (transaction.operations.first as InsertOperation).nodes.first;
       expect(transaction.toJson(), {
         "operations": [
           {
             "op": "insert",
             "path": [0],
-            "nodes": [item1.toJson()],
-          }
+            "nodes": [insertedNode.toJson()],
+          },
         ],
       });
     });
     test("delete", () {
       final item1 = Node(type: "node", attributes: {}, children: LinkedList());
-      final root = Node(
-        type: "root",
-        children: [
-          item1,
-        ],
-      );
+      final root = Node(type: "root", children: [item1]);
       final state = EditorState(document: Document(root: root));
       final transaction = state.transaction;
       transaction.deleteNode(item1);
       state.apply(transaction);
+      final deletedNode =
+          (transaction.operations.first as DeleteOperation).nodes.first;
       expect(transaction.toJson(), {
         "operations": [
           {
             "op": "delete",
             "path": [0],
-            "nodes": [item1.toJson()],
-          }
+            "nodes": [deletedNode.toJson()],
+          },
         ],
       });
     });

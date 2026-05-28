@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 
 final CommandShortcutEvent deleteLeftSentenceCommand = CommandShortcutEvent(
   key: 'delete the left line',
-  getDescription: () => AppFlowyEditorL10n.current.cmdDeleteLineLeft,
+  getDescription: () => aft.cmdDeleteLineLeft,
   command: 'ctrl+alt+backspace',
   macOSCommand: 'cmd+backspace',
   handler: _deleteLeftSentenceCommandHandler,
@@ -30,11 +30,7 @@ CommandShortcutEventHandler _deleteLeftSentenceCommandHandler = (editorState) {
   }
 
   final transaction = editorState.transaction;
-  transaction.deleteText(
-    node,
-    0,
-    selection.endIndex,
-  );
+  transaction.deleteText(node, 0, selection.endIndex);
   editorState.apply(transaction);
 
   return KeyEventResult.handled;

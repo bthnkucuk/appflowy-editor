@@ -1,12 +1,14 @@
 name: "appflowy_editor"
 
-version: 6.1.0
+version: 7.0.0
+
+publish_to: none
 
 homepage: "https://github.com/AppFlowy-IO/appflowy-editor"
 
 environment:
-  sdk: ">=3.11.0 <4.0.0"
-  flutter: ">=3.41.1"
+  sdk: ">=3.12.0 <4.0.0"
+  flutter: ">=3.44.0"
 
 description: A highly customizable rich-text editor for Flutter. The AppFlowy
   Editor project for AppFlowy and beyond.
@@ -14,46 +16,45 @@ description: A highly customizable rich-text editor for Flutter. The AppFlowy
 dependencies:
   super_sliver_list: ^0.4.1
   fractional_indexing_dart: ^1.0.7
+  google_fonts: ^8.1.0
   collection: "^1.19.1"
+  cross_file: ^0.3.5+2
   device_info_plus: 12.4.0
   diff_match_patch: "^0.4.1"
   file_picker: ^11.0.2
   flutter:
     sdk: flutter
-  flutter_svg: 2.3.0
   html: ^0.15.6
   http: "^1.6.0"
-  intl: "^0.20.2"
-  keyboard_height_plugin: 0.3.0
   logging: "^1.3.0"
   markdown: "^7.3.1"
   numerus: "^2.3.2"
   pdf: "^3.12.0"
   provider: "^6.1.5+1"
-  scroll_to_index: "^3.0.1"
+  slang: ^4.14.0
+  slang_flutter: ^4.14.0
   string_validator: "^1.2.0"
+  stupid_simple_sheet: ^0.9.1+1
+  iconifyx_ph:
+    git:
+      url: https://github.com/bthnkucuk/iconifyx
+      path: packages/iconifyx_ph
   universal_html: 2.3.0
   universal_platform: ^1.1.0
   url_launcher: "^6.3.2"
   equatable: ^2.0.8
-  flutter_animate: ^4.5.2
   uuid: ^4.5.3
 
 dev_dependencies:
-  awesome_lints:
-    git:
-      url: https://github.com/LucasXu0/awesome_lints.git
-      ref: main
-  custom_lint: ^0.8.1
   flutter_lints: ^6.0.0
   flutter_localizations:
     sdk: flutter
   flutter_test:
     sdk: flutter
-  intl_utils: "^2.8.2"
-  mockito: "^5.6.4"
+  leak_tracker_flutter_testing: ^3.0.10
+  slang_build_runner: ^4.14.0
   network_image_mock: "^2.1.1"
-  path_provider: "^2.0.5"
+  path_provider: ^2.1.5
   pubspec_dependency_sorter: "^1.0.5"
 
 platforms:
@@ -71,18 +72,4 @@ topics:
 
 flutter:
   assets:
-    - "assets/images/toolbar/"
-    - "assets/images/selection_menu/"
-    - "assets/images/image_toolbar/"
-    - "assets/images/"
-    - "assets/mobile/toolbar_icons/"
-
-flutter_intl:
-  enabled: true
-  class_name: AppFlowyEditorLocalizations
-  main_locale: en
-  arb_dir: lib/l10n
-  output_dir: lib/src/l10n
-  use_deferred_loading: false
-  localizely:
-    project_id: b7199c7d-eca0-4025-894d-230cdcafa9aa
+    - assets/i18n/

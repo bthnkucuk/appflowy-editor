@@ -1,7 +1,7 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/editor/editor_component/service/selection/mobile_selection_service.dart';
-import 'package:appflowy_editor/src/editor/util/platform_extension.dart';
-import 'package:appflowy_editor/src/render/selection/mobile_basic_handle.dart';
+import '../selection/mobile_selection_service.dart';
+import '../../../util/platform_extension.dart';
+import '../../../../render/selection/mobile_basic_handle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -20,7 +20,7 @@ Future<void> onFloatingCursorUpdate(
     return;
   }
 
-  final selectionService = editorState.service.selectionService;
+  final selectionService = editorState.selectionService;
 
   switch (point.state) {
     case FloatingCursorDragState.Start:
@@ -77,9 +77,7 @@ Future<void> onFloatingCursorUpdate(
 
       disableMagnifier = true;
       selectionService.onPanUpdate(
-        DragUpdateDetails(
-          globalPosition: _cursorOffset! + point.offset!,
-        ),
+        DragUpdateDetails(globalPosition: _cursorOffset! + point.offset!),
         MobileSelectionDragMode.cursor,
       );
       break;

@@ -1,8 +1,6 @@
 import 'dart:collection';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
-import 'package:appflowy_editor/src/core/document/table_of_content.dart'
-    show TableOfContent;
 
 /// [Document] represents an AppFlowy Editor document structure.
 ///
@@ -11,57 +9,7 @@ import 'package:appflowy_editor/src/core/document/table_of_content.dart'
 /// **DO NOT** directly mutate the properties of a [Document] object.
 ///
 class Document {
-  Document({required this.root}) {
-    calculateTableOfContents();
-  }
-
-  List<TableOfContent> tableOfContents = [];
-
-  void calculateTableOfContents() {
-    final headings = nodes.where((node) => node.type == 'heading');
-    if (headings.isEmpty) {
-      return;
-    }
-
-    final tableOfContents = <TableOfContent>[];
-
-    TableOfContent? currentTableOfContent;
-
-    for (final node in nodes) {
-      if (node.type == 'heading') {
-        if (currentTableOfContent != null) {
-          tableOfContents.add(currentTableOfContent);
-          currentTableOfContent = null;
-        }
-
-        final text = node.text;
-
-        if (text != null && text.isNotEmpty) {
-          currentTableOfContent = TableOfContent(
-            text: text,
-            level: node.level,
-            selection: Selection(
-              start: Position(path: node.path, offset: 0),
-              end: Position(path: node.path, offset: text.length),
-            ),
-          );
-        }
-      } else {
-        final currSelection = currentTableOfContent?.selection;
-        currentTableOfContent = currentTableOfContent?.copyWith(
-          selection: currSelection?.copyWith(
-            end: Position(path: node.path, offset: node.text?.length ?? 0),
-          ),
-        );
-      }
-    }
-
-    if (currentTableOfContent != null) {
-      tableOfContents.add(currentTableOfContent);
-    }
-
-    this.tableOfContents = tableOfContents;
-  }
+  Document({required this.root});
 
   /// Constructs a [Document] from a JSON strcuture.
   ///
@@ -278,7 +226,17 @@ class Document {
 
   /// Encodes the [Document] into a JSON structure.
   ///
-  Map<String, Object> toJson() {
-    return {'document': root.toJson()};
+  Map<String, Object> toJson({
+    bool includeDatabaseIndex = true,
+    bool includeId = true,
+    bool includeRank = true,
+  }) {
+    return {
+      'document': root.toJson(
+        includeDatabaseIndex: includeDatabaseIndex,
+        includeId: includeId,
+        includeRank: includeRank,
+      ),
+    };
   }
 }

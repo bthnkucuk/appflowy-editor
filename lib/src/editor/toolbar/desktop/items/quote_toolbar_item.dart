@@ -11,15 +11,13 @@ final ToolbarItem quoteItem = ToolbarItem(
     final node = editorState.getNodeAtPath(selection.start.path)!;
     final isHighlight = node.type == 'quote';
     final child = SVGIconItemWidget(
-      iconName: 'toolbar/quote',
+      icon: ToolbarIcons.quote,
       isHighlight: isHighlight,
       highlightColor: highlightColor,
       iconColor: iconColor,
       onPressed: () => editorState.formatNode(
         selection,
-        (node) => node.copyWith(
-          type: isHighlight ? 'paragraph' : 'quote',
-        ),
+        (node) => node.copyWith(type: isHighlight ? 'paragraph' : 'quote'),
       ),
     );
 
@@ -27,7 +25,7 @@ final ToolbarItem quoteItem = ToolbarItem(
       return tooltipBuilder(
         context,
         _kQuoteItemId,
-        AppFlowyEditorL10n.current.quote,
+        aft.quote,
         child,
       );
     }

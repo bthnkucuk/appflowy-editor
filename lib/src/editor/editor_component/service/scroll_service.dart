@@ -1,11 +1,11 @@
-import 'package:appflowy_editor/src/editor/editor_component/service/scroll/auto_scroller.dart';
+import 'scroll/auto_scroller.dart';
 import 'package:flutter/material.dart';
 
 /// [AppFlowyScrollService] is responsible for processing document scrolling.
 ///
 /// Usually, this service can be obtained by the following code.
 /// ```dart
-/// final keyboardService = editorState.service.scrollService;
+/// final keyboardService = editorState.scrollService;
 /// ```
 ///
 abstract class AppFlowyScrollService implements AutoScrollerService {
@@ -31,14 +31,9 @@ abstract class AppFlowyScrollService implements AutoScrollerService {
   ///
   /// This function will filter illegal values.
   /// Only within the range of minScrollExtent and maxScrollExtent are legal values.
-  void scrollTo(
-    double dy, {
-    Duration duration,
-  });
+  void scrollTo(double dy, {Duration duration});
 
-  void jumpTo(
-    int index,
-  );
+  void jumpTo(int index);
 
   void jumpToTop();
 

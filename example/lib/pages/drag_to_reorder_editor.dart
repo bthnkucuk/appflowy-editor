@@ -129,12 +129,24 @@ class DragToReorderAction extends StatefulWidget {
 
 const _interceptorKey = 'drag_to_reorder_interceptor';
 
-class _DragToReorderActionState extends State<DragToReorderAction> {
+class _DragToReorderActionState extends State<DragToReorderAction>
+    with AutomaticKeepAliveClientMixin {
   late final Node node;
   late final BlockComponentContext blockComponentContext;
   late final EditorState editorState = context.read<EditorState>();
 
   Offset? globalPosition;
+
+  /// While a drag is in flight we tell the enclosing `SuperListView` to keep
+  /// this state alive even if the item scrolls out of the viewport. Without
+  /// this, edge auto-scroll eventually pushes the dragged item past
+  /// `cacheExtent`, Flutter disposes the `Draggable`, and the drag is
+  /// silently cancelled — the drop indicator freezes and the drop never
+  /// lands where the user intends.
+  bool _isDragActive = false;
+
+  @override
+  bool get wantKeepAlive => _isDragActive;
 
   late final gestureInterceptor = SelectionGestureInterceptor(
     key: _interceptorKey,
@@ -150,7 +162,7 @@ class _DragToReorderActionState extends State<DragToReorderAction> {
   void initState() {
     super.initState();
 
-    editorState.service.selectionService.registerGestureInterceptor(
+    editorState.selectionService.registerGestureInterceptor(
       gestureInterceptor,
     );
 
@@ -164,15 +176,22 @@ class _DragToReorderActionState extends State<DragToReorderAction> {
 
   @override
   void dispose() {
-    editorState.service.selectionService.unregisterGestureInterceptor(
+    editorState.selectionService.unregisterGestureInterceptor(
       _interceptorKey,
     );
 
     super.dispose();
   }
 
+  void _setDragActive(bool active) {
+    if (_isDragActive == active) return;
+    _isDragActive = active;
+    updateKeepAlive();
+  }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Padding(
       padding: const EdgeInsets.only(top: 10.0, right: 4.0),
       child: Draggable<Node>(
@@ -180,6 +199,7 @@ class _DragToReorderActionState extends State<DragToReorderAction> {
         feedback: _buildFeedback(),
         onDragStarted: () {
           debugPrint('onDragStarted');
+          _setDragActive(true);
           editorState.selectionService.removeDropTarget();
         },
         onDragUpdate: (details) {
@@ -196,7 +216,12 @@ class _DragToReorderActionState extends State<DragToReorderAction> {
 
           editorState.scrollService?.startAutoScroll(details.globalPosition);
         },
+        onDraggableCanceled: (velocity, offset) {
+          _setDragActive(false);
+          editorState.selectionService.removeDropTarget();
+        },
         onDragEnd: (details) {
+          _setDragActive(false);
           editorState.selectionService.removeDropTarget();
 
           if (globalPosition == null) {

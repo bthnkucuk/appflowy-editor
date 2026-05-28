@@ -5,9 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() async {
   group('markdown_heading_parser.dart', () {
     final parser = DocumentMarkdownDecoder(
-      markdownElementParsers: [
-        const MarkdownHeadingParserV2(),
-      ],
+      markdownElementParsers: [const MarkdownHeadingParserV2()],
     );
 
     test('convert # to heading', () {
@@ -21,15 +19,24 @@ void main() async {
 
       final result = parser.convert(headingMarkdown);
       for (var i = 0; i < 6; i++) {
-        expect(result.nodeAtPath([i])!.toJson(), {
-          'type': 'heading',
-          'data': {
-            'level': i + 1,
-            'delta': [
-              {'insert': 'Heading ${i + 1}'},
-            ],
+        expect(
+          result
+              .nodeAtPath([i])!
+              .toJson(
+                includeId: false,
+                includeDatabaseIndex: false,
+                includeRank: false,
+              ),
+          {
+            'type': 'heading',
+            'data': {
+              'level': i + 1,
+              'delta': [
+                {'insert': 'Heading ${i + 1}'},
+              ],
+            },
           },
-        });
+        );
       }
     });
 
@@ -57,28 +64,35 @@ void main() async {
       final result = parser.convert(
         '## 👋 **Welcome to** ***[AppFlowy Editor](appflowy.io)***',
       );
-      expect(result.root.children[0].toJson(), {
-        'type': 'heading',
-        'data': {
-          'level': 2,
-          'delta': [
-            {'insert': '👋 '},
-            {
-              'insert': 'Welcome to',
-              'attributes': {'bold': true},
-            },
-            {'insert': ' '},
-            {
-              'insert': 'AppFlowy Editor',
-              'attributes': {
-                'italic': true,
-                'bold': true,
-                'href': 'appflowy.io',
+      expect(
+        result.root.children[0].toJson(
+          includeId: false,
+          includeDatabaseIndex: false,
+          includeRank: false,
+        ),
+        {
+          'type': 'heading',
+          'data': {
+            'level': 2,
+            'delta': [
+              {'insert': '👋 '},
+              {
+                'insert': 'Welcome to',
+                'attributes': {'bold': true},
               },
-            }
-          ],
+              {'insert': ' '},
+              {
+                'insert': 'AppFlowy Editor',
+                'attributes': {
+                  'italic': true,
+                  'bold': true,
+                  'href': 'appflowy.io',
+                },
+              },
+            ],
+          },
         },
-      });
+      );
     });
   });
 }

@@ -2,9 +2,7 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 
 const _kTextColorItemId = 'editor.textColor';
 
-ToolbarItem buildTextColorItem({
-  List<ColorOption>? colorOptions,
-}) {
+ToolbarItem buildTextColorItem({List<ColorOption>? colorOptions}) {
   return ToolbarItem(
     id: _kTextColorItemId,
     group: 4,
@@ -26,28 +24,22 @@ ToolbarItem buildTextColorItem({
       });
 
       final child = SVGIconItemWidget(
-        iconName: 'toolbar/text_color',
+        icon: ToolbarIcons.textColor,
         isHighlight: isHighlight,
         highlightColor: highlightColor,
         iconColor: iconColor,
         onPressed: () {
           bool showClearButton = false;
-          nodes.allSatisfyInSelection(
-            selection,
-            (delta) {
-              if (!showClearButton) {
-                showClearButton = delta.whereType<TextInsert>().any(
-                  (element) {
-                    return element
-                            .attributes?[AppFlowyRichTextKeys.textColor] !=
-                        null;
-                  },
-                );
-              }
+          nodes.allSatisfyInSelection(selection, (delta) {
+            if (!showClearButton) {
+              showClearButton = delta.whereType<TextInsert>().any((element) {
+                return element.attributes?[AppFlowyRichTextKeys.textColor] !=
+                    null;
+              });
+            }
 
-              return true;
-            },
-          );
+            return true;
+          });
           showColorMenu(
             context,
             editorState,
@@ -64,7 +56,7 @@ ToolbarItem buildTextColorItem({
         return tooltipBuilder(
           context,
           _kTextColorItemId,
-          AppFlowyEditorL10n.current.textColor,
+          aft.textColor,
           child,
         );
       }

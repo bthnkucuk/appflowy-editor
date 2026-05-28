@@ -139,12 +139,13 @@ class _CustomizeThemeForEditorState extends State<CustomizeThemeForEditor> {
       QuoteBlockKeys.type: QuoteBlockComponentBuilder(
         configuration: configuration,
         iconBuilder: (context, node) {
-          return const EditorSvg(
-            width: 20,
-            height: 20,
+          return const Padding(
             padding: EdgeInsets.only(right: 5.0),
-            name: 'quote',
-            color: Colors.pink,
+            child: ToolbarIcon(
+              icon: ToolbarIcons.quote,
+              size: 20,
+              color: Colors.pink,
+            ),
           );
         },
       ),

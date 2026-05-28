@@ -6,7 +6,7 @@ class SVGIconItemWidget extends StatelessWidget {
     super.key,
     this.size = const Size.square(30.0),
     this.iconSize = const Size.square(18.0),
-    this.iconName,
+    this.icon,
     this.iconBuilder,
     required this.isHighlight,
     required this.highlightColor,
@@ -16,7 +16,7 @@ class SVGIconItemWidget extends StatelessWidget {
 
   final Size size;
   final Size iconSize;
-  final String? iconName;
+  final ToolbarIcons? icon;
   final WidgetBuilder? iconBuilder;
   final bool isHighlight;
   final Color highlightColor;
@@ -27,11 +27,10 @@ class SVGIconItemWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget child = iconBuilder != null
         ? iconBuilder!(context)
-        : EditorSvg(
-            name: iconName,
+        : ToolbarIcon(
+            icon: icon!,
             color: isHighlight ? highlightColor : iconColor,
-            width: iconSize.width,
-            height: iconSize.height,
+            size: iconSize.shortestSide,
           );
     if (onPressed != null) {
       child = MouseRegion(
@@ -48,10 +47,6 @@ class SVGIconItemWidget extends StatelessWidget {
       );
     }
 
-    return SizedBox(
-      width: size.width,
-      height: size.height,
-      child: child,
-    );
+    return SizedBox(width: size.width, height: size.height, child: child);
   }
 }

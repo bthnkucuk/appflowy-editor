@@ -17,11 +17,7 @@ void main() {
 
         tester.view.devicePixelRatio = 1.0;
 
-        await tester.buildAndPump(
-          AppFlowyEditor(
-            editorState: editorState,
-          ),
-        );
+        await tester.buildAndPump(AppFlowyEditor(editorState: editorState));
 
         editorState.selectionService.updateSelection(
           Selection.collapsed(Position(path: [0])),

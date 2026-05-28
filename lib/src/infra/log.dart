@@ -1,13 +1,6 @@
 import 'package:logging/logging.dart';
 
-enum AppFlowyEditorLogLevel {
-  off,
-  error,
-  warn,
-  info,
-  debug,
-  all,
-}
+enum AppFlowyEditorLogLevel { off, error, warn, info, debug, all }
 
 typedef AppFlowyEditorLogHandler = void Function(String message);
 
@@ -44,9 +37,7 @@ class AppFlowyLogConfiguration {
 
 /// For logging message in AppFlowyEditor
 class AppFlowyEditorLog {
-  AppFlowyEditorLog._({
-    required this.name,
-  }) : _logger = Logger(name);
+  AppFlowyEditorLog._({required this.name}) : _logger = Logger(name);
 
   final String name;
   late final Logger _logger;
@@ -77,7 +68,7 @@ class AppFlowyEditorLog {
   /// For example, uses the logger when processing scroll events.
   static AppFlowyEditorLog scroll = AppFlowyEditorLog._(name: 'scroll');
 
-  /// For logging message related to [FloatingToolbar] or [MobileToolbar].
+  /// For logging message related to [FloatingToolbar] or [MobileToolbarV2].
   ///
   /// For example, uses the logger when processing toolbar events.
   static AppFlowyEditorLog toolbar = AppFlowyEditorLog._(name: 'toolbar');

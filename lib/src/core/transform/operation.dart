@@ -3,9 +3,7 @@ import 'package:flutter/foundation.dart';
 
 /// [Operation] represents a change to a [Document].
 sealed class Operation {
-  const Operation(
-    this.path,
-  );
+  const Operation(this.path);
 
   factory Operation.fromJson() => throw UnimplementedError();
 
@@ -24,10 +22,7 @@ sealed class Operation {
 
 /// [InsertOperation] represents an insert operation.
 class InsertOperation extends Operation {
-  const InsertOperation(
-    super.path,
-    this.nodes,
-  );
+  const InsertOperation(super.path, this.nodes);
 
   factory InsertOperation.fromJson(Map<String, dynamic> json) {
     final path = json['path'] as Path;
@@ -72,10 +67,7 @@ class InsertOperation extends Operation {
 
 /// [DeleteOperation] represents a delete operation.
 class DeleteOperation extends Operation {
-  const DeleteOperation(
-    super.path,
-    this.nodes,
-  );
+  const DeleteOperation(super.path, this.nodes);
 
   factory DeleteOperation.fromJson(Map<String, dynamic> json) {
     final path = json['path'] as Path;
@@ -120,51 +112,43 @@ class DeleteOperation extends Operation {
 
 /// [UpdateOperation] represents an attributes update operation.
 class UpdateOperation extends Operation {
-  const UpdateOperation(
-    super.path,
-    this.attributes,
-    this.oldAttributes,
-  );
+  const UpdateOperation(super.path, this.attributes, this.oldAttributes);
 
   factory UpdateOperation.fromJson(Map<String, dynamic> json) {
     final path = json['path'] as Path;
     final oldAttributes = json['oldAttributes'] as Attributes;
     final attributes = json['attributes'] as Attributes;
 
-    return UpdateOperation(
-      path,
-      attributes,
-      oldAttributes,
-    );
+    return UpdateOperation(path, attributes, oldAttributes);
   }
 
   final Attributes attributes;
   final Attributes oldAttributes;
 
   @override
-  Operation invert() => UpdateOperation(
-        path,
-        oldAttributes,
-        attributes,
-      );
+  Operation invert() => UpdateOperation(path, oldAttributes, attributes);
 
   @override
   Map<String, dynamic> toJson() {
+    // Previously cloned both attribute maps. The fields are `final`, no
+    // caller mutates them after the operation is constructed, and downstream
+    // JSON consumers (log dumps, broadcast hooks, persistence) only read.
+    // Passing references avoids two Map allocations per UpdateOperation,
+    // mirroring the TextInsert.toJson fix.
     return {
       'op': 'update',
       'path': path,
-      'attributes': {...attributes},
-      'oldAttributes': {...oldAttributes},
+      'attributes': attributes,
+      'oldAttributes': oldAttributes,
     };
   }
 
   @override
   Operation copyWith({Path? path}) {
-    return UpdateOperation(
-      path ?? this.path,
-      {...attributes},
-      {...oldAttributes},
-    );
+    // Same reasoning as toJson: attribute maps are immutable post-construction
+    // in practice, so cloning here was pure overhead. `transformOperation`
+    // is the hot caller — it runs inside `Transaction.add` per existing op.
+    return UpdateOperation(path ?? this.path, attributes, oldAttributes);
   }
 
   @override
@@ -184,11 +168,7 @@ class UpdateOperation extends Operation {
 
 /// [UpdateTextOperation] represents a text update operation.
 class UpdateTextOperation extends Operation {
-  const UpdateTextOperation(
-    super.path,
-    this.delta,
-    this.inverted,
-  );
+  const UpdateTextOperation(super.path, this.delta, this.inverted);
 
   factory UpdateTextOperation.fromJson(Map<String, dynamic> json) {
     final path = json['path'] as Path;

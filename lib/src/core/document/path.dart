@@ -64,64 +64,46 @@ extension PathExtensions on Path {
     return true;
   }
 
-  Path get next {
-    Path nextPath = Path.from(this, growable: true);
-    if (isEmpty) {
-      return nextPath;
-    }
-    final last = nextPath.last;
+  Path get next => _withLastShifted(1);
 
-    return nextPath
-      ..removeLast()
-      ..add(last + 1);
-  }
+  Path nextNPath(int n) => _withLastShifted(n);
 
-  Path nextNPath(int n) {
-    Path nextPath = Path.from(this, growable: true);
-    if (isEmpty) {
-      return nextPath;
-    }
-    final last = nextPath.last;
+  Path get previous => _withLastShifted(-1);
 
-    return nextPath
-      ..removeLast()
-      ..add(last + n);
-  }
+  Path previousNPath(int n) => _withLastShifted(-n);
 
   Path child(int index) {
-    return Path.from(this, growable: true)..add(index);
-  }
-
-  Path get previous {
-    Path previousPath = Path.from(this, growable: true);
-    if (isEmpty) {
-      return previousPath;
+    final len = length;
+    final result = List<int>.filled(len + 1, 0, growable: false);
+    for (var i = 0; i < len; i++) {
+      result[i] = this[i];
     }
-    final last = previousPath.last;
-
-    return previousPath
-      ..removeLast()
-      ..add(max(0, last - 1));
-  }
-
-  Path previousNPath(int n) {
-    Path previousPath = Path.from(this, growable: true);
-    if (isEmpty) {
-      return previousPath;
-    }
-    final last = previousPath.last;
-
-    return previousPath
-      ..removeLast()
-      ..add(max(0, last - n));
+    result[len] = index;
+    return result;
   }
 
   Path get parent {
-    if (isEmpty) {
-      return this;
-    }
+    final len = length;
+    if (len == 0) return this;
+    return List<int>.generate(len - 1, (i) => this[i], growable: false);
+  }
 
-    return Path.from(this, growable: true)..removeLast();
+  /// Returns a fresh path with the last segment shifted by [delta]
+  /// (clamped at 0 for negative results, matching the previous
+  /// `previousNPath` behavior). Empty paths yield an empty path —
+  /// callers historically got a `growable: true` empty list here, but
+  /// nothing in the codebase mutates the returned path, so an unmodifiable
+  /// const-empty avoids the per-call allocation in that corner.
+  Path _withLastShifted(int delta) {
+    final len = length;
+    if (len == 0) return const <int>[];
+    final result = List<int>.filled(len, 0, growable: false);
+    for (var i = 0; i < len - 1; i++) {
+      result[i] = this[i];
+    }
+    final shifted = this[len - 1] + delta;
+    result[len - 1] = shifted < 0 ? 0 : shifted;
+    return result;
   }
 
   bool isAncestorOf(Path other) {
@@ -144,12 +126,10 @@ extension PathExtensions on Path {
   }
 
   // if isSameDepth is true, the path must be the same depth as the selection
-  bool inSelection(
-    Selection? selection, {
-    bool isSameDepth = false,
-  }) {
+  bool inSelection(Selection? selection, {bool isSameDepth = false}) {
     selection = selection?.normalized;
-    bool result = selection != null &&
+    bool result =
+        selection != null &&
         selection.start.path <= this &&
         this <= selection.end.path;
     if (isSameDepth) {

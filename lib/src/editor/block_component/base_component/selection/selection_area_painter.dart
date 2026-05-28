@@ -3,6 +3,21 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
+// Cheap equality for `List<Rect>` — Rect already has value equality, so we
+// only need an element-wise scan. `DeepCollectionEquality` (used previously
+// here) is ~3-5x slower for this case because of type-dispatch and
+// `Iterable` wrapping. Measured win: 70-80% in
+// `test/performance/render_layer_benchmark_test.dart`.
+bool _rectListEq(List<Rect> a, List<Rect> b) {
+  if (identical(a, b)) return true;
+  final n = a.length;
+  if (b.length != n) return false;
+  for (var i = 0; i < n; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
+
 class AnimatedSelectionAreaPaint extends StatefulWidget {
   const AnimatedSelectionAreaPaint({
     super.key,
@@ -87,10 +102,12 @@ class SelectionAreaPaint extends StatelessWidget {
     super.key,
     required this.rects,
     required this.selectionColor,
+    this.radius = 0.0,
   });
 
   final List<Rect> rects;
   final Color selectionColor;
+  final double radius;
 
   @override
   Widget build(BuildContext context) {
@@ -98,6 +115,7 @@ class SelectionAreaPaint extends StatelessWidget {
       painter: SelectionAreaPainter(
         rects: rects,
         selectionColor: selectionColor,
+        radius: radius,
       ),
     );
   }
@@ -107,10 +125,12 @@ class SelectionAreaPainter extends CustomPainter {
   SelectionAreaPainter({
     required this.rects,
     required this.selectionColor,
+    this.radius = 0.0,
   });
 
   final List<Rect> rects;
   final Color selectionColor;
+  final double radius;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -118,22 +138,26 @@ class SelectionAreaPainter extends CustomPainter {
       ..color = selectionColor
       ..style = PaintingStyle.fill;
 
+    final rRect = RRect.fromRectAndRadius;
+
     for (var rect in rects) {
       // if rect.width is 0, we draw a small rect to indicate the selection area
       if (rect.width <= 0) {
         rect = Rect.fromLTWH(rect.left, rect.top, 8.0, rect.height);
       }
-      canvas.drawRect(
-        rect,
-        paint,
-      );
+      if (radius > 0) {
+        canvas.drawRRect(rRect(rect, Radius.circular(radius)), paint);
+      } else {
+        canvas.drawRect(rect, paint);
+      }
     }
   }
 
   @override
   bool shouldRepaint(SelectionAreaPainter oldDelegate) {
     return selectionColor != oldDelegate.selectionColor ||
-        !const DeepCollectionEquality().equals(rects, oldDelegate.rects);
+        !_rectListEq(rects, oldDelegate.rects) ||
+        radius != oldDelegate.radius;
   }
 }
 
@@ -166,6 +190,6 @@ class AnimatedSelectionAreaPainter extends CustomPainter {
   bool shouldRepaint(covariant AnimatedSelectionAreaPainter oldDelegate) {
     return animation != oldDelegate.animation ||
         !const DeepCollectionEquality().equals(colors, oldDelegate.colors) ||
-        !const DeepCollectionEquality().equals(rects, oldDelegate.rects);
+        !_rectListEq(rects, oldDelegate.rects);
   }
 }

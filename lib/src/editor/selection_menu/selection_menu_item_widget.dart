@@ -1,6 +1,6 @@
-import 'package:appflowy_editor/src/editor/selection_menu/selection_menu_service.dart';
-import 'package:appflowy_editor/src/editor/selection_menu/selection_menu_widget.dart';
-import 'package:appflowy_editor/src/editor_state.dart';
+import 'selection_menu_service.dart';
+import 'selection_menu_widget.dart';
+import '../../editor_state.dart';
 import 'package:flutter/material.dart';
 
 class SelectionMenuItemWidget extends StatefulWidget {
@@ -50,13 +50,15 @@ class _SelectionMenuItemWidgetState extends State<SelectionMenuItemWidget> {
               style.selectionMenuItemSelectedColor,
             ),
             backgroundColor: widget.isSelected
-                ? WidgetStateProperty.all(
-                    style.selectionMenuItemSelectedColor,
-                  )
+                ? WidgetStateProperty.all(style.selectionMenuItemSelectedColor)
                 : WidgetStateProperty.all(Colors.transparent),
           ),
-          label: widget.item.nameBuilder
-                  ?.call(widget.item.name, style, isSelected) ??
+          label:
+              widget.item.nameBuilder?.call(
+                widget.item.name,
+                style,
+                isSelected,
+              ) ??
               Text(
                 widget.item.name,
                 textAlign: TextAlign.left,

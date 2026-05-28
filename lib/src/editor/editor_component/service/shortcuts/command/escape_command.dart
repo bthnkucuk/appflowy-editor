@@ -9,14 +9,14 @@ import 'package:flutter/material.dart';
 ///
 final CommandShortcutEvent exitEditingCommand = CommandShortcutEvent(
   key: 'exit the editing mode',
-  getDescription: () => AppFlowyEditorL10n.current.cmdExitEditing,
+  getDescription: () => aft.cmdExitEditing,
   command: 'escape',
   handler: _exitEditingCommandHandler,
 );
 
 CommandShortcutEventHandler _exitEditingCommandHandler = (editorState) {
   editorState.selection = null;
-  editorState.service.keyboardService?.closeKeyboard();
+  editorState.keyboardService?.closeKeyboard();
 
   return KeyEventResult.handled;
 };
