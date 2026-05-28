@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 
 class FilePickerResult {
@@ -29,10 +31,11 @@ abstract class FilePickerService {
 
   Future<String?> saveFile({
     String? dialogTitle,
-    String? fileName,
+    required String fileName,
     String? initialDirectory,
     FileType type = FileType.any,
     List<String>? allowedExtensions,
+    required Uint8List bytes,
     bool lockParentWindow = false,
   }) async =>
       throw UnimplementedError('saveFile() has not been implemented.');

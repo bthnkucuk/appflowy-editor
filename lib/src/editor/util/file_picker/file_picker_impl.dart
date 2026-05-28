@@ -1,10 +1,14 @@
+// ignore_for_file: deprecated_member_use
+
+import 'dart:typed_data';
+
 import 'package:appflowy_editor/src/editor/util/file_picker/file_picker_service.dart';
 import 'package:file_picker/file_picker.dart' as fp;
 
 class FilePicker implements FilePickerService {
   @override
   Future<String?> getDirectoryPath({String? title}) {
-    return fp.FilePicker.getDirectoryPath();
+    return fp.FilePicker.getDirectoryPath(dialogTitle: title);
   }
 
   @override
@@ -37,10 +41,11 @@ class FilePicker implements FilePickerService {
   @override
   Future<String?> saveFile({
     String? dialogTitle,
-    String? fileName,
+    required String fileName,
     String? initialDirectory,
     fp.FileType type = fp.FileType.any,
     List<String>? allowedExtensions,
+    required Uint8List bytes,
     bool lockParentWindow = false,
   }) {
     return fp.FilePicker.saveFile(
@@ -49,6 +54,7 @@ class FilePicker implements FilePickerService {
       initialDirectory: initialDirectory,
       type: type,
       allowedExtensions: allowedExtensions,
+      bytes: bytes,
       lockParentWindow: lockParentWindow,
     );
   }
