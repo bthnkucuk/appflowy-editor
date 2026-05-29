@@ -57,7 +57,11 @@ mixin _SelectionStyleMixin {
   /// Guarded against post-dispose calls so a stray late emission from a
   /// service that hasn't detached yet doesn't throw.
   void notifyTap(Selection selection) {
-    if (_tapEventsController.isClosed) return;
+    if (_tapEventsController.isClosed) {
+      debugPrint('[H-DBG] notifyTap: skip (controller closed)');
+      return;
+    }
+    debugPrint('[H-DBG] notifyTap: $selection');
     _tapEventsController.add(selection);
   }
 
@@ -99,8 +103,14 @@ mixin _SelectionStyleMixin {
 
   /// Sets the highlight of the editor.
   set highlight(Selection? value) {
-    if (highlightNotifier.value == value) return;
+    if (highlightNotifier.value == value) {
+      debugPrint('[H-DBG] highlight setter: skip ($value unchanged)');
+      return;
+    }
 
+    debugPrint(
+      '[H-DBG] highlight setter: ${highlightNotifier.value} → $value',
+    );
     highlightNotifier.value = value;
   }
 

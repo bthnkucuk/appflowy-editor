@@ -178,7 +178,15 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
   }
 
   void _scheduleUpdate() {
-    if (!mounted || _updatePending) return;
+    if (!mounted) {
+      debugPrint('[H-DBG] BHA[${widget.node.path}] _scheduleUpdate: skip (unmounted)');
+      return;
+    }
+    if (_updatePending) {
+      debugPrint('[H-DBG] BHA[${widget.node.path}] _scheduleUpdate: coalesced');
+      return;
+    }
+    debugPrint('[H-DBG] BHA[${widget.node.path}] _scheduleUpdate: scheduled');
     _updatePending = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updatePending = false;
@@ -193,6 +201,9 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
       valueListenable: _paintNotifier,
       builder: (context, paint, _) {
         BlockHighlightArea.debugBuilderCallCount++;
+        debugPrint(
+          '[H-DBG] BHA[${widget.node.path}] BUILD paint=${paint?.type}',
+        );
         if (paint == null) {
           return const SizedBox.shrink();
         }
@@ -280,16 +291,43 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
       return;
     }
 
+    // Fix B: outer block-only containers (heading / paragraph wrap is
+    // mounted with `supportTypes: [BlockSelectionType.block]`) only ever
+    // paint when the editor's selection type is `block`. For every other
+    // selection-type (inline cursor / range, programmatic highlight,
+    // tap-driven word boundary…) walking the path-in-selection math and
+    // the supportTypes fall-through is dead work. Short-circuit before
+    // any compute.
+    final supportTypes = widget.supportTypes;
+    if (supportTypes.length == 1 &&
+        supportTypes.first == BlockSelectionType.block) {
+      final editorState = context.read<EditorState>();
+      if (editorState.selectionType != SelectionType.block) {
+        if (_paintNotifier.value != null) {
+          debugPrint(
+            '[H-DBG] BHA[${widget.node.path}] update: block-only short-circuit → paint=null (was non-null, will rebuild)',
+          );
+          _paintNotifier.value = null;
+        }
+        return;
+      }
+    }
+
     final selection = widget.listenable.value?.normalized;
     final path = widget.node.path;
 
     if (selection == null || !path.inSelection(selection)) {
+      final wasNull = _paintNotifier.value == null;
+      debugPrint(
+        '[H-DBG] BHA[$path] update: out-of-selection '
+        '(selection=$selection) → paint=null '
+        '${wasNull ? "(unchanged, no rebuild)" : "(was non-null, will rebuild)"}',
+      );
       _paintNotifier.value = null;
       return;
     }
 
     final editorState = context.read<EditorState>();
-    final supportTypes = widget.supportTypes;
 
     if (supportTypes.contains(BlockSelectionType.block) &&
         editorState.selectionType == SelectionType.block) {
@@ -335,11 +373,20 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
       }
 
       final rects = widget.delegate.getRectsInSelection(selection);
-      _paintNotifier.value = _BlockHighlightPaint(
+      final oldPaint = _paintNotifier.value;
+      final newPaint = _BlockHighlightPaint(
         type: BlockSelectionType.selection,
         selectionRects: rects,
         sectionRects: sectionRects,
       );
+      final samePaint = oldPaint == newPaint;
+      debugPrint(
+        '[H-DBG] BHA[$path] update: selection-branch '
+        'sectionCached=${identical(sectionRects, _prevSectionRects)} '
+        'rects=${rects.length} '
+        '${samePaint ? "(paint unchanged, no rebuild)" : "(paint changed, will rebuild)"}',
+      );
+      _paintNotifier.value = newPaint;
       return;
     }
 

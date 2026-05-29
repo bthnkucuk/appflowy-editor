@@ -191,6 +191,10 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
   }
 
   void _scheduleUpdate() {
+    debugPrint(
+      '[H-DBG] BSA[${widget.node.path}] _scheduleUpdate '
+      '(selection listener fired — should NOT happen on highlight-only changes)',
+    );
     if (!mounted || _updatePending) return;
     _updatePending = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -206,6 +210,9 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
       valueListenable: _paintNotifier,
       builder: (context, paint, _) {
         BlockSelectionArea.debugBuilderCallCount++;
+        debugPrint(
+          '[H-DBG] BSA[${widget.node.path}] BUILD paint=${paint?.type}',
+        );
         if (paint == null) {
           return const SizedBox.shrink();
         }

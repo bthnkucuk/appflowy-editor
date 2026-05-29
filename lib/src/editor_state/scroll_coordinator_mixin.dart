@@ -285,6 +285,9 @@ mixin _ScrollCoordinatorMixin {
     final top = highlightRects.firstOrNull?.top;
 
     if (top != null) {
+      debugPrint(
+        '[H-DBG] _scrollToHighlight: rect-top=$top → animateScroll(${top - 300})',
+      );
       editorScrollController.safeAnimateScroll(
         // 300 px headroom above the highlight so the active line sits below
         // the top edge of the viewport, not flush against it.
@@ -294,6 +297,10 @@ mixin _ScrollCoordinatorMixin {
       );
       return;
     }
+    debugPrint(
+      '[H-DBG] _scrollToHighlight: no rect (off-screen) '
+      '${allowRetry ? "→ jumpToIndex+retry" : "→ bail"}',
+    );
 
     if (!allowRetry) return;
     final index = askedSelection?.start.path.firstOrNull;
@@ -358,26 +365,39 @@ mixin _ScrollCoordinatorMixin {
   /// and we fall back to the original "scroll on every change" path.
   void _onHighlightChangedForAutoScroll() {
     if (_scrollCoordinatorDisposed) return;
-    if (!isAutoScrollHighlightNotifier.value) return;
+    if (!isAutoScrollHighlightNotifier.value) {
+      debugPrint('[H-DBG] auto-scroll: skip (toggle off)');
+      return;
+    }
     final controller = _autoScrollController;
-    if (controller == null) return;
+    if (controller == null) {
+      debugPrint('[H-DBG] auto-scroll: skip (no controller)');
+      return;
+    }
 
     final newSel = highlight;
     if (newSel == null) {
-      // Highlight cleared — drop the coalesce key so the next non-null
-      // highlight triggers a fresh scroll.
+      debugPrint('[H-DBG] auto-scroll: highlight cleared, drop section key');
       _lastAutoScrolledSection = null;
       return;
     }
 
     final section = _resolveHighlightSection(newSel);
     if (section != null) {
-      // Same-section identity is preserved by Node.sections's cache, so
-      // identical() is the cheap correct check here.
-      if (identical(section, _lastAutoScrolledSection)) return;
+      if (identical(section, _lastAutoScrolledSection)) {
+        debugPrint(
+          '[H-DBG] auto-scroll: SAME-SECTION coalesce (no scroll) '
+          'section.text="${section.text.length > 30 ? "${section.text.substring(0, 30)}…" : section.text}"',
+        );
+        return;
+      }
+      debugPrint(
+        '[H-DBG] auto-scroll: section CHANGED → scroll '
+        'new.text="${section.text.length > 30 ? "${section.text.substring(0, 30)}…" : section.text}"',
+      );
       _lastAutoScrolledSection = section;
     } else {
-      // No sections to coalesce against — clear and fall through.
+      debugPrint('[H-DBG] auto-scroll: no section parser → fallback scroll');
       _lastAutoScrolledSection = null;
     }
 

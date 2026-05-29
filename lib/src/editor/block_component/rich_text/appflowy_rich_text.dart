@@ -159,6 +159,7 @@ class _AppFlowyRichTextState extends State<AppFlowyRichText>
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[H-DBG] AppFlowyRichText[${widget.node.path}] BUILD');
     Widget child = Stack(
       children: [
         _buildPlaceholderText(context),

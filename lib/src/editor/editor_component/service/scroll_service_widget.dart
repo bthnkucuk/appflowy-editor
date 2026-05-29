@@ -42,6 +42,7 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget> implements Ap
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[H-DBG] ScrollServiceWidget BUILD');
     return Provider.value(
       value: widget.editorScrollController,
       child: Builder(

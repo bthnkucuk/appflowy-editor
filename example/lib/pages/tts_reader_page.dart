@@ -87,10 +87,15 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
 
   int _totalCharacterCount = 0;
 
-  int _currentIndex = -1;
+  /// Control-panel + back-pill state held in notifiers so the per-tick
+  /// advance doesn't `setState` the whole page — that would rebuild
+  /// `AppFlowyEditor` and cascade down through every visible block on
+  /// every word. Only the pill and panel `ValueListenableBuilder`s
+  /// rebuild on these.
+  final ValueNotifier<int> _currentIndex = ValueNotifier(-1);
+  final ValueNotifier<bool> _playing = ValueNotifier(false);
+  final ValueNotifier<double> _speed = ValueNotifier(1.0);
   Timer? _timer;
-  bool _playing = false;
-  double _speed = 1.0;
 
   /// Subscription to the editor's one-shot tap-event stream — cancelled
   /// in [dispose] so we don't outlive the editor.
@@ -151,6 +156,9 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     _tapEventsSubscription?.cancel();
     editorScrollController.dispose();
     editorState.dispose();
+    _currentIndex.dispose();
+    _playing.dispose();
+    _speed.dispose();
     super.dispose();
   }
 
@@ -231,17 +239,17 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   }
 
   Duration get _tickDuration => Duration(
-        milliseconds: (_baseWordDuration.inMilliseconds / _speed).round(),
+        milliseconds: (_baseWordDuration.inMilliseconds / _speed.value).round(),
       );
 
   void _advanceTo(int i) {
     if (i < 0 || i >= _tokens.length) {
       _pause();
       editorState.updateHighlight(null);
-      setState(() => _currentIndex = -1);
+      _currentIndex.value = -1;
       return;
     }
-    setState(() => _currentIndex = i);
+    _currentIndex.value = i;
     // The mixin subscribed to `highlightNotifier` when we called
     // `enableAutoScrollHighlight(...)`, so this single write drives
     // both the visual highlight and the auto-scroll. No explicit
@@ -251,26 +259,26 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
 
   void _play() {
     if (_tokens.isEmpty) return;
-    if (_currentIndex < 0 || _currentIndex >= _tokens.length - 1) {
-      _currentIndex = -1;
+    if (_currentIndex.value < 0 || _currentIndex.value >= _tokens.length - 1) {
+      _currentIndex.value = -1;
     }
     _timer?.cancel();
     // Re-arm auto-scroll on play — like the app does on tap or skip.
     editorState.enableAutoScrollHighlight(editorScrollController);
-    _advanceTo(_currentIndex + 1);
-    setState(() => _playing = true);
+    _advanceTo(_currentIndex.value + 1);
+    _playing.value = true;
     _timer = Timer.periodic(_tickDuration, (_) {
-      _advanceTo(_currentIndex + 1);
+      _advanceTo(_currentIndex.value + 1);
     });
   }
 
   void _pause() {
     _timer?.cancel();
     _timer = null;
-    if (_playing) setState(() => _playing = false);
+    if (_playing.value) _playing.value = false;
   }
 
-  void _togglePlay() => _playing ? _pause() : _play();
+  void _togglePlay() => _playing.value ? _pause() : _play();
 
   /// Jump to the start of the next/previous section.
   ///
@@ -285,8 +293,8 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     final targetTokenIdx = _findAdjacentSectionStartToken(forward: forward);
     if (targetTokenIdx < 0) return;
     editorState.enableAutoScrollHighlight(editorScrollController);
-    _currentIndex = targetTokenIdx - 1;
-    if (_playing) {
+    _currentIndex.value = targetTokenIdx - 1;
+    if (_playing.value) {
       _play();
     } else {
       _advanceTo(targetTokenIdx);
@@ -297,7 +305,7 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   /// or -1 if we're already at a boundary with nothing to skip to.
   int _findAdjacentSectionStartToken({required bool forward}) {
     final tokens = _tokens;
-    final currentIdx = _currentIndex < 0 ? 0 : _currentIndex;
+    final currentIdx = _currentIndex.value < 0 ? 0 : _currentIndex.value;
     final currentToken = tokens[currentIdx];
     final currentPath = currentToken.start.path;
     final currentOffset = currentToken.start.offset;
@@ -352,12 +360,12 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   }
 
   void _cycleSpeed() {
-    final nextIdx = (_speeds.indexOf(_speed) + 1) % _speeds.length;
-    setState(() => _speed = _speeds[nextIdx]);
-    if (_playing) {
+    final nextIdx = (_speeds.indexOf(_speed.value) + 1) % _speeds.length;
+    _speed.value = _speeds[nextIdx];
+    if (_playing.value) {
       _timer?.cancel();
       _timer = Timer.periodic(_tickDuration, (_) {
-        _advanceTo(_currentIndex + 1);
+        _advanceTo(_currentIndex.value + 1);
       });
     }
   }
@@ -383,8 +391,8 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     if (tokenIdx < 0) return;
 
     editorState.enableAutoScrollHighlight(editorScrollController);
-    _currentIndex = tokenIdx - 1;
-    if (_playing) {
+    _currentIndex.value = tokenIdx - 1;
+    if (_playing.value) {
       _play();
     } else {
       _advanceTo(tokenIdx);
@@ -475,16 +483,18 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
               animation: Listenable.merge([
                 editorState.isAutoScrollHighlightNotifier,
                 editorScrollController.visibleRangeNotifier,
+                _currentIndex,
               ]),
               builder: (context, _) {
                 final autoScroll =
                     editorState.isAutoScrollHighlightNotifier.value;
                 final visibleRange =
                     editorScrollController.visibleRangeNotifier.value;
-                final show = _currentIndex >= 0 && !autoScroll;
+                final currentIndex = _currentIndex.value;
+                final show = currentIndex >= 0 && !autoScroll;
                 final activeBlock =
-                    _tokens.isNotEmpty && _currentIndex >= 0
-                        ? (_tokens[_currentIndex].start.path.firstOrNull ?? 0)
+                    _tokens.isNotEmpty && currentIndex >= 0
+                        ? (_tokens[currentIndex].start.path.firstOrNull ?? 0)
                         : 0;
                 // visibleRange.$1 / .$2 are first/last top-level child
                 // indices currently rendered by SuperSliverList. Arrow
@@ -523,16 +533,23 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
             bottom: 12,
             child: SafeArea(
               top: false,
-              child: _ControlPanel(
-                playing: _playing,
-                speed: _speed,
-                currentIndex: _currentIndex,
-                totalTokens: _tokens.length,
-                totalCharacterCount: _totalCharacterCount,
-                onTogglePlay: _togglePlay,
-                onSkipBack: () => _skipSection(forward: false),
-                onSkipForward: () => _skipSection(forward: true),
-                onCycleSpeed: _cycleSpeed,
+              child: AnimatedBuilder(
+                animation: Listenable.merge([
+                  _playing,
+                  _speed,
+                  _currentIndex,
+                ]),
+                builder: (context, _) => _ControlPanel(
+                  playing: _playing.value,
+                  speed: _speed.value,
+                  currentIndex: _currentIndex.value,
+                  totalTokens: _tokens.length,
+                  totalCharacterCount: _totalCharacterCount,
+                  onTogglePlay: _togglePlay,
+                  onSkipBack: () => _skipSection(forward: false),
+                  onSkipForward: () => _skipSection(forward: true),
+                  onCycleSpeed: _cycleSpeed,
+                ),
               ),
             ),
           ),

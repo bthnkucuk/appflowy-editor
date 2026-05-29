@@ -27,6 +27,7 @@ class _HighlightServiceWidgetState extends State<HighlightServiceWidget>
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[H-DBG] HighlightServiceWidget BUILD');
     // if (PlatformExtension.isDesktopOrWeb) {
     //   return DesktopSelectionServiceWidget(
     //     key: forwardKey,

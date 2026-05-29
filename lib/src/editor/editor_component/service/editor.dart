@@ -307,6 +307,7 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[H-DBG] AppFlowyEditor BUILD');
     services ??= _buildServices(context);
 
     return Provider.value(

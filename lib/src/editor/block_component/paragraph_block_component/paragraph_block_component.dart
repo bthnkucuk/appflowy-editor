@@ -145,6 +145,7 @@ class _ParagraphBlockComponentWidgetState
     BuildContext context, {
     bool withBackgroundColor = true,
   }) {
+    debugPrint('[H-DBG] ParagraphBlock[${widget.node.path}] BUILD');
     final textDirection = calculateTextDirection(
       layoutDirection: Directionality.maybeOf(context),
     );

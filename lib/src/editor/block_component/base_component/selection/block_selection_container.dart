@@ -63,6 +63,9 @@ class BlockSelectionContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint(
+      '[H-DBG] BSC[${node.path}] BUILD supportTypes=$supportTypes',
+    );
     final blockSelectionArea = BlockSelectionArea(
       node: node,
       delegate: delegate,

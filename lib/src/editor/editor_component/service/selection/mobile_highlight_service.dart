@@ -54,6 +54,16 @@ class _MobileHighlightServiceWidgetState
 
   bool updateSelectionByTapUp = false;
 
+  /// Memoised last-seen value of `editorState.selection`. `_updateSelection`
+  /// is attached to `highlightNotifier`, so it fires on every highlight
+  /// tick — but the body reads the editor's *selection* and only does
+  /// real work when the selection actually changed. When the listener
+  /// is woken up by a pure highlight change, the cached value still
+  /// matches the live selection and we early-return without rescheduling
+  /// the post-frame `selectionNotifierAfterLayout` write that would
+  /// otherwise drive a cascade of dead rebuilds.
+  Selection? _lastObservedSelection;
+
   late EditorState editorState = Provider.of<EditorState>(
     context,
     listen: false,
@@ -84,6 +94,7 @@ class _MobileHighlightServiceWidgetState
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[H-DBG] MobileHighlightServiceWidget BUILD');
     final stack = widget.child;
     return PlatformExtension.isIOS
         ? MobileSelectionGestureDetector(
@@ -127,7 +138,12 @@ class _MobileHighlightServiceWidgetState
   /// lines up. Pan updates do not publish on the stream — the
   /// pre-refactor code fired tap on every pan tick, which was a wart.
   void _applySelection(Selection? selection, {required bool isTap}) {
+    debugPrint(
+      '[H-DBG] mobile._applySelection isTap=$isTap selection=$selection '
+      '(current=${currentSelection.value})',
+    );
     if (currentSelection.value == selection) {
+      debugPrint('[H-DBG]   → skipped (same as current)');
       return;
     }
 
@@ -142,8 +158,10 @@ class _MobileHighlightServiceWidgetState
     }
 
     currentSelection.value = selection;
+    debugPrint('[H-DBG]   → updateHighlight($selection)');
     editorState.updateHighlight(selection);
     if (isTap && selection != null) {
+      debugPrint('[H-DBG]   → notifyTap($selection)');
       editorState.notifyTap(selection);
     }
   }
@@ -209,12 +227,31 @@ class _MobileHighlightServiceWidgetState
 
   void _updateSelection() {
     final selection = editorState.selection;
+    // Fix A: this listener is attached to `highlightNotifier`, so it
+    // fires on every highlight tick — but the body only cares about
+    // changes to the editor's *selection*. When a highlight-only tick
+    // wakes us up, the cached value still matches and we bail before
+    // scheduling the post-frame work that drives
+    // `selectionNotifierAfterLayout`'s `PropertyValueNotifier` notify
+    // cascade.
+    if (selection == _lastObservedSelection) {
+      debugPrint(
+        '[H-DBG] mobile._updateSelection skipped (selection unchanged: $selection)',
+      );
+      return;
+    }
+    _lastObservedSelection = selection;
+    debugPrint(
+      '[H-DBG] mobile._updateSelection (highlightNotifier fired) '
+      'editorState.selection=$selection currentSelection=${currentSelection.value}',
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       if (mounted) selectionNotifierAfterLayout.value = selection;
     });
 
     if (currentSelection.value != selection) {
+      debugPrint('[H-DBG]   → clearSelection (current != editorState.selection)');
       clearSelection();
       return;
     }
@@ -314,6 +351,10 @@ class _MobileHighlightServiceWidgetState
     // final x = node?.selectable?.getWordEdgeInOffset(offset);
     // select word boundary closest to offset
     final selection = node?.selectable?.getWordBoundaryInOffset(offset);
+    debugPrint(
+      '[H-DBG] mobile.onTapUp @ $offset → node=${node?.path} '
+      'wordBoundary=$selection',
+    );
     if (selection == null) {
       clearSelection();
       return;

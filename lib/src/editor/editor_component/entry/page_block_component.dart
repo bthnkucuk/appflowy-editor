@@ -128,6 +128,7 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[H-DBG] PageBlockComponent BUILD');
     final editorState = context.read<EditorState>();
     final scrollController = context.read<EditorScrollController?>();
     final items = node.children;
@@ -204,6 +205,7 @@ class PageBlockComponent extends BlockComponentStatelessWidget {
         extentPrecalculationPolicy: _SmallDocumentPrecalcPolicy(editorState),
         itemCount: items.length + extentCount,
         itemBuilder: (context, index) {
+          debugPrint('[H-DBG] SuperListView.itemBuilder index=$index BUILD');
           editorState.updateAutoScroller(Scrollable.of(context));
           if (header != null && index == 0) {
             return IgnoreEditorSelectionGesture(child: header!);

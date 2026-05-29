@@ -117,6 +117,7 @@ class _HeadingBlockComponentWidgetState
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[H-DBG] HeadingBlock[${widget.node.path}] BUILD');
     final textDirection = calculateTextDirection(
       layoutDirection: Directionality.maybeOf(context),
     );
