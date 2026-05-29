@@ -68,6 +68,7 @@ class EditorScrollController {
   ));
 
   void dispose() {
+    _disposed = true;
     scrollController.removeListener(_syncOffsetNotifier);
     if (shouldDisposeScrollController) {
       scrollController.dispose();
@@ -79,6 +80,16 @@ class EditorScrollController {
     offsetNotifier.dispose();
     visibleRangeNotifier.dispose();
   }
+
+  // `_onVisibleRangeChanged` is invoked by `SuperListController` from inside
+  // `RenderSuperSliverList.performLayout`. Writing `visibleRangeNotifier.value`
+  // synchronously there fires listeners during the layout phase, which trips
+  // the "build/setState scheduled during frame" assertion in any consumer that
+  // rebuilds off the notifier. Stage the value here and flush in a single
+  // postFrame callback per frame; the last write wins.
+  (int, int)? _pendingRange;
+  bool _rangeNotifyScheduled = false;
+  bool _disposed = false;
 
   // ---------------------------------------------------------------------------
   // Offset-based scrolling
@@ -235,13 +246,13 @@ class EditorScrollController {
 
   void _onVisibleRangeChanged() {
     if (!listController.isAttached) {
-      visibleRangeNotifier.value = (-1, -1);
+      _stageRange((-1, -1));
       return;
     }
 
     final range = listController.visibleRange;
     if (range == null) {
-      visibleRangeNotifier.value = (-1, -1);
+      _stageRange((-1, -1));
       return;
     }
 
@@ -260,7 +271,21 @@ class EditorScrollController {
       max--;
     }
 
-    visibleRangeNotifier.value = (min, max);
+    _stageRange((min, max));
+  }
+
+  void _stageRange((int, int) range) {
+    _pendingRange = range;
+    if (_rangeNotifyScheduled) return;
+    _rangeNotifyScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _rangeNotifyScheduled = false;
+      if (_disposed) return;
+      final staged = _pendingRange;
+      if (staged == null) return;
+      _pendingRange = null;
+      visibleRangeNotifier.value = staged;
+    });
   }
 }
 

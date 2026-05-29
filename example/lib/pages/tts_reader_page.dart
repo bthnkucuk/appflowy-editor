@@ -80,13 +80,6 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   bool _playing = false;
   double _speed = 1.0;
 
-  /// Mirror of `editorScrollController.visibleRangeNotifier.value`,
-  /// updated via a postFrame defer. SuperSliverList fires its visible
-  /// range notifier from inside `RenderSuperSliverList.performLayout`,
-  /// which would assert if we drove a `setState` directly off it.
-  (int, int) _visibleRange = (0, 0);
-  bool _visibleRangeUpdatePending = false;
-
   @override
   void initState() {
     super.initState();
@@ -116,19 +109,12 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     // tap-up (see mobile_highlight_service.dart:129 → updateTap). We seek
     // to whichever word the tap landed in.
     editorState.tapNotifier.addListener(_onTapNotifier);
-
-    editorScrollController.visibleRangeNotifier.addListener(
-      _onVisibleRangeChanged,
-    );
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     editorState.tapNotifier.removeListener(_onTapNotifier);
-    editorScrollController.visibleRangeNotifier.removeListener(
-      _onVisibleRangeChanged,
-    );
     editorScrollController.dispose();
     editorState.dispose();
     Node.sectionParser = _previousSectionParser;
@@ -214,25 +200,6 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   Duration get _tickDuration => Duration(
         milliseconds: (_baseWordDuration.inMilliseconds / _speed).round(),
       );
-
-  /// SuperSliverList's `visibleRangeNotifier` fires from inside its
-  /// `performLayout`. Coalesce updates to one postFrame callback per
-  /// layout pass.
-  void _onVisibleRangeChanged() {
-    final next = editorScrollController.visibleRangeNotifier.value;
-    if (next == _visibleRange) return;
-    if (_visibleRangeUpdatePending) {
-      _visibleRange = next;
-      return;
-    }
-    _visibleRangeUpdatePending = true;
-    _visibleRange = next;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _visibleRangeUpdatePending = false;
-      if (!mounted) return;
-      setState(() {});
-    });
-  }
 
   void _advanceTo(int i) {
     if (i < 0 || i >= _tokens.length) {
@@ -474,9 +441,16 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
             left: 0,
             right: 0,
             bottom: 124,
-            child: ValueListenableBuilder<bool>(
-              valueListenable: editorState.isAutoScrollHighlightNotifier,
-              builder: (context, autoScroll, _) {
+            child: AnimatedBuilder(
+              animation: Listenable.merge([
+                editorState.isAutoScrollHighlightNotifier,
+                editorScrollController.visibleRangeNotifier,
+              ]),
+              builder: (context, _) {
+                final autoScroll =
+                    editorState.isAutoScrollHighlightNotifier.value;
+                final visibleRange =
+                    editorScrollController.visibleRangeNotifier.value;
                 final show = _currentIndex >= 0 && !autoScroll;
                 final activeBlock =
                     _tokens.isNotEmpty && _currentIndex >= 0
@@ -487,8 +461,8 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
                 // points up if active word is above the visible
                 // window, down if below; defaults to down when range
                 // is unknown ((-1, -1) or initial (0, 0)).
-                final isAbove = _visibleRange.$1 >= 0 &&
-                    activeBlock < _visibleRange.$1;
+                final isAbove = visibleRange.$1 >= 0 &&
+                    activeBlock < visibleRange.$1;
                 return AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   transitionBuilder: (child, anim) => FadeTransition(
