@@ -26,12 +26,7 @@ class _Insert {
 }
 
 class _Cfg {
-  const _Cfg({
-    required this.text,
-    required this.lineHeight,
-    required this.bold,
-    required this.italic,
-  });
+  const _Cfg({required this.text, required this.lineHeight, required this.bold, required this.italic});
   final TextStyle text;
   final double lineHeight;
   final TextStyle bold;
@@ -124,8 +119,8 @@ void main() {
 void _report(String label, Stopwatch sw, int iterations) {
   final totalUs = sw.elapsedMicroseconds;
   final perOpNs = (totalUs * 1000) / iterations;
-  // ignore: avoid_print
-  print(
+
+  debugPrint(
     '[BENCH] $label: '
     '${totalUs / 1000}ms total, '
     '${perOpNs.toStringAsFixed(1)}ns/op '

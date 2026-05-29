@@ -4,7 +4,7 @@
 // swap the backing store (e.g. to `IMap`).
 //
 // Run with: `fvm flutter test test/performance/attributes_benchmark_test.dart`
-// Results print to stdout via testWidgets `addTearDown` print so they show
+// Results debugPrint to stdout via testWidgets `addTearDown` debugPrint so they show
 // even when the test passes silently.
 //
 // The benchmark does NOT assert on absolute timings — those vary by host.
@@ -12,6 +12,7 @@
 // nanoseconds + total ms so you can eyeball wins after a migration.
 
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -39,11 +40,7 @@ void main() {
 
     test('composeAttributes with null-removal — 100k ops', () {
       // Attribute unset path: a key with null value removes the entry.
-      final base = <String, dynamic>{
-        'bold': true,
-        'italic': true,
-        'href': 'https://x',
-      };
+      final base = <String, dynamic>{'bold': true, 'italic': true, 'href': 'https://x'};
       final patch = <String, dynamic>{'href': null};
 
       for (var i = 0; i < 1000; i++) {
@@ -64,10 +61,7 @@ void main() {
       // Hot path during transaction processing: every UpdateOperation that
       // doesn't pass an explicit `attributes:` argument hits the
       // `{...this.attributes}` clone at node.dart:433.
-      final node = Node(
-        type: 'paragraph',
-        attributes: {'delta': [], 'level': 1, 'backgroundColor': '#fff'},
-      );
+      final node = Node(type: 'paragraph', attributes: {'delta': [], 'level': 1, 'backgroundColor': '#fff'});
 
       for (var i = 0; i < 500; i++) {
         node.copyWith();
@@ -107,11 +101,11 @@ void main() {
       // the existing op list. The defensive `{...attributes}` /
       // `{...oldAttributes}` clones at operation.dart copyWith showed up
       // in profiles. Mirrors the TextInsert.attributes shape.
-      final op = UpdateOperation(
-        [0, 1],
-        {'bold': true, 'italic': true, 'href': 'https://x'},
-        {'bold': null, 'italic': null, 'href': null},
-      );
+      final op = UpdateOperation([0, 1], {'bold': true, 'italic': true, 'href': 'https://x'}, {
+        'bold': null,
+        'italic': null,
+        'href': null,
+      });
 
       for (var i = 0; i < 2000; i++) {
         op.copyWith(path: [i % 5, 1]);
@@ -128,11 +122,11 @@ void main() {
     });
 
     test('UpdateOperation.toJson — 200k ops', () {
-      final op = UpdateOperation(
-        [0, 1],
-        {'bold': true, 'italic': true, 'href': 'https://x'},
-        {'bold': null, 'italic': null, 'href': null},
-      );
+      final op = UpdateOperation([0, 1], {'bold': true, 'italic': true, 'href': 'https://x'}, {
+        'bold': null,
+        'italic': null,
+        'href': null,
+      });
 
       for (var i = 0; i < 2000; i++) {
         op.toJson();
@@ -187,8 +181,8 @@ void main() {
 void _report(String label, Stopwatch sw, int iterations) {
   final totalUs = sw.elapsedMicroseconds;
   final perOpNs = (totalUs * 1000) / iterations;
-  // ignore: avoid_print
-  print(
+
+  debugPrint(
     '[BENCH] $label: '
     '${totalUs / 1000}ms total, '
     '${perOpNs.toStringAsFixed(1)}ns/op '

@@ -76,8 +76,8 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget> implements Ap
   void _onSelectionChanged() {
     // should auto scroll after the cursor or selection updated.
     final selection = editorState.selection;
-    // ignore: avoid_print
-    print(
+
+    debugPrint(
       '[SCROLL-DBG] _onSelectionChanged '
       'selection=$selection '
       'reason=${editorState.selectionUpdateReason} '
@@ -85,16 +85,14 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget> implements Ap
       'kbHeight=$_currentKeyboardInset',
     );
     if (selection == null || [SelectionUpdateReason.selectAll].contains(editorState.selectionUpdateReason)) {
-      // ignore: avoid_print
-      print('[SCROLL-DBG]   → skipped (null or selectAll)');
+      debugPrint('[SCROLL-DBG]   → skipped (null or selectAll)');
       return;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final selectionRects = editorState.selectionRects();
       if (selectionRects.isEmpty) {
-        // ignore: avoid_print
-        print('[SCROLL-DBG]   → skipped (empty rects in postFrame)');
+        debugPrint('[SCROLL-DBG]   → skipped (empty rects in postFrame)');
         return;
       }
 
@@ -151,8 +149,8 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget> implements Ap
         // soft keyboard
         // workaround: wait for the soft keyboard to show up
         final keyboardDelay = _currentKeyboardInset == 0 ? const Duration(milliseconds: 250) : Duration.zero;
-        // ignore: avoid_print
-        print(
+
+        debugPrint(
           '[SCROLL-DBG]   mobile branch: '
           'dragMode=$dragMode '
           'targetRect=$targetRect '
@@ -188,24 +186,22 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget> implements Ap
             final isLeftHandle = dragMode == MobileSelectionDragMode.leftSelectionHandle;
             final freshTarget = isLeftHandle ? freshRects.first : freshRects.last;
             if (freshTarget.top >= viewportTop && freshTarget.bottom <= viewportBottom) {
-              // ignore: avoid_print
-              print(
+              debugPrint(
                 '[SCROLL-DBG]   viewport-guard: rect $freshTarget inside '
                 '[$viewportTop, $viewportBottom] — skipping scroll '
                 '(dragMode=$dragMode)',
               );
               return;
             }
-            // ignore: avoid_print
-            print(
+
+            debugPrint(
               '[SCROLL-DBG]   viewport-guard: rect $freshTarget OUTSIDE '
               '[$viewportTop, $viewportBottom] — scrolling '
               '(dragMode=$dragMode)',
             );
           }
 
-          // ignore: avoid_print
-          print(
+          debugPrint(
             '[SCROLL-DBG]   → startAutoScroll fired '
             '(endTouchPoint=$endTouchPoint direction=$direction)',
           );

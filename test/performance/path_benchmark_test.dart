@@ -9,6 +9,7 @@
 //   fvm flutter test --concurrency=1 test/performance/path_benchmark_test.dart
 
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -92,39 +93,33 @@ void main() {
       _report('Path.equals (equal)', sw, iters);
     });
 
-    test(
-      'Document traversal: walk 100 nodes, get parent at each — 10k iters',
-      () {
-        // Realistic workload — tree walk where each visit asks for `.parent`.
-        final paths = List<List<int>>.generate(
-          100,
-          (i) => [i ~/ 10, i % 10, i % 3],
-        );
-        for (var i = 0; i < 50; i++) {
-          for (final p in paths) {
-            // ignore: unused_local_variable
-            final parent = p.parent;
-          }
+    test('Document traversal: walk 100 nodes, get parent at each — 10k iters', () {
+      // Realistic workload — tree walk where each visit asks for `.parent`.
+      final paths = List<List<int>>.generate(100, (i) => [i ~/ 10, i % 10, i % 3]);
+      for (var i = 0; i < 50; i++) {
+        for (final p in paths) {
+          // ignore: unused_local_variable
+          final parent = p.parent;
         }
-        final sw = Stopwatch()..start();
-        const iters = 10000;
-        for (var i = 0; i < iters; i++) {
-          for (final p in paths) {
-            // ignore: unused_local_variable
-            final parent = p.parent;
-          }
+      }
+      final sw = Stopwatch()..start();
+      const iters = 10000;
+      for (var i = 0; i < iters; i++) {
+        for (final p in paths) {
+          // ignore: unused_local_variable
+          final parent = p.parent;
         }
-        sw.stop();
-        _report('walk 100 nodes × .parent', sw, iters);
-      },
-    );
+      }
+      sw.stop();
+      _report('walk 100 nodes × .parent', sw, iters);
+    });
   });
 }
 
 void _report(String label, Stopwatch sw, int iters) {
   final perOpNs = (sw.elapsedMicroseconds * 1000) / iters;
-  // ignore: avoid_print
-  print(
+
+  debugPrint(
     '[BENCH] $label: ${sw.elapsedMicroseconds / 1000}ms total, '
     '${perOpNs.toStringAsFixed(1)}ns/op',
   );

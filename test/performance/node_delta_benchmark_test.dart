@@ -7,6 +7,7 @@
 //   fvm flutter test --concurrency=1 test/performance/node_delta_benchmark_test.dart
 
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -132,8 +133,8 @@ void main() {
 
 void _report(String label, Stopwatch sw, int iters) {
   final perOpNs = (sw.elapsedMicroseconds * 1000) / iters;
-  // ignore: avoid_print
-  print(
+
+  debugPrint(
     '[BENCH] $label: ${sw.elapsedMicroseconds / 1000}ms total, '
     '${perOpNs.toStringAsFixed(1)}ns/op',
   );

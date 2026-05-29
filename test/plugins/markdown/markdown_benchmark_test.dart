@@ -4,6 +4,7 @@ library;
 import 'dart:io';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_test/flutter_test.dart';
 
 // Drop large `.md` files into `test/plugins/markdown/fixtures/` and re-run
@@ -21,40 +22,32 @@ void main() {
 
   test('markdownToDocument benchmark', () {
     if (!fixturesDir.existsSync()) {
-      // ignore: avoid_print
-      print('No fixtures dir at ${fixturesDir.path}, skipping.');
+      debugPrint('No fixtures dir at ${fixturesDir.path}, skipping.');
       return;
     }
 
-    final files =
-        fixturesDir
-            .listSync()
-            .whereType<File>()
-            .where((f) => f.path.toLowerCase().endsWith('.md'))
-            .toList()
-          ..sort((a, b) => a.path.compareTo(b.path));
+    final files = fixturesDir.listSync().whereType<File>().where((f) => f.path.toLowerCase().endsWith('.md')).toList()
+      ..sort((a, b) => a.path.compareTo(b.path));
 
     if (files.isEmpty) {
-      // ignore: avoid_print
-      print('No .md fixtures found in ${fixturesDir.path}.');
+      debugPrint('No .md fixtures found in ${fixturesDir.path}.');
       return;
     }
 
-    // ignore: avoid_print
-    print(
+    debugPrint(
       '\nmarkdownToDocument benchmark (warmup=$_warmupIters, '
       'measure=$_measureIters)',
     );
-    // ignore: avoid_print
-    print('=' * 78);
-    // ignore: avoid_print
-    print(
+
+    debugPrint('=' * 78);
+
+    debugPrint(
       '${'file'.padRight(40)} ${'size'.padLeft(8)} '
       '${'min'.padLeft(8)} ${'avg'.padLeft(8)} ${'max'.padLeft(8)} '
       '${'nodes'.padLeft(8)}',
     );
-    // ignore: avoid_print
-    print('-' * 78);
+
+    debugPrint('-' * 78);
 
     for (final file in files) {
       final content = file.readAsStringSync();
@@ -84,8 +77,7 @@ void main() {
 
       final nodeCount = lastDoc!.root.children.length;
 
-      // ignore: avoid_print
-      print(
+      debugPrint(
         '${name.padRight(40)} ${'${sizeKb}K'.padLeft(8)} '
         '${_fmtMs(minUs).padLeft(8)} '
         '${_fmtMs(avgUs).padLeft(8)} '
@@ -94,8 +86,7 @@ void main() {
       );
     }
 
-    // ignore: avoid_print
-    print('=' * 78);
+    debugPrint('=' * 78);
   });
 }
 

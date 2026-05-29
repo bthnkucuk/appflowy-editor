@@ -24,23 +24,11 @@ void main() {
   group('Render-layer rect-equality benchmark', () {
     // Typical selection-area workload: 1-3 rects per block, all elements
     // compare equal in steady state (selection didn't move).
-    final shortA = <Rect>[
-      const Rect.fromLTWH(0, 0, 100, 20),
-      const Rect.fromLTWH(0, 20, 80, 20),
-    ];
-    final shortB = <Rect>[
-      const Rect.fromLTWH(0, 0, 100, 20),
-      const Rect.fromLTWH(0, 20, 80, 20),
-    ];
+    final shortA = <Rect>[const Rect.fromLTWH(0, 0, 100, 20), const Rect.fromLTWH(0, 20, 80, 20)];
+    final shortB = <Rect>[const Rect.fromLTWH(0, 0, 100, 20), const Rect.fromLTWH(0, 20, 80, 20)];
 
-    final longA = List<Rect>.generate(
-      20,
-      (i) => Rect.fromLTWH(i * 10.0, i * 5.0, 100, 20),
-    );
-    final longB = List<Rect>.generate(
-      20,
-      (i) => Rect.fromLTWH(i * 10.0, i * 5.0, 100, 20),
-    );
+    final longA = List<Rect>.generate(20, (i) => Rect.fromLTWH(i * 10.0, i * 5.0, 100, 20));
+    final longB = List<Rect>.generate(20, (i) => Rect.fromLTWH(i * 10.0, i * 5.0, 100, 20));
 
     test('DeepCollectionEquality — equal 2-element List<Rect> — 500k ops', () {
       const eq = DeepCollectionEquality();
@@ -57,22 +45,19 @@ void main() {
       _report('DeepCollectionEquality (2-rect equal)', sw, iterations);
     });
 
-    test(
-      'manual list-of-Rect equality — equal 2-element List<Rect> — 500k ops',
-      () {
-        // warm
-        for (var i = 0; i < 5000; i++) {
-          _rectListEq(shortA, shortB);
-        }
-        final sw = Stopwatch()..start();
-        const iterations = 500000;
-        for (var i = 0; i < iterations; i++) {
-          _rectListEq(shortA, shortB);
-        }
-        sw.stop();
-        _report('manual rect-list eq (2-rect equal)', sw, iterations);
-      },
-    );
+    test('manual list-of-Rect equality — equal 2-element List<Rect> — 500k ops', () {
+      // warm
+      for (var i = 0; i < 5000; i++) {
+        _rectListEq(shortA, shortB);
+      }
+      final sw = Stopwatch()..start();
+      const iterations = 500000;
+      for (var i = 0; i < iterations; i++) {
+        _rectListEq(shortA, shortB);
+      }
+      sw.stop();
+      _report('manual rect-list eq (2-rect equal)', sw, iterations);
+    });
 
     test('DeepCollectionEquality — equal 20-element List<Rect> — 200k ops', () {
       const eq = DeepCollectionEquality();
@@ -88,48 +73,36 @@ void main() {
       _report('DeepCollectionEquality (20-rect equal)', sw, iterations);
     });
 
-    test(
-      'manual list-of-Rect equality — equal 20-element List<Rect> — 200k ops',
-      () {
-        for (var i = 0; i < 2000; i++) {
-          _rectListEq(longA, longB);
-        }
-        final sw = Stopwatch()..start();
-        const iterations = 200000;
-        for (var i = 0; i < iterations; i++) {
-          _rectListEq(longA, longB);
-        }
-        sw.stop();
-        _report('manual rect-list eq (20-rect equal)', sw, iterations);
-      },
-    );
+    test('manual list-of-Rect equality — equal 20-element List<Rect> — 200k ops', () {
+      for (var i = 0; i < 2000; i++) {
+        _rectListEq(longA, longB);
+      }
+      final sw = Stopwatch()..start();
+      const iterations = 200000;
+      for (var i = 0; i < iterations; i++) {
+        _rectListEq(longA, longB);
+      }
+      sw.stop();
+      _report('manual rect-list eq (20-rect equal)', sw, iterations);
+    });
 
-    test(
-      'DeepCollectionEquality — first-element-differs 2-rect — 500k ops',
-      () {
-        const eq = DeepCollectionEquality();
-        final shortC = <Rect>[
-          const Rect.fromLTWH(1, 0, 100, 20),
-          const Rect.fromLTWH(0, 20, 80, 20),
-        ];
-        for (var i = 0; i < 5000; i++) {
-          eq.equals(shortA, shortC);
-        }
-        final sw = Stopwatch()..start();
-        const iterations = 500000;
-        for (var i = 0; i < iterations; i++) {
-          eq.equals(shortA, shortC);
-        }
-        sw.stop();
-        _report('DeepCollectionEquality (2-rect diff)', sw, iterations);
-      },
-    );
+    test('DeepCollectionEquality — first-element-differs 2-rect — 500k ops', () {
+      const eq = DeepCollectionEquality();
+      final shortC = <Rect>[const Rect.fromLTWH(1, 0, 100, 20), const Rect.fromLTWH(0, 20, 80, 20)];
+      for (var i = 0; i < 5000; i++) {
+        eq.equals(shortA, shortC);
+      }
+      final sw = Stopwatch()..start();
+      const iterations = 500000;
+      for (var i = 0; i < iterations; i++) {
+        eq.equals(shortA, shortC);
+      }
+      sw.stop();
+      _report('DeepCollectionEquality (2-rect diff)', sw, iterations);
+    });
 
     test('manual rect-list eq — first-element-differs 2-rect — 500k ops', () {
-      final shortC = <Rect>[
-        const Rect.fromLTWH(1, 0, 100, 20),
-        const Rect.fromLTWH(0, 20, 80, 20),
-      ];
+      final shortC = <Rect>[const Rect.fromLTWH(1, 0, 100, 20), const Rect.fromLTWH(0, 20, 80, 20)];
       for (var i = 0; i < 5000; i++) {
         _rectListEq(shortA, shortC);
       }
@@ -210,8 +183,8 @@ bool _rectListEq(List<Rect>? a, List<Rect>? b) {
 void _report(String label, Stopwatch sw, int iterations) {
   final totalUs = sw.elapsedMicroseconds;
   final perOpNs = (totalUs * 1000) / iterations;
-  // ignore: avoid_print
-  print(
+
+  debugPrint(
     '[BENCH] $label: '
     '${totalUs / 1000}ms total, '
     '${perOpNs.toStringAsFixed(1)}ns/op '
