@@ -2,17 +2,52 @@ import 'dart:async';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 
-/// Read-along viewer: walks the document one word at a time, driving
-/// `editorState.updateHighlight` so `BlockHighlightArea` paints the
-/// active word. Tap any word to seek there; the bottom control panel
-/// has play/pause, skip ±5 words, and a speed selector. A "back to
-/// current" pill appears when the user has scrolled the active word
-/// off-screen.
+/// Read-along viewer ported from the production tuSpeech app's reader
+/// screen. The key features mirrored from the app — and the reason this
+/// example exists — are:
 ///
-/// Patterned after a production TTS app's reader screen — bottom-anchored
-/// player UI over an `editable: false` editor, with the highlight
-/// re-centered each tick.
+/// 1. **Section parser.** `Node.sectionParser` is installed BEFORE the
+///    document is constructed (Node populates `sections` lazily in its
+///    constructor — line 55 of [Node]). Every paragraph/heading is then
+///    split into sentence-sized "sections", which [BlockHighlightArea]
+///    paints in [EditorStyle.highlightAreaColor] behind the word-level
+///    highlight, automatically — we don't paint anything ourselves; we
+///    only drive `updateHighlight(wordSelection)` and the section
+///    underlay follows because BHA derives the enclosing section from
+///    the highlight's offset midpoint (lines 324-327 of
+///    block_highlight_area.dart).
+///
+/// 2. **`highlightable: true` + `tapNotifier`.** Instead of intercepting
+///    pointer events ourselves, we let
+///    [MobileHighlightServiceWidget] do the tap routing — its
+///    `_onDoubleTapUp` resolves the word boundary at the tap and calls
+///    `editorState.updateTap(selection)`. We listen on
+///    `editorState.tapNotifier` to seek. Exact same path the app uses
+///    (`document_details_listener_mixin.tapListener`).
+///
+/// 3. **Editor-owned auto-scroll state.** The "back to current" pill
+///    drives off `editorState.isAutoScrollHighlightNotifier`, not a
+///    local flag. User drags the editor (reverse scroll) → we call
+///    `disableAutoScrollHighlight()`. Pill tap →
+///    `enableAutoScrollHighlight(editorScrollController)`. Each tick
+///    calls `highlightChanged(controller)` which scrolls iff the
+///    notifier is true.
+///
+/// 4. **Section-midpoint lookup on tap.** Tap → find which section of
+///    `node.sections` contains the offset midpoint
+///    `(tap.start + tap.end) ~/ 2`. Same predicate
+///    `BlockHighlightArea._updateSelectionIfNeeded` uses — keeping this
+///    in sync is what prevents the "highlight paints in the wrong
+///    place" class of bug.
+///
+/// Tokens here are pre-computed word selections in reading order; one
+/// tick == one word, the section underlay is derived. In the real app
+/// tokens come from the audio handler's `AudioSection` stream
+/// (sub-section word-aligned ranges); from the editor's point of view
+/// the contract is identical: highlight a small selection inside a
+/// section, the section paints automatically.
 class TtsReaderPage extends StatefulWidget {
   const TtsReaderPage({super.key});
 
@@ -21,17 +56,11 @@ class TtsReaderPage extends StatefulWidget {
 }
 
 class _TtsReaderPageState extends State<TtsReaderPage> {
-  // Word-per-tick at 1.0x speed. 350 ms ≈ a brisk reading cadence —
-  // long enough to register the highlight visually, short enough to
-  // sound like speech.
+  // Word-per-tick at 1.0x speed.
   static const Duration _baseWordDuration = Duration(milliseconds: 350);
 
   // Skip distance for the back/forward buttons.
   static const int _skipAmount = 5;
-
-  // Tap-vs-scroll threshold for the outer Listener. 10 px is the
-  // default Flutter TapGestureRecognizer uses.
-  static const double _tapSlop = 10;
 
   // Cycle order for the speed pill.
   static const List<double> _speeds = [0.75, 1.0, 1.25, 1.5];
@@ -41,40 +70,41 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   late final Map<String, BlockComponentBuilder> _blockComponentBuilders;
   late final EditorStyle _editorStyle;
 
-  /// Pre-computed word selections, in reading order. Computed once from
-  /// the static sample document — editor is read-only so it never
-  /// drifts.
+  /// Pre-computed word selections, in reading order. The static sample
+  /// document is read-only so it never drifts.
   final List<Selection> _tokens = [];
+
+  /// Saved so we can restore on dispose — `Node.sectionParser` is a
+  /// global static and shouldn't leak into other example pages that
+  /// pop in after this one.
+  Sections? Function(Node)? _previousSectionParser;
 
   int _currentIndex = -1;
   Timer? _timer;
   bool _playing = false;
   double _speed = 1.0;
 
-  /// Raw-pointer state for the outer Listener (see [build]).
-  Offset? _pointerDownAt;
-
-  /// True if our most recent scroll-to-highlight call is still in
-  /// flight, so we can ignore the resulting [_onScrollViewScrolled]
-  /// callback and not falsely flag "user scrolled away".
-  bool _suppressNextScrollEvent = false;
-
-  /// Becomes true when the user manually drags the document while
-  /// playback is active. While true, auto-scroll is paused and the
-  /// "back to current" pill is shown. Reset by tapping the pill.
-  bool _userScrolledAway = false;
-
   /// Mirror of `editorScrollController.visibleRangeNotifier.value`,
   /// updated via a postFrame defer. SuperSliverList fires its visible
   /// range notifier from inside `RenderSuperSliverList.performLayout`,
-  /// which would assert if we drove a `setState` directly off it (build
-  /// scheduled during frame).
+  /// which would assert if we drove a `setState` directly off it.
   (int, int) _visibleRange = (0, 0);
   bool _visibleRangeUpdatePending = false;
 
   @override
   void initState() {
     super.initState();
+
+    // Install the section parser. Order doesn't matter — `Node`
+    // bumps the path generation after wiring children's parents in
+    // its constructor / `fromJson`, so any path the parser reads at
+    // construction time is invalidated by the time the editor
+    // mounts. Sections are stored on each node and consumed by
+    // [BlockHighlightArea] to paint the active sentence underlay
+    // behind the word highlight.
+    _previousSectionParser = Node.sectionParser;
+    Node.sectionParser = _defaultNodeSectionParser;
+
     editorState = EditorState(document: _buildSampleDocument());
     editorState.editable = false;
     editorScrollController = EditorScrollController(
@@ -85,9 +115,11 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     _editorStyle = _buildEditorStyle();
     _tokens.addAll(_computeWordTokens(editorState.document));
 
-    // Scroll listener — tells us when the user manually drags.
-    editorState.addScrollViewScrolledListener(_onScrollViewScrolled);
-    // Mirror the visible range out of the layout phase.
+    // The editor's MobileHighlightServiceWidget fires tapNotifier on every
+    // tap-up (see mobile_highlight_service.dart:129 → updateTap). We seek
+    // to whichever word the tap landed in.
+    editorState.tapNotifier.addListener(_onTapNotifier);
+
     editorScrollController.visibleRangeNotifier.addListener(
       _onVisibleRangeChanged,
     );
@@ -96,32 +128,20 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   @override
   void dispose() {
     _timer?.cancel();
-    editorState.removeScrollViewScrolledListener(_onScrollViewScrolled);
+    editorState.tapNotifier.removeListener(_onTapNotifier);
     editorScrollController.visibleRangeNotifier.removeListener(
       _onVisibleRangeChanged,
     );
-    // Intentionally no `selectionService.unregisterGestureInterceptor`
-    // call — the child SelectionServiceWidget unmounts before us, so
-    // touching `editorState.selectionService` here asserts. We don't
-    // register one anymore (tap goes through Listener).
     editorScrollController.dispose();
     editorState.dispose();
+    Node.sectionParser = _previousSectionParser;
     super.dispose();
   }
 
   /// Build a FRESH map of block component builders. The default
   /// [standardBlockComponentBuilderMap] is a top-level `final` map of
   /// shared builder instances — mutating their `.configuration` would
-  /// leak into every other example that mounts an editor. We construct
-  /// new builders for paragraph + heading (the only blocks this sample
-  /// document uses) with tight vertical padding so consecutive
-  /// paragraphs sit close together.
-  ///
-  /// Spacing source map (so future tweaks know what to touch):
-  /// - inter-block gap → [BlockComponentConfiguration.padding] (each
-  ///   block wraps its child in `Container(padding: ...)`).
-  /// - intra-paragraph line spacing →
-  ///   [TextStyleConfiguration.lineHeight], set in [_buildEditorStyle].
+  /// leak into every other example that mounts an editor.
   Map<String, BlockComponentBuilder> _buildBlockComponentBuilders() {
     EdgeInsets paragraphPadding(Node _) =>
         const EdgeInsets.symmetric(vertical: 2);
@@ -151,22 +171,21 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     };
   }
 
-  /// The default [TextStyleConfiguration.lineHeight] is 1.5, which at
-  /// fontSize 16 produces 24-px line boxes — fine for editing, but
-  /// makes multi-line paragraphs in a viewer feel airy enough that
-  /// users read the gap between visual lines as "huge spacing between
-  /// paragraphs". Tightening to 1.35 collapses that visual gap without
-  /// crushing readability.
+  /// Highlight colors are what makes the section/word distinction
+  /// visible. `highlightAreaColor` is the underlay BHA paints for the
+  /// enclosing section; `highlightColor` is the foreground word.
   EditorStyle _buildEditorStyle() {
     return EditorStyle.mobile(
       padding: const EdgeInsets.only(
         left: 16,
         right: 16,
         top: 12,
-        bottom: 160, // room for the bottom control panel
+        bottom: 160,
       ),
       cursorColor: Colors.transparent,
       selectionColor: const Color(0x33000000),
+      highlightColor: const Color(0x553B82F6),
+      highlightAreaColor: const Color(0x223B82F6),
       textStyleConfiguration: const TextStyleConfiguration(
         text: TextStyle(fontSize: 17, color: Colors.black87),
         lineHeight: 1.35,
@@ -174,11 +193,7 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     );
   }
 
-  /// Walks every block in reading order, splits its plain text on
-  /// non-whitespace runs, and stores each run as a `Selection`. Runs
-  /// matched with `\S+` so punctuation rides along with the adjacent
-  /// word ("world!" is one token) — close enough to how a screen reader
-  /// pronounces a sentence.
+  /// Word tokens — one per `\S+` run, in reading order.
   static List<Selection> _computeWordTokens(Document doc) {
     final tokens = <Selection>[];
     final iter = NodeIterator(document: doc, startNode: doc.root);
@@ -203,23 +218,9 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
         milliseconds: (_baseWordDuration.inMilliseconds / _speed).round(),
       );
 
-  void _onScrollViewScrolled() {
-    if (_suppressNextScrollEvent) {
-      _suppressNextScrollEvent = false;
-      return;
-    }
-    // Any scroll not originated from our auto-scroll is treated as the
-    // user dragging away. Pause auto-scroll until they tap "back to
-    // current" — yanking them back every word would feel hostile.
-    if (!_userScrolledAway && _playing) {
-      setState(() => _userScrolledAway = true);
-    }
-  }
-
   /// SuperSliverList's `visibleRangeNotifier` fires from inside its
-  /// `performLayout`, so a `setState` driven directly off it asserts
-  /// "Build scheduled during frame." Coalesce updates to one postFrame
-  /// callback per layout pass and re-emit on the next frame.
+  /// `performLayout`. Coalesce updates to one postFrame callback per
+  /// layout pass.
   void _onVisibleRangeChanged() {
     final next = editorScrollController.visibleRangeNotifier.value;
     if (next == _visibleRange) return;
@@ -236,26 +237,19 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     });
   }
 
-  void _scrollHighlightIntoView() {
-    // Pre-set the suppress flag so the scroll callback this triggers
-    // doesn't immediately mark the user as having scrolled away.
-    _suppressNextScrollEvent = true;
-    editorState.scrollToHighlight(editorScrollController);
-  }
-
   void _advanceTo(int i) {
     if (i < 0 || i >= _tokens.length) {
       _pause();
-      // Done — clear highlight so the last word doesn't stay lit.
       editorState.updateHighlight(null);
       setState(() => _currentIndex = -1);
       return;
     }
     setState(() => _currentIndex = i);
     editorState.updateHighlight(_tokens[i]);
-    if (!_userScrolledAway) {
-      _scrollHighlightIntoView();
-    }
+    // Drives `scrollToHighlight` iff `isAutoScrollHighlightNotifier` is
+    // true. Mirrors the app's mixin call from
+    // `_skipSubscription.listen` (document_details_listener_mixin:35).
+    editorState.highlightChanged(editorScrollController);
   }
 
   void _play() {
@@ -264,7 +258,8 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
       _currentIndex = -1;
     }
     _timer?.cancel();
-    _userScrolledAway = false;
+    // Re-arm auto-scroll on play — like the app does on tap or skip.
+    editorState.enableAutoScrollHighlight(editorScrollController);
     _advanceTo(_currentIndex + 1);
     setState(() => _playing = true);
     _timer = Timer.periodic(_tickDuration, (_) {
@@ -283,7 +278,7 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   void _skip(int delta) {
     if (_tokens.isEmpty) return;
     final next = (_currentIndex + delta).clamp(0, _tokens.length - 1);
-    _userScrolledAway = false;
+    editorState.enableAutoScrollHighlight(editorScrollController);
     _currentIndex = next - 1;
     if (_playing) {
       _play();
@@ -303,65 +298,71 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     }
   }
 
-  void _onTapWord(Offset globalOffset) {
-    final pos = editorState.selectionService.getPositionInOffset(globalOffset);
-    if (pos == null) return;
-    final tapIdx = _findTokenIndex(pos);
-    if (tapIdx < 0) {
-      // Tap landed in whitespace / outside any token. Suppress keyboard
-      // anyway — the editor's own tap may have placed a cursor.
-      _suppressKeyboardAfterTap();
-      return;
-    }
-    _userScrolledAway = false;
-    _currentIndex = tapIdx - 1;
+  /// Tap routing via `tapNotifier`. Mirrors the app's `tapListener`:
+  /// resolve the enclosing section by offset midpoint, locate the
+  /// matching token, seek there, re-arm auto-scroll.
+  void _onTapNotifier() {
+    final tap = editorState.tapNotifier.value;
+    if (tap == null) return;
+    // Consume the tap immediately — the app's flow clears it via the
+    // highlight stream; here we don't have one, so do it explicitly.
+    editorState.tapNotifier.value = null;
+
+    final node = editorState.getNodesInSelection(tap).lastOrNull;
+    if (node == null) return;
+
+    final mid = (tap.end.offset + tap.start.offset) ~/ 2;
+
+    // Resolve the section containing the tap — same predicate
+    // [BlockHighlightArea._updateSelectionIfNeeded] uses.
+    final section = node.sections?.firstWhereOrNull(
+      (s) => s.selection.end.offset >= mid,
+    );
+    if (section == null) return;
+
+    final tokenIdx = _findTokenIndex(node, mid);
+    if (tokenIdx < 0) return;
+
+    editorState.enableAutoScrollHighlight(editorScrollController);
+    _currentIndex = tokenIdx - 1;
     if (_playing) {
       _play();
     } else {
-      _advanceTo(tapIdx);
+      _advanceTo(tokenIdx);
     }
-    _suppressKeyboardAfterTap();
   }
 
-  /// The editor's own tap recognizer fires alongside our Listener and
-  /// places a collapsed selection at the tap, which makes the keyboard
-  /// service attach the IME (it gates on selection update, not on
-  /// `editorState.editable`). Defer one microtask so the editor's
-  /// handler has run, then close the keyboard, clear the selection,
-  /// and yield focus back to the platform.
-  void _suppressKeyboardAfterTap() {
-    scheduleMicrotask(() {
-      if (!mounted) return;
-      editorState.keyboardService?.closeKeyboard();
-      try {
-        editorState.selectionService.clearSelection();
-      } catch (_) {
-        // Selection service may not be mounted yet on the very first
-        // tap; safe to ignore — there's nothing to clear.
-      }
-      FocusManager.instance.primaryFocus?.unfocus();
-    });
-  }
-
-  int _findTokenIndex(Position pos) {
+  int _findTokenIndex(Node node, int offset) {
     for (var i = 0; i < _tokens.length; i++) {
       final t = _tokens[i];
-      if (!t.start.path.equals(pos.path)) continue;
-      if (pos.offset >= t.start.offset && pos.offset <= t.end.offset) {
+      if (!t.start.path.equals(node.path)) continue;
+      if (offset >= t.start.offset && offset <= t.end.offset) {
         return i;
       }
     }
-    return -1;
+    // Fallback: closest token in this node.
+    int? best;
+    int bestDelta = 1 << 30;
+    for (var i = 0; i < _tokens.length; i++) {
+      final t = _tokens[i];
+      if (!t.start.path.equals(node.path)) continue;
+      final mid = (t.start.offset + t.end.offset) ~/ 2;
+      final d = (mid - offset).abs();
+      if (d < bestDelta) {
+        bestDelta = d;
+        best = i;
+      }
+    }
+    return best ?? -1;
   }
 
   void _returnToCurrent() {
-    setState(() => _userScrolledAway = false);
-    _scrollHighlightIntoView();
+    editorState.enableAutoScrollHighlight(editorScrollController);
   }
 
   /// True when the active word's top-level block is fully outside the
   /// currently visible range. Used as the trigger for the
-  /// "back to current" pill.
+  /// "back to current" pill (in conjunction with the auto-scroll flag).
   bool _activeWordOutsideViewport((int, int) visibleRange) {
     if (_currentIndex < 0 || _tokens.isEmpty) return false;
     final topIdx = _tokens[_currentIndex].start.path.firstOrNull;
@@ -374,8 +375,6 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      // Prevent the framework from auto-resizing for the keyboard if it
-      // does manage to slip through — the body should never reflow.
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Read-Along'),
@@ -383,28 +382,27 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
       ),
       body: Stack(
         children: [
-          // Raw-pointer Listener bypasses the gesture arena and the
-          // editor's tap-disabled-in-readonly behavior. Down/up distance
-          // < _tapSlop is treated as a tap; anything bigger is a scroll
-          // and gets ignored.
           Positioned.fill(
-            child: Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerDown: (event) => _pointerDownAt = event.position,
-              onPointerUp: (event) {
-                final start = _pointerDownAt;
-                _pointerDownAt = null;
-                if (start == null) return;
-                if ((event.position - start).distance > _tapSlop) return;
-                _onTapWord(event.position);
+            // User-reverse-scroll detection: the app does this in
+            // editorx's `_AppFlowyEditorX` via `onScrollReverse` →
+            // `editorState.disableAutoScrollHighlight()`. We inline it.
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is UserScrollNotification &&
+                    notification.direction == ScrollDirection.reverse) {
+                  editorState.disableAutoScrollHighlight();
+                }
+                return false;
               },
               child: AppFlowyEditor(
                 editorState: editorState,
                 editable: false,
-                // Belt: keep the keyboard service off entirely for the
-                // viewer, on top of the editor's own `editable:false`
-                // gate. The example user is testing on Android where
-                // any IME attach causes the keyboard to flash up.
+                // `highlightable: true` wires
+                // MobileHighlightServiceWidget — the source of tap
+                // events we consume via tapNotifier. Without this the
+                // tap-to-seek path is dead.
+                highlightable: true,
+                disableSelectionService: true,
                 disableKeyboardService: true,
                 showMagnifier: false,
                 editorScrollController: editorScrollController,
@@ -413,17 +411,17 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
               ),
             ),
           ),
-          // "Back to current" pill — shows when the user has scrolled
-          // the active word off-screen. Drives off the mirrored
-          // [_visibleRange] (updated postFrame) so we don't rebuild
-          // during SuperSliverList's layout phase.
+          // Back-to-current pill. Visibility driven by the editor-owned
+          // `isAutoScrollHighlightNotifier` (false → user has scrolled
+          // away) AND the active word being outside the viewport.
           Positioned(
             left: 0,
             right: 0,
             bottom: 124,
-            child: Builder(
-              builder: (context) {
-                final outOfView = _userScrolledAway &&
+            child: ValueListenableBuilder<bool>(
+              valueListenable: editorState.isAutoScrollHighlightNotifier,
+              builder: (context, autoScroll, _) {
+                final outOfView = !autoScroll &&
                     _activeWordOutsideViewport(_visibleRange);
                 final isAbove = _tokens.isNotEmpty &&
                     _currentIndex >= 0 &&
@@ -453,8 +451,6 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
               },
             ),
           ),
-          // Bottom control panel — rounded card with circular play, skip
-          // ±5 words, and a speed pill.
           Positioned(
             left: 12,
             right: 12,
@@ -486,9 +482,9 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
         paragraphNode(
           text: 'This page walks through the document one word at a time, '
               'highlighting each word as if a screen reader were reading it '
-              'aloud. The highlight is driven by editorState.updateHighlight, '
-              'which paints through the same BlockHighlightArea that powers '
-              'normal selection rendering.',
+              'aloud. The word highlight is driven by editorState.updateHighlight; '
+              'the surrounding section underlay is painted by '
+              'BlockHighlightArea automatically, derived from Node.sectionParser.',
         ),
         headingNode(level: 2, text: 'How to use it'),
         paragraphNode(
@@ -498,21 +494,20 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
               'the document to seek directly there.',
         ),
         paragraphNode(
-          text: 'Because the editor is mounted with editable: false, the '
-              'document acts purely as a viewer — no caret, no keyboard. '
-              'A raw-pointer Listener catches taps and turns them into '
-              '"seek to this word" events without enabling editing.',
+          text: 'Tapping is routed through editorState.tapNotifier — '
+              'MobileHighlightServiceWidget resolves the word boundary at '
+              'the tap and fires updateTap; we listen and seek to that '
+              'word. This is the exact path the production app uses for '
+              'tap-to-seek into a TTS queue.',
         ),
-        headingNode(level: 2, text: 'Why it matters'),
+        headingNode(level: 2, text: 'Sections vs words'),
         paragraphNode(
-          text: 'BlockHighlightArea is decoupled from the cursor pipeline. '
-              'Anything that produces a Selection can drive it: a real TTS '
-              'engine emitting word boundary events, a karaoke player '
-              'aligning lyrics to audio, a collaborative cursor from a '
-              'remote peer, or a tutor that walks a learner through a '
-              'passage. The editor stays read-only; the highlight does the '
-              'work, and the page snaps the active word back into view '
-              'unless the user has chosen to scroll away.',
+          text: 'BlockHighlightArea derives the enclosing section from the '
+              'midpoint of the active highlight selection. So a tiny '
+              'word-sized selection lights up both the word (in '
+              'highlightColor) and the surrounding sentence (in '
+              'highlightAreaColor). Section boundaries come from a unicode-aware '
+              'sentence boundary regex installed as Node.sectionParser.',
         ),
         headingNode(level: 3, text: 'Try this'),
         paragraphNode(
@@ -544,6 +539,81 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
       ],
     );
     return Document(root: root);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Section parser — ported from tuSpeech/core/default_node_section_parser.dart.
+//
+// Splits each node's plain text into sentence-sized "sections". A section
+// boundary is preferred wherever the unicode sentence-end regex matches
+// within the [soft, hard] window from the cursor; otherwise we cut at the
+// hard limit. The regex is intentionally broad — Western, RTL (Arabic,
+// Hebrew, Persian), Indic (Devanagari, Bengali), CJK, Thai, etc. — so a
+// multilingual document still gets meaningful sections.
+// ---------------------------------------------------------------------------
+
+final RegExp _sentenceEnd = RegExp(
+  r'(?<=[.!?…‽¡¿؟۔।॥։。！？⸘⸮])\s*(?=[\p{Lu}\p{Lt}\p{Pi}\p{Ps}\p{Nd}]|[一-鿿぀-ヿ가-힯฀-๿֐-׿؀-ۿऀ-ॿঀ-৿])',
+  unicode: true,
+);
+
+Sections? _defaultNodeSectionParser(Node node) {
+  final paragraph = node.delta?.toPlainText();
+  if (paragraph == null) return null;
+
+  final parts = _splitSubtexts(paragraph);
+  if (parts.isEmpty) return null;
+
+  var startOffset = 0;
+  final result = <Section>[];
+  for (var index = 0; index < parts.length; index++) {
+    final text = parts[index];
+    result.add(
+      Section(
+        index: index,
+        text: text,
+        selection: Selection(
+          start: Position(path: node.path, offset: startOffset),
+          end: Position(path: node.path, offset: startOffset + text.length),
+        ),
+        parent: node,
+      ),
+    );
+    startOffset += text.length;
+  }
+  return Sections(result);
+}
+
+/// Sentence boundaries beyond `soft` characters trigger a split as soon
+/// as one is found; if none lands inside [soft, hard], we hard-cut at
+/// `hard`. Tuned smaller than the app's defaults for the example so
+/// sections light up multiple times per paragraph.
+List<String> _splitSubtexts(String text, {int soft = 50, int hard = 500}) {
+  if (text.isEmpty) return const [];
+  final parts = <String>[];
+  var cursor = 0;
+  while (cursor < text.length) {
+    if (cursor + soft >= text.length) {
+      parts.add(text.substring(cursor));
+      break;
+    }
+    final searchEnd = (cursor + hard).clamp(0, text.length);
+    final window = text.substring(cursor + soft, searchEnd);
+    final m = _sentenceEnd.firstMatch(window);
+    final cut = m != null ? cursor + soft + m.end : searchEnd;
+    parts.add(text.substring(cursor, cut));
+    cursor = cut;
+  }
+  return parts;
+}
+
+extension _IterableX<E> on Iterable<E> {
+  E? firstWhereOrNull(bool Function(E) test) {
+    for (final e in this) {
+      if (test(e)) return e;
+    }
+    return null;
   }
 }
 
@@ -706,9 +776,6 @@ class _BackToCurrentPill extends StatelessWidget {
   const _BackToCurrentPill({required this.onTap, required this.isAbove});
 
   final VoidCallback onTap;
-
-  /// True if the active word is above the visible range (user scrolled
-  /// down past it). Drives the arrow direction.
   final bool isAbove;
 
   @override
