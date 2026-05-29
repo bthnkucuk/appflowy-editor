@@ -97,16 +97,29 @@ class EditorScrollController {
     await scrollController.animateTo(target, duration: duration, curve: curve);
   }
 
+  /// Non-animated jump to a pixel offset. Clamps to `[min, max]ScrollExtent`.
+  ///
+  /// No-op if the underlying scroll controller has no clients or the
+  /// editor is in non-shrinkWrap mode (which is virtualized and has no
+  /// stable pixel coordinate for an arbitrary node — use [jumpToIndex]
+  /// instead).
+  void jumpToPixels(double pixels) {
+    if (!shrinkWrap) return;
+    if (!scrollController.hasClients) return;
+    final position = scrollController.position;
+    scrollController.jumpTo(
+      pixels.clamp(position.minScrollExtent, position.maxScrollExtent),
+    );
+  }
+
+  /// Legacy combined entry point. Treated `offset` as pixels in shrinkWrap
+  /// mode and as a node index (via `.toInt()`) otherwise — a footgun.
+  /// Forwards to [jumpToPixels] or [jumpToIndex] based on [shrinkWrap]
+  /// so existing callers keep working.
+  @Deprecated('Use jumpToPixels(double) or jumpToIndex(index:) directly')
   void jumpTo({required double offset}) {
     if (shrinkWrap) {
-      if (scrollController.hasClients) {
-        scrollController.jumpTo(
-          offset.clamp(
-            scrollController.position.minScrollExtent,
-            scrollController.position.maxScrollExtent,
-          ),
-        );
-      }
+      jumpToPixels(offset);
       return;
     }
 
