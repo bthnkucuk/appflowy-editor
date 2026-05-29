@@ -398,28 +398,29 @@ Widget _buildDropArea(
   Node dragNode,
 ) {
   final targetNode = data.targetNode;
-  if (_shouldIgnoreDrop(dragNode, targetNode.path)) {
+
+  final shouldIgnoreDrop = _shouldIgnoreDrop(dragNode, targetNode.path);
+  if (shouldIgnoreDrop) {
     return const SizedBox.shrink();
   }
 
-  // All the geometry the indicator needs comes from
-  // [DragAreaBuilderData] now — no more `selectable.findRenderObject()`
-  // re-resolution (which was subject to layout drift mid-drag) and
-  // no off-by-`childOffsetY` issues in `getBlockRect()`. The editor
-  // hands us:
-  //   - `targetBlockRect`: target block's global screen rect, derived
-  //     from its `RenderPadding`, so `.top`/`.bottom` line up with the
-  //     block's actual visible edges.
-  //   - `isCloserToStart`: same predicate the editor uses to pick the
-  //     drop path. Reading it here keeps the indicator and the
-  //     committed insertion path in lockstep.
-  final globalBlockRect = data.targetBlockRect;
-  final dragOffset = data.dragOffset;
-  if (!globalBlockRect.contains(dragOffset)) {
+  final selectable = targetNode.selectable;
+  final renderBox = selectable?.context.findRenderObject() as RenderBox?;
+  if (selectable == null || renderBox == null) {
     return const SizedBox.shrink();
   }
 
-  final horizontalPosition = _horizontalPositionFor(dragOffset, globalBlockRect);
+  final position = _getPosition(
+    context,
+    targetNode,
+    data.dragOffset,
+  );
+
+  if (position == null) {
+    return const SizedBox.shrink();
+  }
+
+  final (verticalPosition, horizontalPosition, globalBlockRect) = position;
 
   // 44 is the width of the drag indicator
   const indicatorWidth = 44.0;
@@ -437,7 +438,11 @@ Widget _buildDropArea(
     child = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(height: 2, width: breakWidth, color: Colors.red),
+        Container(
+          height: 2,
+          width: breakWidth,
+          color: Colors.red,
+        ),
         const SizedBox(width: padding),
         Container(
           height: 2,
@@ -451,37 +456,22 @@ Widget _buildDropArea(
       top: globalBlockRect.top,
       height: globalBlockRect.height,
       left: globalBlockRect.right - 2,
-      child: Container(width: 2, color: Colors.red),
+      child: Container(
+        width: 2,
+        color: Colors.red,
+      ),
     );
   }
 
-  // Center the line on the boundary so it reads as "between blocks"
-  // rather than glued to the top of the next block. The 2px height is
-  // the indicator's thickness; offset half that.
-  final indicatorY =
-      (data.isCloserToStart ? globalBlockRect.top : globalBlockRect.bottom) - 1;
-
   return Positioned(
-    top: indicatorY,
+    top: verticalPosition == VerticalPosition.top
+        ? globalBlockRect.top
+        : globalBlockRect.bottom,
     left: globalBlockRect.left + 22,
     child: child,
   );
 }
 
-HorizontalPosition _horizontalPositionFor(Offset dragOffset, Rect blockRect) {
-  if (dragOffset.dx < blockRect.left + 44) {
-    return HorizontalPosition.left;
-  } else if (dragOffset.dx > blockRect.right / 3.0 * 2.0) {
-    return HorizontalPosition.right;
-  }
-  return HorizontalPosition.center;
-}
-
-/// Drop-time geometry resolver — used by `_moveNodeToNewPosition`
-/// AFTER the drag is released, when `DragAreaBuilderData` isn't
-/// available. The `selectable.findRenderObject()` call is safe here
-/// because layout has stabilized by drop time; mid-drag the builder
-/// path uses `data.targetBlockRect` instead.
 (VerticalPosition, HorizontalPosition, Rect)? _getPosition(
   BuildContext context,
   Node dragTargetNode,
@@ -493,16 +483,42 @@ HorizontalPosition _horizontalPositionFor(Offset dragOffset, Rect blockRect) {
     return null;
   }
 
-  final globalBlockRect = renderBox.localToGlobal(Offset.zero) & renderBox.size;
-  if (!globalBlockRect.contains(dragOffset)) {
+  final globalBlockOffset = renderBox.localToGlobal(Offset.zero);
+  final globalBlockRect = globalBlockOffset & renderBox.size;
+
+  // Check if the dragOffset is within the globalBlockRect
+  final isInside = globalBlockRect.contains(dragOffset);
+
+  if (!isInside) {
+    debugPrint(
+      'the drag offset is not inside the block, dragOffset($dragOffset), globalBlockRect($globalBlockRect)',
+    );
     return null;
   }
 
-  final horizontalPosition = _horizontalPositionFor(dragOffset, globalBlockRect);
-  final verticalPosition =
-      dragOffset.dy < globalBlockRect.top + globalBlockRect.height / 2
-      ? VerticalPosition.top
-      : VerticalPosition.bottom;
+  debugPrint(
+    'the drag offset is inside the block, dragOffset($dragOffset), globalBlockRect($globalBlockRect)',
+  );
+
+  // Determine the relative position
+  HorizontalPosition horizontalPosition;
+  VerticalPosition verticalPosition;
+
+  // Horizontal position
+  if (dragOffset.dx < globalBlockRect.left + 44) {
+    horizontalPosition = HorizontalPosition.left;
+  } else if (dragOffset.dx > globalBlockRect.right / 3.0 * 2.0) {
+    horizontalPosition = HorizontalPosition.right;
+  } else {
+    horizontalPosition = HorizontalPosition.center;
+  }
+
+  // Vertical position
+  if (dragOffset.dy < globalBlockRect.top + globalBlockRect.height / 2) {
+    verticalPosition = VerticalPosition.top;
+  } else {
+    verticalPosition = VerticalPosition.bottom;
+  }
 
   return (verticalPosition, horizontalPosition, globalBlockRect);
 }

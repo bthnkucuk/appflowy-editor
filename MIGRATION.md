@@ -493,60 +493,7 @@ Before: `MobileHighlightServiceWidget.updateSelection` called `updateTap(selecti
 
 ---
 
-## 11. `DragAreaBuilderData` gains two required fields
-
-If you pass a custom `DragAreaBuilder` to
-`editorState.selectionService.renderDropTargetForOffset(..., builder: …)`,
-the data object handed to your builder grew two new fields:
-
-```dart
-DragAreaBuilderData({
-  required this.targetNode,
-  required this.dragOffset,
-  required this.isCloserToStart,   // ← new
-  required this.targetBlockRect,   // ← new
-});
-```
-
-Why: builders that previously re-derived "before vs after" by calling
-`targetNode.selectable?.getBlockRect()` themselves were hitting a
-geometry corner case — `getBlockRect()` returns
-`Offset.zero & (parentSize - childOffset)`, which doesn't represent the
-block's visual bottom edge when the inner BlockSelectionContainer has
-a non-zero `childOffsetY` (some heading blocks have ~8px). The line
-ended up drawn INSIDE the block instead of at the boundary between
-two blocks.
-
-The editor now computes `isCloserToStart` once (same predicate it uses
-to pick the drop path) and resolves the target block's
-`targetBlockRect` in global screen coordinates from its
-`RenderPadding`, before any layout drift between the comparison and
-the overlay's deferred build. Use them directly:
-
-```dart
-final indicatorY = data.isCloserToStart
-    ? data.targetBlockRect.top
-    : data.targetBlockRect.bottom;
-
-return Positioned(
-  top: indicatorY - 1,            // center a 2px line on the boundary
-  left: data.targetBlockRect.left,
-  child: Container(
-    height: 2,
-    width: data.targetBlockRect.width,
-    color: Colors.red,
-  ),
-);
-```
-
-If you only need "before vs after" semantics, read
-`data.isCloserToStart` instead of recomputing. The editor's drop path
-uses the same predicate, so what you render visually matches where
-the node actually lands.
-
----
-
-## 12. Net-new APIs (additive, no migration needed)
+## 11. Net-new APIs (additive, no migration needed)
 
 These don't break anything but are worth knowing about:
 
