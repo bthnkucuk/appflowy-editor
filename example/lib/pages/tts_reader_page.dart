@@ -400,6 +400,14 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   }
 
   /// Word tokens — one per `\S+` run, in reading order.
+  ///
+  /// Built via [Selection.single] rather than the two-`Position`
+  /// constructor: every word lives inside one node, so the path is
+  /// shared between start and end. `Selection.single(path:,
+  /// startOffset:, endOffset:)` says exactly that, and is the public
+  /// shortcut for "same-path range selection". Downstream readers
+  /// that compute token streams should use the same idiom — keeps the
+  /// hot loop free of redundant `Position` allocations.
   static List<Selection> _computeWordTokens(Document doc) {
     final tokens = <Selection>[];
     final iter = NodeIterator(document: doc, startNode: doc.root);
@@ -410,9 +418,10 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
       if (text == null || text.isEmpty) continue;
       for (final m in regex.allMatches(text)) {
         tokens.add(
-          Selection(
-            start: Position(path: node.path, offset: m.start),
-            end: Position(path: node.path, offset: m.end),
+          Selection.single(
+            path: node.path,
+            startOffset: m.start,
+            endOffset: m.end,
           ),
         );
       }
@@ -562,14 +571,26 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     final node = editorState.getNodesInSelection(tap).lastOrNull;
     if (node == null) return;
 
-    final mid = (tap.end.offset + tap.start.offset) ~/ 2;
+    // Tap midpoint as a collapsed [Selection]. `Position.copyWith` lets
+    // us reuse `tap.start.path` (the tap is single-line so start.path
+    // == end.path) and only override the offset; `Selection.collapsed`
+    // wraps the resulting point so we have a Selection-typed value to
+    // hand to selection-shaped APIs without writing a length-zero
+    // range out longhand. Both APIs together are the canonical
+    // "convert a tap range into a hit-test point" idiom.
+    final tapPoint = tap.start.copyWith(
+      offset: (tap.start.offset + tap.end.offset) ~/ 2,
+    );
+    final collapsedTap = Selection.collapsed(tapPoint);
 
     // Resolve the section containing the tap — same predicate
-    // [BlockHighlightArea._updateSelectionIfNeeded] uses.
-    final section = node.sectionForSelection(tap);
+    // [BlockHighlightArea._updateSelectionIfNeeded] uses. Pass the
+    // collapsed midpoint; `sectionForSelection` would compute the same
+    // midpoint internally anyway.
+    final section = node.sectionForSelection(collapsedTap);
     if (section == null) return;
 
-    final tokenIdx = _findTokenIndex(node, mid);
+    final tokenIdx = _findTokenIndex(node, tapPoint.offset);
     if (tokenIdx < 0) return;
 
     editorState.enableAutoScrollHighlight(editorScrollController);
