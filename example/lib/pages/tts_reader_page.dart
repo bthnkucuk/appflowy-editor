@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
 
 /// Read-along viewer ported from a production reader app. The key
@@ -71,7 +73,15 @@ class TtsReaderPage extends StatefulWidget {
 
 /// Build path the demo wires up for its initial `Document`. See
 /// `_TtsReaderPageState._sampleDocumentSource` for the full doc.
-enum _SampleDocumentSource { programmatic, markdown, json }
+enum _SampleDocumentSource {
+  programmatic('Programmatic (typed factories)'),
+  markdown('Markdown → Document'),
+  json('JSON → Document');
+
+  const _SampleDocumentSource(this.label);
+
+  final String label;
+}
 
 class _TtsReaderPageState extends State<TtsReaderPage> {
   // Word-per-tick at 1.0x speed.
@@ -80,37 +90,43 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   // Cycle order for the speed pill.
   static const List<double> _speeds = [0.75, 1.0, 1.25, 1.5];
 
-  /// Selects which `Document` build path the demo wires up. Three
-  /// alternatives all compile and produce a runnable read-along:
+  /// Runtime-switchable build path for the demo's `Document`.
   ///
-  /// - [_SampleDocumentSource.programmatic] — the default. Builds the
-  ///   tree via the typed `headingNode` / `paragraphNode` / `noteNode`
-  ///   helpers. Best for hand-authored sample content; gets the custom
-  ///   `NoteBlockComponent` for free because it lives in the typed
-  ///   factory.
+  /// Mutable (vs. `static const`) so the AppBar overflow menu can hot-
+  /// swap the source while the page is mounted — every switch tears
+  /// down the current editor state and rebuilds, exercising the
+  /// **mid-lifecycle EditorState replacement** pattern downstream
+  /// reader apps use in `prepareReader`-style flows (open a new
+  /// document → dispose the old `EditorState` / scroll controller →
+  /// build new ones → re-subscribe to tap events → reset tokens /
+  /// playlist / playback cursor → setState to flush).
+  ///
+  /// Three build paths the menu can pick:
+  ///
+  /// - [_SampleDocumentSource.programmatic] — typed-factory tree built
+  ///   via `headingNode` / `paragraphNode` / `noteNode`. Best for
+  ///   hand-authored content; gets the custom `NoteBlockComponent`
+  ///   for free because it lives in the typed factory.
   /// - [_SampleDocumentSource.markdown] — round-trips through
   ///   `markdownToDocument(...)`. The canonical "I have a markdown
-  ///   string from somewhere — disk, network, a remote CMS — wire it
-  ///   into the editor" path. The standard markdown parsers don't
-  ///   know about the custom note block, so the resulting document is
-  ///   a subset (heading + paragraph only); demonstrates exactly the
-  ///   tradeoff a markdown-sourced reader makes.
+  ///   string from disk / network / remote CMS, parse it into a
+  ///   Document" path. The standard markdown parsers don't know about
+  ///   the custom note block, so the note drops out of the resulting
+  ///   document — the same lossy tradeoff a downstream markdown-
+  ///   sourced reader makes.
   /// - [_SampleDocumentSource.json] — round-trips through
   ///   `Document.toJson()` + `Document.fromJson(...)`. The canonical
   ///   "load a persisted document from storage" path. JSON is
-  ///   lossless (the note block survives because the JSON encoder
-  ///   preserves arbitrary attributes), so the document matches the
-  ///   programmatic build byte-for-byte.
-  ///
-  /// Flip this constant to exercise the other paths against the rest
-  /// of the page — section parser, tokens, playlist, tap-to-seek,
-  /// auto-scroll all just work, because the document API surface is
-  /// the same regardless of how the tree was constructed.
-  static const _SampleDocumentSource _sampleDocumentSource =
-      _SampleDocumentSource.programmatic;
+  ///   lossless across `Node.type` + `Node.attributes` + children, so
+  ///   the custom note block survives the round-trip with no
+  ///   encoder-side help.
+  _SampleDocumentSource _documentSource = _SampleDocumentSource.programmatic;
 
-  late final EditorState editorState;
-  late final EditorScrollController editorScrollController;
+  // `late` (not `late final`) — the AppBar swap menu rebuilds both on
+  // every source switch. The builders + style don't depend on the
+  // document tree, so they stay `late final`.
+  late EditorState editorState;
+  late EditorScrollController editorScrollController;
   late final Map<String, BlockComponentBuilder> _blockComponentBuilders;
   late final EditorStyle _editorStyle;
 
@@ -192,6 +208,97 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     // The stream is broadcast and carries only taps, so there's no
     // reason to gate or consume — each event is one tap.
     _tapEventsSubscription = editorState.tapEvents.listen(_onTap);
+  }
+
+  /// Mid-lifecycle `EditorState` replacement — the pattern downstream
+  /// reader apps use when the user opens a new document while the
+  /// reader screen is mounted. Tears down every editor-bound piece of
+  /// state in dependency order:
+  ///
+  /// 1. Halt the playback timer + the tap-event subscription so no
+  ///    stray callback fires against the (about-to-be-)disposed editor.
+  /// 2. Dispose the scroll controller before the editor state — the
+  ///    controller's listener on `editorState.document.root` would
+  ///    otherwise survive past its host.
+  /// 3. Dispose the editor state. The transaction pipeline closes,
+  ///    every notifier (`selectionNotifier`, `highlightNotifier`,
+  ///    `tapEvents` stream, the outline notifier, dirty notifier)
+  ///    closes / disposes, the document tears down with it.
+  /// 4. Reset every reader-local field that was derived from the old
+  ///    document — tokens, playlist, character count, the playback
+  ///    cursor (`_currentIndex`), the `_playing` flag.
+  /// 5. Build the new editor state through `EditorState(document:
+  ///    _buildDocumentFor(source))`, re-attach the section parser,
+  ///    rebuild the scroll controller, recompute tokens + playlist,
+  ///    re-subscribe to the new `tapEvents` stream.
+  /// 6. `setState` to flush. The page's `build()` recomputes against
+  ///    the new editor state; `AppFlowyEditor` re-receives the new
+  ///    state via `didUpdateWidget`; every `AnimatedBuilder` /
+  ///    `ValueListenableBuilder` keyed off the editor's notifiers
+  ///    re-subscribes to the new ones.
+  Future<void> _swapDocumentSource(_SampleDocumentSource source) async {
+    if (source == _documentSource) return;
+
+    // Load the new document FIRST. If the asset is missing or markdown
+    // parsing throws, we surface the failure before tearing down the
+    // current editor — the user keeps reading whatever they had.
+    final Document newDocument;
+    try {
+      newDocument = await _buildDocumentFor(source);
+    } catch (error, stack) {
+      debugPrint('[H-DBG] swap aborted: $error\n$stack');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load $source: $error')),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+
+    _timer?.cancel();
+    _timer = null;
+    _tapEventsSubscription?.cancel();
+    _tapEventsSubscription = null;
+    editorScrollController.dispose();
+    editorState.dispose();
+
+    _tokens.clear();
+    _playlist.clear();
+    _totalCharacterCount = 0;
+    _currentIndex.value = -1;
+    _playing.value = false;
+
+    setState(() {
+      _documentSource = source;
+      editorState = EditorState(document: newDocument);
+      editorState.editable = false;
+      editorState.sectionParser = (node) =>
+          defaultSentenceSectionParser(node, soft: 50, hard: 500);
+      editorScrollController = EditorScrollController(
+        editorState: editorState,
+        shrinkWrap: false,
+      );
+      _tokens.addAll(_computeWordTokens(editorState.document));
+      _playlist.addAll(
+        editorState.document.root.children
+            .map((node) => node.sections)
+            .whereType<Sections>()
+            .expand((s) => s)
+            .mapWithCharacterOffsets(
+              (section, characterOffset) => _PlaylistItem(
+                section: section,
+                characterOffset: characterOffset,
+              ),
+            ),
+      );
+      if (_playlist.isNotEmpty) {
+        final last = _playlist.last;
+        _totalCharacterCount =
+            last.characterOffset + last.section.characterCount;
+      }
+      _tapEventsSubscription = editorState.tapEvents.listen(_onTap);
+    });
   }
 
   @override
@@ -553,6 +660,25 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
               _resumeAt(_tokens.length ~/ 2);
             },
           ),
+          // Mid-lifecycle document swap demo. Downstream reader apps
+          // open new documents while the reader screen stays mounted —
+          // this menu exercises that path against all three Document
+          // factories (programmatic Node tree, markdownToDocument,
+          // Document.fromJson) so a refactor that breaks any of them
+          // gets caught by manually flipping through the menu.
+          PopupMenuButton<_SampleDocumentSource>(
+            tooltip: 'Switch sample document source',
+            icon: const Icon(Icons.swap_horiz_rounded),
+            onSelected: _swapDocumentSource,
+            itemBuilder: (context) => [
+              for (final source in _SampleDocumentSource.values)
+                CheckedPopupMenuItem<_SampleDocumentSource>(
+                  value: source,
+                  checked: source == _documentSource,
+                  child: Text(source.label),
+                ),
+            ],
+          ),
         ],
       ),
       body: Stack(
@@ -676,64 +802,55 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     );
   }
 
-  /// Picks the build path declared by [_sampleDocumentSource]. Keeping
-  /// all three branches reachable from one switch means every alternative
-  /// is type-checked and analyzer-visited on every build — they don't
-  /// rot into "demo code that compiled three releases ago".
+  /// Resolves the build path declared by the runtime [_documentSource].
+  /// Keeping all three branches reachable from one switch means every
+  /// alternative is type-checked and analyzer-visited on every build —
+  /// they don't rot into "demo code that compiled three releases ago".
+  /// initState builds the initial document synchronously — only the
+  /// `programmatic` source is allowed at boot, so this stays sync.
+  /// Runtime swaps go through the async [_buildDocumentFor].
   Document _buildInitialDocument() {
-    return switch (_sampleDocumentSource) {
-      _SampleDocumentSource.programmatic => _buildSampleDocument(),
-      _SampleDocumentSource.markdown => _buildSampleDocumentFromMarkdown(),
-      _SampleDocumentSource.json => _buildSampleDocumentFromJson(),
-    };
+    assert(
+      _documentSource == _SampleDocumentSource.programmatic,
+      'Initial document must be the programmatic source — markdown / '
+      'json paths require async asset loads and must go through the '
+      'AppBar swap menu.',
+    );
+    return _buildSampleDocument();
   }
 
-  /// Round-trips through `markdownToDocument(...)` — the canonical
-  /// "I have a markdown string, parse it into a Document" path. The
-  /// editor ships a default set of block-level markdown parsers
-  /// (heading, paragraph, list, blockquote, …) that the call below
-  /// applies. Custom block types (like our [NoteBlockComponent]) are
-  /// NOT in that default set — the resulting document drops the note
-  /// block, which is the same tradeoff a downstream markdown-sourced
-  /// reader makes.
-  ///
-  /// Pass `customParsers:` to teach the decoder about additional block
-  /// shapes; we skip that here for brevity.
-  Document _buildSampleDocumentFromMarkdown() {
-    const markdown = '''
-# Read-Along Demo
+  Future<Document> _buildDocumentFor(_SampleDocumentSource source) async =>
+      switch (source) {
+        _SampleDocumentSource.programmatic => _buildSampleDocument(),
+        _SampleDocumentSource.markdown =>
+          await _buildSampleDocumentFromMarkdown(),
+        _SampleDocumentSource.json => await _buildSampleDocumentFromJson(),
+      };
 
-This page walks through the document one word at a time,
-highlighting each word as if a screen reader were reading it
-aloud. The word highlight is driven by editorState.updateHighlight;
-the surrounding section underlay is painted by BlockHighlightArea
-automatically, derived from Node.sectionParser.
-
-## How to use it
-
-Press play to start from the beginning. Use the skip buttons to jump
-five words at a time. Tap the speed pill to cycle through 0.75x, 1x,
-1.25x, and 1.5x. Tap any word in the document to seek directly there.
-
-## Sections vs words
-
-BlockHighlightArea derives the enclosing section from the midpoint
-of the active highlight selection. So a tiny word-sized selection
-lights up both the word (in highlightColor) and the surrounding
-sentence (in highlightAreaColor).
-''';
+  /// Loads `assets/sample_article.md` via [rootBundle] and runs it
+  /// through `markdownToDocument(...)` — the canonical "I have a
+  /// markdown file (on disk, in assets, fetched from the network),
+  /// parse it into a Document" path. The editor ships a default set of
+  /// block-level markdown parsers (heading, paragraph, list,
+  /// blockquote, …) that the call below applies. Custom block types
+  /// (like our [NoteBlockComponent]) are NOT in that default set — a
+  /// markdown-sourced document loses them, the same tradeoff a
+  /// downstream markdown-sourced reader makes. Pass `customParsers:`
+  /// to teach the decoder about additional block shapes.
+  Future<Document> _buildSampleDocumentFromMarkdown() async {
+    final markdown = await rootBundle.loadString('assets/sample_article.md');
     return markdownToDocument(markdown);
   }
 
-  /// Round-trips through `Document.toJson()` + `Document.fromJson(...)`
-  /// — the canonical "load a persisted document from disk / network"
-  /// path. JSON is lossless across `Node.type` + `Node.attributes` +
-  /// children, so the custom note block survives the round-trip with no
-  /// special handling on either side. The same encoder/decoder shape an
-  /// app uses to persist user-authored documents to a backend.
-  Document _buildSampleDocumentFromJson() {
-    final original = _buildSampleDocument();
-    return Document.fromJson(original.toJson());
+  /// Loads `assets/example.json` via [rootBundle] and runs it through
+  /// `Document.fromJson(...)` — the canonical "load a persisted
+  /// document from storage" path. JSON is lossless across `Node.type`
+  /// + `Node.attributes` + children, so any custom block survives the
+  /// round-trip with no encoder-side help — the same shape an app uses
+  /// to persist user-authored documents to a backend.
+  Future<Document> _buildSampleDocumentFromJson() async {
+    final raw = await rootBundle.loadString('assets/example.json');
+    return Document.fromJson(jsonDecode(raw) as Map<String, Object?>);
   }
 
   Document _buildSampleDocument() {
