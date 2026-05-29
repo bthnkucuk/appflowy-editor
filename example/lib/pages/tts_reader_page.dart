@@ -4,9 +4,8 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 
-/// Read-along viewer ported from the production tuSpeech app's reader
-/// screen. The key features mirrored from the app — and the reason this
-/// example exists — are:
+/// Read-along viewer ported from a production reader app. The key
+/// features mirrored — and the reason this example exists — are:
 ///
 /// 1. **Section parser.** `Node.sectionParser` is installed BEFORE the
 ///    document is constructed (Node populates `sections` lazily in its
@@ -543,7 +542,8 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
 }
 
 // ---------------------------------------------------------------------------
-// Section parser — ported from tuSpeech/core/default_node_section_parser.dart.
+// Section parser — splits each node's plain text into sentence-sized
+// "sections".
 //
 // Splits each node's plain text into sentence-sized "sections". A section
 // boundary is preferred wherever the unicode sentence-end regex matches
