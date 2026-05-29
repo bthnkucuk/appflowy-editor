@@ -41,8 +41,6 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar> with Widg
   // use for skipping the first build for the toolbar when the selection is collapsed.
   Selection? prevSelection;
 
-  VoidCallback? _onScrollEnd;
-
   late final StreamSubscription _onTapSelectionAreaSubscription;
 
   @override
@@ -88,22 +86,12 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar> with Widg
 
   @override
   Widget build(BuildContext context) {
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification is ScrollEndNotification && _onScrollEnd != null) {
-          _onScrollEnd!.call();
-          _onScrollEnd = null;
-        }
-
-        return false;
+    return OverlayPortal(
+      controller: _portalController,
+      overlayChildBuilder: (overlayContext) {
+        return widget.toolbarBuilder(overlayContext, _anchor, _clear);
       },
-      child: OverlayPortal(
-        controller: _portalController,
-        overlayChildBuilder: (overlayContext) {
-          return widget.toolbarBuilder(overlayContext, _anchor, _clear);
-        },
-        child: widget.child,
-      ),
+      child: widget.child,
     );
   }
 
@@ -140,14 +128,13 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar> with Widg
       'isShowing=${_portalController.isShowing} '
       'dy=${widget.editorScrollController.offsetNotifier.value}',
     );
-    // Hide while scrolling, re-show once the scroll comes to rest. Cheaper
-    // than continuously re-computing the anchor each scroll tick — and
-    // matches the old OverlayEntry-based behavior.
-    if (_portalController.isShowing) {
-      _portalController.hide();
-      prevSelection = null;
-      _onScrollEnd ??= () => _showAfterDelay(const Duration(milliseconds: 50));
-    }
+    // Only react if already showing — never auto-show from scroll.
+    // [_refreshToolbar] re-anchors smoothly when the selection is
+    // still on-screen, and hides for good when it isn't. Matches the
+    // desktop floating-toolbar behavior and the "ekran dışına çıkarsa
+    // gitsin ve bir daha gelmesin" UX directive.
+    if (!_portalController.isShowing) return;
+    _refreshToolbar();
   }
 
   final String _debounceKey = 'show the toolbar';
@@ -163,28 +150,39 @@ class _MobileFloatingToolbarState extends State<MobileFloatingToolbar> with Widg
   }
 
   void _showAfterDelay([Duration duration = Duration.zero]) {
-    // uses debounce to avoid the computing the rects too frequently.
+    // [_refreshToolbar] handles both validate+show and validate+hide,
+    // so no pre-call `_clear()` is needed here.
     Debounce.debounce(_debounceKey, duration, () {
       if (!mounted) return;
-      _showToolbar();
+      _refreshToolbar();
     });
   }
 
-  void _showToolbar() {
+  /// Single-entry "compute anchor + decide show/hide" path. Called by
+  /// [_showAfterDelay]'s debounced callback (selection change) and by
+  /// [_onScrollPositionChanged] (scroll tick). Every invalid-state
+  /// route calls [_clear] explicitly so the toolbar disappears whenever
+  /// the selection becomes unreadable or scrolls off-screen, regardless
+  /// of which caller drove this tick.
+  void _refreshToolbar() {
     final rects = editorState.selectionRects();
     if (rects.isEmpty) {
-      debugPrint('[FLOAT-DBG] _showToolbar skipped (no rects)');
+      debugPrint('[FLOAT-DBG] _refreshToolbar hide (no rects)');
+      _clear();
       return;
     }
     final rect = _findSuitableRect(rects);
-    // Empty is determined only if there is only one selection area
+    // Empty rect means the selection is no longer in view (see
+    // [_findSuitableRect]: it returns Rect.zero when every rect's top
+    // is above the editor's render origin). Treat as off-screen → hide.
     if (rects.length <= 1 && rect.isEmpty) {
-      debugPrint('[FLOAT-DBG] _showToolbar skipped (empty single rect)');
+      debugPrint('[FLOAT-DBG] _refreshToolbar hide (empty single rect)');
+      _clear();
       return;
     }
 
     debugPrint(
-      '[FLOAT-DBG] _showToolbar SHOW anchor=${rect.topCenter} '
+      '[FLOAT-DBG] _refreshToolbar SHOW anchor=${rect.topCenter} '
       'wasShowing=${_portalController.isShowing}',
     );
     setState(() {
