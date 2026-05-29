@@ -63,6 +63,11 @@ mixin _ScrollCoordinatorMixin {
   AutoScroller? autoScroller;
   ScrollableState? scrollableState;
 
+  /// Set in [_disposeScrollCoordinator] so the deferred retry inside
+  /// [scrollToHighlight] short-circuits if the editor disposes between
+  /// scheduling and the post-frame callback firing.
+  bool _scrollCoordinatorDisposed = false;
+
   // ---------------------------------------------------------------------------
   // Scroll-view listener set
   // ---------------------------------------------------------------------------
@@ -230,8 +235,22 @@ mixin _ScrollCoordinatorMixin {
   void scrollToHighlight(
     EditorScrollController editorScrollController, {
     Selection? selection,
-    bool fromInside = false,
     bool alignToTop = true,
+  }) {
+    if (_scrollCoordinatorDisposed) return;
+    _scrollToHighlight(
+      editorScrollController,
+      selection: selection,
+      alignToTop: alignToTop,
+      allowRetry: true,
+    );
+  }
+
+  void _scrollToHighlight(
+    EditorScrollController editorScrollController, {
+    Selection? selection,
+    required bool alignToTop,
+    required bool allowRetry,
   }) {
     final askedSelection = selection ?? highlight;
     final highlightRects = this.highlightRects(askedSelection);
@@ -240,23 +259,32 @@ mixin _ScrollCoordinatorMixin {
 
     if (top != null) {
       editorScrollController.safeAnimateScroll(
+        // 300 px headroom above the highlight so the active line sits below
+        // the top edge of the viewport, not flush against it.
         offset: top - 300,
         duration: const Duration(milliseconds: 700),
         curve: Curves.easeInOut,
       );
-    } else {
-      if (fromInside) return;
-      final index = askedSelection?.start.path.firstOrNull;
-      if (index != null) {
-        editorScrollController.jumpToIndex(index: index, alignment: alignToTop ? 0 : 1);
-      }
-
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        Future.delayed(Duration(milliseconds: 0), () {
-          scrollToHighlight(editorScrollController, selection: selection, fromInside: true);
-        });
-      });
+      return;
     }
+
+    if (!allowRetry) return;
+    final index = askedSelection?.start.path.firstOrNull;
+    if (index != null) {
+      editorScrollController.jumpToIndex(index: index, alignment: alignToTop ? 0 : 1);
+    }
+
+    // jumpToIndex schedules a relayout; postFrame fires after that layout
+    // pass so highlightRects can resolve. One retry only — bail otherwise.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollCoordinatorDisposed) return;
+      _scrollToHighlight(
+        editorScrollController,
+        selection: selection,
+        alignToTop: alignToTop,
+        allowRetry: false,
+      );
+    });
   }
 
   void enableAutoScrollHighlight(EditorScrollController editorScrollController) {
@@ -279,6 +307,7 @@ mixin _ScrollCoordinatorMixin {
   // ---------------------------------------------------------------------------
 
   void _disposeScrollCoordinator() {
+    _scrollCoordinatorDisposed = true;
     isAutoScrollHighlightNotifier.dispose();
     _onScrollViewScrolledListeners.clear();
   }
