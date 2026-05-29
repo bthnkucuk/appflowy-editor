@@ -31,13 +31,14 @@ class MobileCollapsedHandle extends StatefulWidget {
 class _MobileCollapsedHandleState extends State<MobileCollapsedHandle> {
   @override
   Widget build(BuildContext context) {
-    final debugInfo = context.read<EditorState>().debugInfo;
+    final debugPaintSizeEnabled =
+        context.read<EditorState>().debugPaintSizeEnabled;
     if (PlatformExtension.isIOS) {
       return _IOSCollapsedHandle(
         layerLink: widget.layerLink,
         rect: widget.rect,
         handleWidth: widget.handleWidth,
-        debugPaintSizeEnabled: debugInfo.debugPaintSizeEnabled,
+        debugPaintSizeEnabled: debugPaintSizeEnabled,
       );
     } else if (PlatformExtension.isAndroid) {
       return _AndroidCollapsedHandle(
@@ -47,7 +48,7 @@ class _MobileCollapsedHandleState extends State<MobileCollapsedHandle> {
         handleWidth: widget.handleWidth,
         handleBallWidth: widget.handleBallWidth,
         enableHapticFeedbackOnAndroid: widget.enableHapticFeedbackOnAndroid,
-        debugPaintSizeEnabled: debugInfo.debugPaintSizeEnabled,
+        debugPaintSizeEnabled: debugPaintSizeEnabled,
         onDragging: widget.onDragging,
       );
     }

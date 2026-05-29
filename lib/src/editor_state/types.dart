@@ -96,16 +96,6 @@ final class ApplyOptions {
   final bool inMemoryUpdate;
 }
 
-///TODO(mobile): Debug info for the editor state. Its meaning is same as [EditorChrome.debugInfo]. clear this class later and use [EditorChrome.debugInfo] instead.
-final class EditorStateDebugInfo {
-  EditorStateDebugInfo({this.debugPaintSizeEnabled = false});
-
-  /// Enable the debug paint size for selection handle.
-  ///
-  /// It is only available on mobile.
-  bool debugPaintSizeEnabled;
-}
-
 enum SelectionUpdateReason {
   uiEvent, // like mouse click, keyboard event
   transaction, // like insert, delete, format

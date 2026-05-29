@@ -493,7 +493,24 @@ Before: `MobileHighlightServiceWidget.updateSelection` called `updateTap(selecti
 
 ---
 
-## 11. Net-new APIs (additive, no migration needed)
+## 11. `EditorStateDebugInfo` wrapper class removed
+
+The single-field wrapper class `EditorStateDebugInfo` is gone — its
+sole field `debugPaintSizeEnabled` (selection-handle debug paint on
+mobile) is now a direct property of `EditorState`. Carries no behavior
+change, just one fewer hop.
+
+| Before | After |
+| --- | --- |
+| `editorState.debugInfo.debugPaintSizeEnabled = true` | `editorState.debugPaintSizeEnabled = true` |
+| `editorState.debugInfo.debugPaintSizeEnabled` | `editorState.debugPaintSizeEnabled` |
+
+If you imported `EditorStateDebugInfo` by name (rare — it had no
+public construction surface beyond the chrome holder) drop the import.
+
+---
+
+## 12. Net-new APIs (additive, no migration needed)
 
 These don't break anything but are worth knowing about:
 

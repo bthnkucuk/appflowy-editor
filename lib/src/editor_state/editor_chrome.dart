@@ -51,9 +51,13 @@ mixin _EditorChromeMixin {
   /// Items rendered in the slash command (`/`) menu.
   List<SelectionMenuItem> selectionMenuItems = [];
 
-  /// Debug overlays / flags (e.g. paint sizes of selection handles on
-  /// mobile). Mutated by tests and demo apps.
-  EditorStateDebugInfo debugInfo = EditorStateDebugInfo();
+  /// Whether to draw debug paint outlines around selection handles on
+  /// mobile. Mutated by tests and demo apps. Previously lived behind
+  /// an `EditorStateDebugInfo debugInfo` wrapper — that class had a
+  /// single field and no behavior, so it was inlined. Access path
+  /// changes from `editorState.debugInfo.debugPaintSizeEnabled` to
+  /// `editorState.debugPaintSizeEnabled`.
+  bool debugPaintSizeEnabled = false;
 
   /// Reference-counted "don't clear my selection / IME on focus loss"
   /// guard. Overlays (slash menu, color picker, link toolbar, mobile
