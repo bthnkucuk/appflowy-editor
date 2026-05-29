@@ -69,12 +69,45 @@ class TtsReaderPage extends StatefulWidget {
   State<TtsReaderPage> createState() => _TtsReaderPageState();
 }
 
+/// Build path the demo wires up for its initial `Document`. See
+/// `_TtsReaderPageState._sampleDocumentSource` for the full doc.
+enum _SampleDocumentSource { programmatic, markdown, json }
+
 class _TtsReaderPageState extends State<TtsReaderPage> {
   // Word-per-tick at 1.0x speed.
   static const Duration _baseWordDuration = Duration(milliseconds: 350);
 
   // Cycle order for the speed pill.
   static const List<double> _speeds = [0.75, 1.0, 1.25, 1.5];
+
+  /// Selects which `Document` build path the demo wires up. Three
+  /// alternatives all compile and produce a runnable read-along:
+  ///
+  /// - [_SampleDocumentSource.programmatic] — the default. Builds the
+  ///   tree via the typed `headingNode` / `paragraphNode` / `noteNode`
+  ///   helpers. Best for hand-authored sample content; gets the custom
+  ///   `NoteBlockComponent` for free because it lives in the typed
+  ///   factory.
+  /// - [_SampleDocumentSource.markdown] — round-trips through
+  ///   `markdownToDocument(...)`. The canonical "I have a markdown
+  ///   string from somewhere — disk, network, a remote CMS — wire it
+  ///   into the editor" path. The standard markdown parsers don't
+  ///   know about the custom note block, so the resulting document is
+  ///   a subset (heading + paragraph only); demonstrates exactly the
+  ///   tradeoff a markdown-sourced reader makes.
+  /// - [_SampleDocumentSource.json] — round-trips through
+  ///   `Document.toJson()` + `Document.fromJson(...)`. The canonical
+  ///   "load a persisted document from storage" path. JSON is
+  ///   lossless (the note block survives because the JSON encoder
+  ///   preserves arbitrary attributes), so the document matches the
+  ///   programmatic build byte-for-byte.
+  ///
+  /// Flip this constant to exercise the other paths against the rest
+  /// of the page — section parser, tokens, playlist, tap-to-seek,
+  /// auto-scroll all just work, because the document API surface is
+  /// the same regardless of how the tree was constructed.
+  static const _SampleDocumentSource _sampleDocumentSource =
+      _SampleDocumentSource.programmatic;
 
   late final EditorState editorState;
   late final EditorScrollController editorScrollController;
@@ -116,7 +149,7 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   void initState() {
     super.initState();
 
-    editorState = EditorState(document: _buildSampleDocument());
+    editorState = EditorState(document: _buildInitialDocument());
     editorState.editable = false;
     // Per-Document parser — sections are computed lazily on first
     // read of `node.sections` (no eager tree walk). Scoped to this
@@ -641,6 +674,66 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
         ],
       ),
     );
+  }
+
+  /// Picks the build path declared by [_sampleDocumentSource]. Keeping
+  /// all three branches reachable from one switch means every alternative
+  /// is type-checked and analyzer-visited on every build — they don't
+  /// rot into "demo code that compiled three releases ago".
+  Document _buildInitialDocument() {
+    return switch (_sampleDocumentSource) {
+      _SampleDocumentSource.programmatic => _buildSampleDocument(),
+      _SampleDocumentSource.markdown => _buildSampleDocumentFromMarkdown(),
+      _SampleDocumentSource.json => _buildSampleDocumentFromJson(),
+    };
+  }
+
+  /// Round-trips through `markdownToDocument(...)` — the canonical
+  /// "I have a markdown string, parse it into a Document" path. The
+  /// editor ships a default set of block-level markdown parsers
+  /// (heading, paragraph, list, blockquote, …) that the call below
+  /// applies. Custom block types (like our [NoteBlockComponent]) are
+  /// NOT in that default set — the resulting document drops the note
+  /// block, which is the same tradeoff a downstream markdown-sourced
+  /// reader makes.
+  ///
+  /// Pass `customParsers:` to teach the decoder about additional block
+  /// shapes; we skip that here for brevity.
+  Document _buildSampleDocumentFromMarkdown() {
+    const markdown = '''
+# Read-Along Demo
+
+This page walks through the document one word at a time,
+highlighting each word as if a screen reader were reading it
+aloud. The word highlight is driven by editorState.updateHighlight;
+the surrounding section underlay is painted by BlockHighlightArea
+automatically, derived from Node.sectionParser.
+
+## How to use it
+
+Press play to start from the beginning. Use the skip buttons to jump
+five words at a time. Tap the speed pill to cycle through 0.75x, 1x,
+1.25x, and 1.5x. Tap any word in the document to seek directly there.
+
+## Sections vs words
+
+BlockHighlightArea derives the enclosing section from the midpoint
+of the active highlight selection. So a tiny word-sized selection
+lights up both the word (in highlightColor) and the surrounding
+sentence (in highlightAreaColor).
+''';
+    return markdownToDocument(markdown);
+  }
+
+  /// Round-trips through `Document.toJson()` + `Document.fromJson(...)`
+  /// — the canonical "load a persisted document from disk / network"
+  /// path. JSON is lossless across `Node.type` + `Node.attributes` +
+  /// children, so the custom note block survives the round-trip with no
+  /// special handling on either side. The same encoder/decoder shape an
+  /// app uses to persist user-authored documents to a backend.
+  Document _buildSampleDocumentFromJson() {
+    final original = _buildSampleDocument();
+    return Document.fromJson(original.toJson());
   }
 
   Document _buildSampleDocument() {
