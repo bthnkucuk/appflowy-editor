@@ -123,6 +123,29 @@ final class Node extends ChangeNotifier
 
   Sections? sections;
 
+  /// First section whose `selection.end.offset >= offset`, or `null` if
+  /// [sections] is `null` / no section matches.
+  ///
+  /// Assumes sections are contiguous and non-overlapping in ascending
+  /// offset order (the contract produced by [defaultSentenceSectionParser]).
+  /// Under that invariant, "first section ending at or past `offset`" is
+  /// also the section that contains `offset`.
+  Section? sectionAtOffset(int offset) {
+    return sections?.firstWhereOrNull(
+      (section) => section.selection.end.offset >= offset,
+    );
+  }
+
+  /// Convenience for the common case of resolving the section enclosing
+  /// the midpoint of [selection]. Same predicate
+  /// [BlockHighlightArea] uses to pick which section's underlay to
+  /// paint, so reusing this keeps tap-to-seek and the painted highlight
+  /// in lockstep.
+  Section? sectionForSelection(Selection selection) {
+    final mid = (selection.start.offset + selection.end.offset) ~/ 2;
+    return sectionAtOffset(mid);
+  }
+
   /// The type of the node.
   final String type;
 

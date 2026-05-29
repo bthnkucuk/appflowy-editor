@@ -1,6 +1,5 @@
 import 'package:appflowy_editor/appflowy_editor.dart' hide Path;
 import '../../../../render/selection/cursor.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -321,10 +320,7 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
       // calling getRectsInSelection on the section selection still walks
       // the RichText layout. Skip it when the section identity didn't
       // change.
-      final mid = (selection.start.offset + selection.end.offset) ~/ 2;
-      final currentSection = widget.node.sections?.firstWhereOrNull(
-        (section) => section.selection.end.offset >= mid,
-      );
+      final currentSection = widget.node.sectionForSelection(selection);
       final sectionSelection = currentSection?.selection;
 
       List<Rect>? sectionRects = _prevSectionRects;

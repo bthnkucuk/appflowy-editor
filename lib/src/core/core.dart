@@ -1,5 +1,6 @@
 export 'document/attributes.dart';
 export 'document/diff.dart';
+export 'document/default_section_parser.dart';
 export 'document/document.dart';
 export 'document/document_outline.dart';
 export 'document/node.dart';

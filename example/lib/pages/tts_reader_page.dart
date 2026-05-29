@@ -58,9 +58,6 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   // Word-per-tick at 1.0x speed.
   static const Duration _baseWordDuration = Duration(milliseconds: 350);
 
-  // Skip distance for the back/forward buttons.
-  static const int _skipAmount = 5;
-
   // Cycle order for the speed pill.
   static const List<double> _speeds = [0.75, 1.0, 1.25, 1.5];
 
@@ -102,7 +99,8 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     // [BlockHighlightArea] to paint the active sentence underlay
     // behind the word highlight.
     _previousSectionParser = Node.sectionParser;
-    Node.sectionParser = _defaultNodeSectionParser;
+    Node.sectionParser = (node) =>
+        defaultSentenceSectionParser(node, soft: 50, hard: 500);
 
     editorState = EditorState(document: _buildSampleDocument());
     editorState.editable = false;
@@ -274,16 +272,83 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
 
   void _togglePlay() => _playing ? _pause() : _play();
 
-  void _skip(int delta) {
+  /// Jump to the start of the next/previous section.
+  ///
+  /// Sections live on each `Node` after `Node.sectionParser` runs.
+  /// "Next" = first section after the one currently under the active
+  /// word (crossing node boundaries when needed). "Previous" = the
+  /// preceding section the same way. We resolve the target section
+  /// first, then map its start back into the token list by node path
+  /// and offset so we land on a token the tick loop can advance from.
+  void _skipSection({required bool forward}) {
     if (_tokens.isEmpty) return;
-    final next = (_currentIndex + delta).clamp(0, _tokens.length - 1);
+    final targetTokenIdx = _findAdjacentSectionStartToken(forward: forward);
+    if (targetTokenIdx < 0) return;
     editorState.enableAutoScrollHighlight(editorScrollController);
-    _currentIndex = next - 1;
+    _currentIndex = targetTokenIdx - 1;
     if (_playing) {
       _play();
     } else {
-      _advanceTo(next);
+      _advanceTo(targetTokenIdx);
     }
+  }
+
+  /// Returns the token index at which the next/previous section starts,
+  /// or -1 if we're already at a boundary with nothing to skip to.
+  int _findAdjacentSectionStartToken({required bool forward}) {
+    final tokens = _tokens;
+    final currentIdx = _currentIndex < 0 ? 0 : _currentIndex;
+    final currentToken = tokens[currentIdx];
+    final currentPath = currentToken.start.path;
+    final currentOffset = currentToken.start.offset;
+
+    // Walk top-level blocks in document order, flattening each block's
+    // sections into one sequence; find our position in that sequence
+    // and return the start token of the next/previous slot.
+    final root = editorState.document.root;
+    final sections = <(Path, Section)>[];
+    for (var i = 0; i < root.children.length; i++) {
+      final node = root.children[i];
+      final nodeSections = node.sections;
+      if (nodeSections == null) continue;
+      for (final s in nodeSections) {
+        sections.add((node.path, s));
+      }
+    }
+    if (sections.isEmpty) return -1;
+
+    // Locate the section enclosing the current token. Comparison is
+    // (path, offset) so we cope with same-offset sections in adjacent
+    // nodes.
+    int currentSectionIdx = -1;
+    for (var i = 0; i < sections.length; i++) {
+      final (path, sec) = sections[i];
+      if (!path.equals(currentPath)) continue;
+      if (currentOffset >= sec.selection.start.offset &&
+          currentOffset < sec.selection.end.offset) {
+        currentSectionIdx = i;
+        break;
+      }
+    }
+    if (currentSectionIdx < 0) {
+      currentSectionIdx = forward ? -1 : sections.length;
+    }
+
+    final targetIdx = forward ? currentSectionIdx + 1 : currentSectionIdx - 1;
+    if (targetIdx < 0 || targetIdx >= sections.length) {
+      // No further section — clamp to first/last token instead so the
+      // button doesn't feel dead at the edges.
+      return forward ? tokens.length - 1 : 0;
+    }
+
+    final (targetPath, targetSection) = sections[targetIdx];
+    final targetOffset = targetSection.selection.start.offset;
+    for (var i = 0; i < tokens.length; i++) {
+      final t = tokens[i];
+      if (!t.start.path.equals(targetPath)) continue;
+      if (t.end.offset > targetOffset) return i;
+    }
+    return -1;
   }
 
   void _cycleSpeed() {
@@ -314,9 +379,7 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
 
     // Resolve the section containing the tap — same predicate
     // [BlockHighlightArea._updateSelectionIfNeeded] uses.
-    final section = node.sections?.firstWhereOrNull(
-      (s) => s.selection.end.offset >= mid,
-    );
+    final section = node.sectionForSelection(tap);
     if (section == null) return;
 
     final tokenIdx = _findTokenIndex(node, mid);
@@ -359,16 +422,6 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     editorState.enableAutoScrollHighlight(editorScrollController);
   }
 
-  /// True when the active word's top-level block is fully outside the
-  /// currently visible range. Used as the trigger for the
-  /// "back to current" pill (in conjunction with the auto-scroll flag).
-  bool _activeWordOutsideViewport((int, int) visibleRange) {
-    if (_currentIndex < 0 || _tokens.isEmpty) return false;
-    final topIdx = _tokens[_currentIndex].start.path.firstOrNull;
-    if (topIdx == null) return false;
-    return topIdx < visibleRange.$1 || topIdx > visibleRange.$2;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -382,13 +435,14 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
       body: Stack(
         children: [
           Positioned.fill(
-            // User-reverse-scroll detection: the app does this in
-            // editorx's `_AppFlowyEditorX` via `onScrollReverse` →
-            // `editorState.disableAutoScrollHighlight()`. We inline it.
+            // User-scroll detection. Disable auto-scroll on either
+            // direction so the pill triggers whether the user dragged
+            // back to re-read or forward to peek ahead. Idle frames
+            // don't count (those fire after the drag releases).
             child: NotificationListener<ScrollNotification>(
               onNotification: (notification) {
                 if (notification is UserScrollNotification &&
-                    notification.direction == ScrollDirection.reverse) {
+                    notification.direction != ScrollDirection.idle) {
                   editorState.disableAutoScrollHighlight();
                 }
                 return false;
@@ -410,9 +464,12 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
               ),
             ),
           ),
-          // Back-to-current pill. Visibility driven by the editor-owned
-          // `isAutoScrollHighlightNotifier` (false → user has scrolled
-          // away) AND the active word being outside the viewport.
+          // Back-to-current pill. Visibility = "user has an active
+          // read position AND has scrolled away from it" → drive off
+          // `isAutoScrollHighlightNotifier`, same as the app. We don't
+          // gate on viewport intersection because a small drag may
+          // leave the word still on-screen but the user has already
+          // told the editor to stop following.
           Positioned(
             left: 0,
             right: 0,
@@ -420,12 +477,18 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
             child: ValueListenableBuilder<bool>(
               valueListenable: editorState.isAutoScrollHighlightNotifier,
               builder: (context, autoScroll, _) {
-                final outOfView = !autoScroll &&
-                    _activeWordOutsideViewport(_visibleRange);
-                final isAbove = _tokens.isNotEmpty &&
-                    _currentIndex >= 0 &&
-                    (_tokens[_currentIndex].start.path.firstOrNull ?? 0) <
-                        _visibleRange.$1;
+                final show = _currentIndex >= 0 && !autoScroll;
+                final activeBlock =
+                    _tokens.isNotEmpty && _currentIndex >= 0
+                        ? (_tokens[_currentIndex].start.path.firstOrNull ?? 0)
+                        : 0;
+                // visibleRange.$1 / .$2 are first/last top-level child
+                // indices currently rendered by SuperSliverList. Arrow
+                // points up if active word is above the visible
+                // window, down if below; defaults to down when range
+                // is unknown ((-1, -1) or initial (0, 0)).
+                final isAbove = _visibleRange.$1 >= 0 &&
+                    activeBlock < _visibleRange.$1;
                 return AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   transitionBuilder: (child, anim) => FadeTransition(
@@ -440,7 +503,7 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
                       child: child,
                     ),
                   ),
-                  child: outOfView
+                  child: show
                       ? _BackToCurrentPill(
                           onTap: _returnToCurrent,
                           isAbove: isAbove,
@@ -462,8 +525,8 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
                 currentIndex: _currentIndex,
                 totalTokens: _tokens.length,
                 onTogglePlay: _togglePlay,
-                onSkipBack: () => _skip(-_skipAmount),
-                onSkipForward: () => _skip(_skipAmount),
+                onSkipBack: () => _skipSection(forward: false),
+                onSkipForward: () => _skipSection(forward: true),
                 onCycleSpeed: _cycleSpeed,
               ),
             ),
@@ -541,82 +604,6 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Section parser — splits each node's plain text into sentence-sized
-// "sections".
-//
-// Splits each node's plain text into sentence-sized "sections". A section
-// boundary is preferred wherever the unicode sentence-end regex matches
-// within the [soft, hard] window from the cursor; otherwise we cut at the
-// hard limit. The regex is intentionally broad — Western, RTL (Arabic,
-// Hebrew, Persian), Indic (Devanagari, Bengali), CJK, Thai, etc. — so a
-// multilingual document still gets meaningful sections.
-// ---------------------------------------------------------------------------
-
-final RegExp _sentenceEnd = RegExp(
-  r'(?<=[.!?…‽¡¿؟۔।॥։。！？⸘⸮])\s*(?=[\p{Lu}\p{Lt}\p{Pi}\p{Ps}\p{Nd}]|[一-鿿぀-ヿ가-힯฀-๿֐-׿؀-ۿऀ-ॿঀ-৿])',
-  unicode: true,
-);
-
-Sections? _defaultNodeSectionParser(Node node) {
-  final paragraph = node.delta?.toPlainText();
-  if (paragraph == null) return null;
-
-  final parts = _splitSubtexts(paragraph);
-  if (parts.isEmpty) return null;
-
-  var startOffset = 0;
-  final result = <Section>[];
-  for (var index = 0; index < parts.length; index++) {
-    final text = parts[index];
-    result.add(
-      Section(
-        index: index,
-        text: text,
-        selection: Selection(
-          start: Position(path: node.path, offset: startOffset),
-          end: Position(path: node.path, offset: startOffset + text.length),
-        ),
-        parent: node,
-      ),
-    );
-    startOffset += text.length;
-  }
-  return Sections(result);
-}
-
-/// Sentence boundaries beyond `soft` characters trigger a split as soon
-/// as one is found; if none lands inside [soft, hard], we hard-cut at
-/// `hard`. Tuned smaller than the app's defaults for the example so
-/// sections light up multiple times per paragraph.
-List<String> _splitSubtexts(String text, {int soft = 50, int hard = 500}) {
-  if (text.isEmpty) return const [];
-  final parts = <String>[];
-  var cursor = 0;
-  while (cursor < text.length) {
-    if (cursor + soft >= text.length) {
-      parts.add(text.substring(cursor));
-      break;
-    }
-    final searchEnd = (cursor + hard).clamp(0, text.length);
-    final window = text.substring(cursor + soft, searchEnd);
-    final m = _sentenceEnd.firstMatch(window);
-    final cut = m != null ? cursor + soft + m.end : searchEnd;
-    parts.add(text.substring(cursor, cut));
-    cursor = cut;
-  }
-  return parts;
-}
-
-extension _IterableX<E> on Iterable<E> {
-  E? firstWhereOrNull(bool Function(E) test) {
-    for (final e in this) {
-      if (test(e)) return e;
-    }
-    return null;
-  }
-}
-
 class _ControlPanel extends StatelessWidget {
   const _ControlPanel({
     required this.playing,
@@ -671,18 +658,18 @@ class _ControlPanel extends StatelessWidget {
                 _SpeedPill(label: speedLabel, onTap: onCycleSpeed),
                 const Spacer(),
                 IconButton(
-                  tooltip: 'Skip back',
+                  tooltip: 'Previous section',
                   iconSize: 28,
-                  icon: const Icon(Icons.replay_5_rounded),
+                  icon: const Icon(Icons.skip_previous_rounded),
                   onPressed: onSkipBack,
                 ),
                 const SizedBox(width: 8),
                 _PlayPauseButton(playing: playing, onTap: onTogglePlay),
                 const SizedBox(width: 8),
                 IconButton(
-                  tooltip: 'Skip forward',
+                  tooltip: 'Next section',
                   iconSize: 28,
-                  icon: const Icon(Icons.forward_5_rounded),
+                  icon: const Icon(Icons.skip_next_rounded),
                   onPressed: onSkipForward,
                 ),
                 const Spacer(),

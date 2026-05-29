@@ -189,6 +189,61 @@ void main() async {
       expect(identical(base.childAtIndexOrNull(1), childE), true);
     });
 
+    group('sectionAtOffset / sectionForSelection', () {
+      Section makeSection(Node parent, int index, int start, int end) {
+        return Section(
+          index: index,
+          text: 'x' * (end - start),
+          selection: Selection(
+            start: Position(path: parent.path, offset: start),
+            end: Position(path: parent.path, offset: end),
+          ),
+          parent: parent,
+        );
+      }
+
+      test('sectionAtOffset returns null when sections is null', () {
+        final node = paragraphNode(delta: Delta()..insert('hello'));
+        expect(node.sections, isNull);
+        expect(node.sectionAtOffset(0), isNull);
+      });
+
+      test('returns the first section whose end >= offset (boundary)', () {
+        final node = paragraphNode(delta: Delta()..insert('x' * 30));
+        node.sections = Sections([
+          makeSection(node, 0, 0, 10),
+          makeSection(node, 1, 10, 20),
+          makeSection(node, 2, 20, 30),
+        ]);
+
+        // Boundary: offset == end of first section.
+        expect(node.sectionAtOffset(10), node.sections!.first);
+        // Strictly inside the second section.
+        expect(node.sectionAtOffset(15), node.sections![1]);
+        // Past the last end — no match.
+        expect(node.sectionAtOffset(100), isNull);
+      });
+
+      test('sectionForSelection matches a midpoint-based call', () {
+        final node = paragraphNode(delta: Delta()..insert('x' * 30));
+        node.sections = Sections([
+          makeSection(node, 0, 0, 10),
+          makeSection(node, 1, 10, 20),
+          makeSection(node, 2, 20, 30),
+        ]);
+
+        final selection = Selection(
+          start: Position(path: node.path, offset: 12),
+          end: Position(path: node.path, offset: 18),
+        );
+        final mid = (12 + 18) ~/ 2;
+        expect(
+          node.sectionForSelection(selection),
+          node.sectionAtOffset(mid),
+        );
+      });
+    });
+
     test('test fromJson', () {
       final node = Node.fromJson({
         'type': 'text',
