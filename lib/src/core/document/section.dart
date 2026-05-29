@@ -23,3 +23,22 @@ final class Section extends Equatable {
 extension type const Sections(List<Section> sections) implements List<Section> {
   const Sections.empty() : sections = const [];
 }
+
+extension SectionCharacterOffsetStamping on Iterable<Section> {
+  /// Pairs each section with the running prefix-sum of `characterCount`s
+  /// preceding it, threaded through [builder]. Use this when a downstream
+  /// consumer needs to know "how many characters precede this section in
+  /// the flattened document" — typically audio playlist builders that
+  /// project section position onto a time axis.
+  ///
+  /// Lazy: walks the input once. `builder` is called in document order.
+  Iterable<T> mapWithCharacterOffsets<T>(
+    T Function(Section section, int characterOffset) builder,
+  ) sync* {
+    var offset = 0;
+    for (final section in this) {
+      yield builder(section, offset);
+      offset += section.characterCount;
+    }
+  }
+}

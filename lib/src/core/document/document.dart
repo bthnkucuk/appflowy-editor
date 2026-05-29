@@ -9,7 +9,12 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 /// **DO NOT** directly mutate the properties of a [Document] object.
 ///
 class Document {
-  Document({required this.root});
+  Document({required this.root}) {
+    // Back-pointer so any Node in this tree can resolve its owning
+    // Document via the parent-chain walk (`Node.document` getter) and
+    // read the per-Document `sectionParser`.
+    root.attachAsRoot(this);
+  }
 
   /// Constructs a [Document] from a JSON strcuture.
   ///
@@ -40,6 +45,8 @@ class Document {
     final document = Map<String, Object>.from(json['document'] as Map);
     final root = Node.fromJson(document);
 
+    // `Document(root: ...)` calls `root.attachAsRoot(this)` so the
+    // back-pointer survives both factory paths.
     return Document(root: root);
   }
 
@@ -59,6 +66,17 @@ class Document {
 
   /// The root [Node] of the [Document]
   final Node root;
+
+  /// Per-Document section parser. Replaces the deprecated process-global
+  /// `Node.sectionParser` static — keeping ownership on the Document
+  /// avoids cross-page leakage (one editor's parser bleeding into
+  /// another's nodes) and lets parsers swap without coordinating a
+  /// save/restore around the static.
+  ///
+  /// `Node.sections` is computed lazily on read and reuses the cached
+  /// result until either the node's delta reference changes or the
+  /// parser identity changes.
+  Sections? Function(Node node)? sectionParser;
 
   /// First node of the document.
   Node? get first => root.children.firstOrNull;

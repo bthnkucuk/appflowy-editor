@@ -170,7 +170,141 @@ If your app was leaning on any of these because the editor pulled them in, add t
 
 ---
 
-## 7. Net-new APIs (additive, no migration needed)
+## 7. Section parser ownership: `Node.sectionParser` → `Document.sectionParser`
+
+The process-global `Node.sectionParser` static is **removed** (was `@Deprecated` for one release; removed in this version). Two real bugs motivated this:
+
+- The parser fired inside the `Node` constructor while children were still orphans, so it read `node.path == []` and the empty path got cached forever — every block then reported `path == []` and a single highlight selection painted across every block at once.
+- The static leaked across pages: consumers had to save/restore it around their lifecycle to avoid bleeding into other editor instances.
+
+### What changed
+
+| Before | After |
+| --- | --- |
+| `Node.sectionParser = mySectionParser;` | `document.sectionParser = mySectionParser;` (or `editorState.sectionParser = mySectionParser;` — delegates to the document) |
+| Sections computed eagerly inside the `Node` constructor | Sections computed lazily on first read of `node.sections`, cached against `(parser, _attributes['delta'])` identity. Edits invalidate automatically when the delta reference changes. |
+| Parser was process-global | Parser is per-`Document`. Two documents in the same process can use different parsers and don't see each other's results. |
+
+### Migration
+
+```dart
+// Before — somewhere at app startup
+editor.Node.sectionParser = defaultNodeSectionParser;  // REMOVED — no longer compiles
+```
+
+```dart
+// After — assign on the Document that will use it
+final document = editor.Document(
+  root: editor.Node(type: 'page', children: documentNodes),
+);
+document.sectionParser = defaultNodeSectionParser;
+// `node.sections` reads now resolve through this document.
+
+final editorState = editor.EditorState(document: document);
+// Or via the editor state (convenience):
+// editorState.sectionParser = defaultNodeSectionParser;
+```
+
+**Order matters in pipelines that build a flat section list immediately after document load.** If you flatten `node.sections` for an audio playlist, queue, or duration estimate, set `document.sectionParser` *before* the iteration — the lazy compute fires on first read:
+
+```dart
+final document = editor.Document(root: rootNode);
+document.sectionParser = defaultNodeSectionParser;   // ← BEFORE the map
+final sections = document.root.children
+    .map((node) => node.sections)
+    .whereType<editor.Sections>()
+    .expand((s) => s)
+    .toList();
+```
+
+### `defaultSentenceSectionParser`
+
+The unicode sentence-boundary parser previously inlined in consumer codebases is now exported from the package:
+
+```dart
+document.sectionParser = (node) =>
+    defaultSentenceSectionParser(node, soft: 50, hard: 500);
+```
+
+`soft` and `hard` are required — reasonable values are document- and consumer-specific (a long-form reader uses wider windows than a quick-glance demo).
+
+---
+
+## 8. `Section.characterOffset` removed
+
+`Section.characterOffset` was a mutable late-init field that downstream audio/playlist code wrote into in a single pass:
+
+```dart
+// REMOVED — no longer compiles
+for (final section in sections) {
+  section.characterOffset = characterCountAllBefore;
+  characterCountAllBefore += section.characterCount;
+}
+```
+
+That field was structurally wrong: `Section` is the parser's output (an immutable projection of a node's text), but `characterOffset` describes a section's position within a *flattened, sequenced* document — a property of the consumer's playlist, not of the section itself. Stamping it into shared `Section` instances also opened a mutation hazard against the editor's own reads (e.g. `BlockHighlightArea` consults the same sections to paint the underlay).
+
+### Migration
+
+Carry `characterOffset` on **your playlist item**, not on `Section`. The package ships a helper extension to keep the stamping single-sourced:
+
+```dart
+// On your audio queue item — anywhere downstream — add a final field:
+class NodedMediaItem {
+  const NodedMediaItem({
+    required this.section,
+    required this.characterOffset,  // ← here, not on Section
+    // ...
+  });
+  final editor.Section section;
+  final int characterOffset;
+  // ...
+}
+```
+
+```dart
+// Build the playlist using the package's extension; the two-pass
+// "stamp then build" collapses into one map:
+import 'package:appflowy_editor/appflowy_editor.dart';
+
+final items = sections.mapWithCharacterOffsets(
+  (section, characterOffset) => NodedMediaItem(
+    section: section,
+    characterOffset: characterOffset,
+    // ...
+  ),
+).toList();
+```
+
+### Duration / seek helpers that read `section.characterOffset`
+
+Switch their input from `Section` to the playlist item that now carries the offset:
+
+```dart
+// Before
+Duration getEstimatedDurationBeforeSection(editor.Section section) {
+  return _getEstimatedDurationFromCharacterCount(section.characterOffset!);
+}
+
+// After
+Duration getEstimatedDurationBeforeItem(NodedMediaItem item) {
+  return _getEstimatedDurationFromCharacterCount(item.characterOffset);
+}
+```
+
+For total-duration estimates that previously read `parentMediaItem.children.last.section.characterOffset`:
+
+```dart
+final last = parentMediaItem.children.last;
+final totalChars = last.characterOffset + last.section.characterCount;
+return _getEstimatedDurationFromCharacterCount(totalChars);
+```
+
+The example reader page (`example/lib/pages/tts_reader_page.dart`) demonstrates this pattern end-to-end — see the `_PlaylistItem` class and the `_ControlPanel` reading-time estimate.
+
+---
+
+## 9. Net-new APIs (additive, no migration needed)
 
 These don't break anything but are worth knowing about:
 
@@ -191,5 +325,7 @@ These don't break anything but are worth knowing about:
 - [ ] Search for `AFMobileIcons`, `EditorSvg`, `flowy_svg` and migrate per §4.
 - [ ] If you had custom `MobileToolbarItem` subclasses, refit them to the `{icon, action}` contract (or use `.sheet(...)`).
 - [ ] If you used `FilePicker`/`FilePickerService`, switch to the `file_picker` package directly (see CHANGELOG Unreleased entry).
+- [ ] Replace `Node.sectionParser = …` with `document.sectionParser = …` (or `editorState.sectionParser = …`). See §7.
+- [ ] If any consumer wrote to `Section.characterOffset`, move the field onto your playlist item and switch to `Sections.mapWithCharacterOffsets(...)` for stamping. See §8.
 - [ ] Bump your app's Flutter / Dart constraints to `>=3.44.0` / `>=3.12.0`.
 - [ ] Pull this fork via git dependency — it does not publish to pub.dev.

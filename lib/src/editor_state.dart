@@ -76,6 +76,14 @@ class EditorState extends _EditorStateBase {
   @override
   final Document document;
 
+  /// Convenience delegators onto [Document.sectionParser]. The parser
+  /// is owned by the Document; these just shave a `.document.` hop off
+  /// hot call sites (e.g. example pages installing a TTS parser).
+  Sections? Function(Node node)? get sectionParser => document.sectionParser;
+  set sectionParser(Sections? Function(Node node)? value) {
+    document.sectionParser = value;
+  }
+
   // the minimum duration for saving the history item.
   // Satisfies [_HistoryMixin.minHistoryItemDuration] abstract getter.
   @override

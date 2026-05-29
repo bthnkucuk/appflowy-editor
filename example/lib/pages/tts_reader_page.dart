@@ -70,10 +70,18 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   /// document is read-only so it never drifts.
   final List<Selection> _tokens = [];
 
-  /// Saved so we can restore on dispose — `Node.sectionParser` is a
-  /// global static and shouldn't leak into other example pages that
-  /// pop in after this one.
-  Sections? Function(Node)? _previousSectionParser;
+  /// Flattened section playlist, each entry pairing a [Section] with
+  /// its running character-count prefix in document order. Built via
+  /// the package's `mapWithCharacterOffsets` so this example and the
+  /// production reader app share one stamping primitive — drift between
+  /// the two pipelines is structurally impossible.
+  ///
+  /// Used here to estimate the document's total reading time; in a real
+  /// audio player each entry would become a queue item with timing
+  /// metadata projected from `characterOffset`.
+  final List<_PlaylistItem> _playlist = [];
+
+  int _totalCharacterCount = 0;
 
   int _currentIndex = -1;
   Timer? _timer;
@@ -84,19 +92,13 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   void initState() {
     super.initState();
 
-    // Install the section parser. Order doesn't matter — `Node`
-    // bumps the path generation after wiring children's parents in
-    // its constructor / `fromJson`, so any path the parser reads at
-    // construction time is invalidated by the time the editor
-    // mounts. Sections are stored on each node and consumed by
-    // [BlockHighlightArea] to paint the active sentence underlay
-    // behind the word highlight.
-    _previousSectionParser = Node.sectionParser;
-    Node.sectionParser = (node) =>
-        defaultSentenceSectionParser(node, soft: 50, hard: 500);
-
     editorState = EditorState(document: _buildSampleDocument());
     editorState.editable = false;
+    // Per-Document parser — sections are computed lazily on first
+    // read of `node.sections` (no eager tree walk). Scoped to this
+    // EditorState, so it can't leak into other example pages.
+    editorState.sectionParser = (node) =>
+        defaultSentenceSectionParser(node, soft: 50, hard: 500);
     editorScrollController = EditorScrollController(
       editorState: editorState,
       shrinkWrap: false,
@@ -104,6 +106,29 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     _blockComponentBuilders = _buildBlockComponentBuilders();
     _editorStyle = _buildEditorStyle();
     _tokens.addAll(_computeWordTokens(editorState.document));
+
+    // Build the section playlist exactly the way the production reader
+    // app does: flatten `node.sections` across the document, then stamp
+    // each section with its running prefix-sum of character counts via
+    // the package's `mapWithCharacterOffsets`. First read of
+    // `node.sections` here triggers the lazy compute installed above.
+    _playlist.addAll(
+      editorState.document.root.children
+          .map((node) => node.sections)
+          .whereType<Sections>()
+          .expand((s) => s)
+          .mapWithCharacterOffsets(
+            (section, characterOffset) => _PlaylistItem(
+              section: section,
+              characterOffset: characterOffset,
+            ),
+          ),
+    );
+    if (_playlist.isNotEmpty) {
+      final last = _playlist.last;
+      _totalCharacterCount =
+          last.characterOffset + last.section.characterCount;
+    }
 
     // The editor's MobileHighlightServiceWidget fires tapNotifier on every
     // tap-up (see mobile_highlight_service.dart:129 → updateTap). We seek
@@ -117,7 +142,6 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     editorState.tapNotifier.removeListener(_onTapNotifier);
     editorScrollController.dispose();
     editorState.dispose();
-    Node.sectionParser = _previousSectionParser;
     super.dispose();
   }
 
@@ -498,6 +522,7 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
                 speed: _speed,
                 currentIndex: _currentIndex,
                 totalTokens: _tokens.length,
+                totalCharacterCount: _totalCharacterCount,
                 onTogglePlay: _togglePlay,
                 onSkipBack: () => _skipSection(forward: false),
                 onSkipForward: () => _skipSection(forward: true),
@@ -578,12 +603,28 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   }
 }
 
+/// Playlist item — Section + its running character-count prefix in
+/// reading order. Same shape the production reader app's audio
+/// `NodedMediaItem` carries; both are constructed from the same
+/// `Sections.mapWithCharacterOffsets` helper so this example and the
+/// real player can't drift on offset semantics.
+class _PlaylistItem {
+  const _PlaylistItem({
+    required this.section,
+    required this.characterOffset,
+  });
+
+  final Section section;
+  final int characterOffset;
+}
+
 class _ControlPanel extends StatelessWidget {
   const _ControlPanel({
     required this.playing,
     required this.speed,
     required this.currentIndex,
     required this.totalTokens,
+    required this.totalCharacterCount,
     required this.onTogglePlay,
     required this.onSkipBack,
     required this.onSkipForward,
@@ -594,10 +635,31 @@ class _ControlPanel extends StatelessWidget {
   final double speed;
   final int currentIndex;
   final int totalTokens;
+
+  /// Sum of character counts across every section, computed from the
+  /// playlist's last item: `last.characterOffset + last.section.characterCount`.
+  /// Used to surface an estimated reading time in the panel — the same
+  /// projection the production audio player applies when computing
+  /// playlist duration.
+  final int totalCharacterCount;
+
   final VoidCallback onTogglePlay;
   final VoidCallback onSkipBack;
   final VoidCallback onSkipForward;
   final VoidCallback onCycleSpeed;
+
+  /// Rough words-per-minute → characters-per-minute projection for
+  /// English-ish prose (~228 wpm × 4.33 chars/word ≈ 987). The production
+  /// reader carries a per-language table for this; here a single
+  /// constant keeps the example focused on the pattern.
+  static const int _approxCharsPerMinute = 987;
+
+  String _formatEstimatedTime() {
+    if (totalCharacterCount == 0) return '—';
+    final minutes = (totalCharacterCount / _approxCharsPerMinute).round();
+    if (minutes < 1) return '<1 min';
+    return '~$minutes min';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -648,15 +710,26 @@ class _ControlPanel extends StatelessWidget {
                 ),
                 const Spacer(),
                 SizedBox(
-                  width: 56,
-                  child: Text(
-                    totalTokens == 0
-                        ? '—'
-                        : '${currentIndex < 0 ? 0 : currentIndex + 1}/$totalTokens',
-                    textAlign: TextAlign.end,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.hintColor,
-                    ),
+                  width: 72,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        totalTokens == 0
+                            ? '—'
+                            : '${currentIndex < 0 ? 0 : currentIndex + 1}/$totalTokens',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.hintColor,
+                        ),
+                      ),
+                      Text(
+                        _formatEstimatedTime(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.hintColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

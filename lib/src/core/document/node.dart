@@ -66,13 +66,12 @@ final class Node extends ChangeNotifier
     if (children.isNotEmpty) {
       _bumpPathGeneration();
     }
-
-    if (sectionParser != null && text != null) {
-      sections = sectionParser!(this);
-    }
+    // The eager `sectionParser` call that used to live here has been
+    // removed — sections are now computed lazily by the `sections`
+    // getter using the owning `Document.sectionParser`. This avoids the
+    // path-cache race (parser reading `node.path` while still orphan)
+    // and the cross-page leakage of the global static.
   }
-
-  static Sections? Function(Node node)? sectionParser;
 
   /// Parses a [Map] into a [Node]
   ///
@@ -121,7 +120,50 @@ final class Node extends ChangeNotifier
 
   int? get sectionCount => sections?.length;
 
-  Sections? sections;
+  /// Returns the [Sections] for this node.
+  ///
+  /// Resolution order:
+  ///   1. Manual override (`node.sections = ...`) wins — kept for tests
+  ///      and downstream callers that inject sections directly.
+  ///   2. Cached compute, valid while both the `_attributes['delta']`
+  ///      reference and the active parser identity are unchanged.
+  ///   3. Fresh compute via the owning `Document.sectionParser`.
+  /// Returns null if no parser is reachable or the node has no delta.
+  Sections? get sections {
+    if (_manualSections != null) return _manualSections;
+
+    final raw = _attributes['delta'];
+    if (raw is! List) return null;
+
+    final parser = document?.sectionParser;
+    if (parser == null) return null;
+
+    if (identical(_cachedSectionsDelta, raw) &&
+        identical(_cachedSectionsParser, parser)) {
+      return _cachedSections;
+    }
+
+    _cachedSectionsDelta = raw;
+    _cachedSectionsParser = parser;
+    if (text == null) {
+      _cachedSections = null;
+      return null;
+    }
+    _cachedSections = parser(this);
+    return _cachedSections;
+  }
+
+  /// Manual override for [sections]. Setting to a non-null value pins
+  /// the result; setting to null clears the override so the next read
+  /// recomputes via the active parser.
+  set sections(Sections? value) {
+    _manualSections = value;
+  }
+
+  Sections? _manualSections;
+  Sections? _cachedSections;
+  Object? _cachedSectionsDelta;
+  Object? _cachedSectionsParser;
 
   /// First section whose `selection.end.offset >= offset`, or `null` if
   /// [sections] is `null` / no section matches.
@@ -172,6 +214,29 @@ final class Node extends ChangeNotifier
 
   /// The parent of the node.
   Node? parent;
+
+  /// Back-pointer to the owning [Document]. Only the root node carries
+  /// the actual reference (set by `Document` via [attachAsRoot]);
+  /// non-root nodes resolve their document by walking up the parent
+  /// chain via the [document] getter.
+  Document? _document;
+
+  /// Resolves the owning [Document] by walking up the parent chain.
+  ///
+  /// Returns null if this node is not (yet) attached under a root with
+  /// a Document back-pointer — e.g. orphan nodes built in tests or
+  /// transient subtrees mid-construction.
+  Document? get document {
+    if (_document != null) return _document;
+    return parent?.document;
+  }
+
+  /// Wires this node as the root of [owner]. Only `Document` should
+  /// call this — the back-pointer is what powers per-Document
+  /// `sectionParser` resolution from any descendant.
+  void attachAsRoot(Document owner) {
+    _document = owner;
+  }
 
   /// The children of the node.
   final RankedLinkedList<Node> _children;

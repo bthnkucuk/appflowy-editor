@@ -244,6 +244,40 @@ void main() async {
       });
     });
 
+    group('SectionCharacterOffsetStamping.mapWithCharacterOffsets', () {
+      Section makeSection(int index, int len) {
+        final parent = Node(type: 'paragraph');
+        return Section(
+          index: index,
+          text: 'x' * len,
+          selection: Selection(
+            start: Position(path: parent.path, offset: 0),
+            end: Position(path: parent.path, offset: len),
+          ),
+          parent: parent,
+        );
+      }
+
+      test('threads running prefix-sum through the builder', () {
+        final sections = [makeSection(0, 5), makeSection(1, 7), makeSection(2, 3)];
+
+        final stamped = sections
+            .mapWithCharacterOffsets(
+              (s, offset) => (s.index, offset),
+            )
+            .toList();
+
+        expect(stamped, [(0, 0), (1, 5), (2, 12)]);
+      });
+
+      test('empty input yields nothing', () {
+        expect(
+          const <Section>[].mapWithCharacterOffsets((s, o) => o).toList(),
+          isEmpty,
+        );
+      });
+    });
+
     test('test fromJson', () {
       final node = Node.fromJson({
         'type': 'text',
