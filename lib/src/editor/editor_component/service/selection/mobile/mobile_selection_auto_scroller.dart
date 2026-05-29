@@ -75,6 +75,13 @@ class MobileSelectionAutoScroller {
       panEndOffset,
     )?.selectable?.getSelectionInRange(panStartOffset, panEndOffset);
     final end = selectionInRange?.end;
+    debugPrint(
+      '[SELECTION_FIX] PAN.scroll.listener '
+      'mode=${pan.dragMode} '
+      'panEndOffset(=lastPanOffset)=$panEndOffset '
+      'end=${end == null ? 'null' : end.toString()} '
+      'scrollDy=$dy',
+    );
     if (end == null) {
       return;
     }

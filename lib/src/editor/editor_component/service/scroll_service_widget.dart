@@ -78,21 +78,21 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget> implements Ap
     final selection = editorState.selection;
 
     debugPrint(
-      '[SCROLL-DBG] _onSelectionChanged '
+      '[SELECTION_FIX] _onSelectionChanged '
       'selection=$selection '
       'reason=${editorState.selectionUpdateReason} '
       'extraInfo=${editorState.selectionExtraInfo} '
       'kbHeight=$_currentKeyboardInset',
     );
     if (selection == null || [SelectionUpdateReason.selectAll].contains(editorState.selectionUpdateReason)) {
-      debugPrint('[SCROLL-DBG]   → skipped (null or selectAll)');
+      debugPrint('[SELECTION_FIX]   → skipped (null or selectAll)');
       return;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final selectionRects = editorState.selectionRects();
       if (selectionRects.isEmpty) {
-        debugPrint('[SCROLL-DBG]   → skipped (empty rects in postFrame)');
+        debugPrint('[SELECTION_FIX]   → skipped (empty rects in postFrame)');
         return;
       }
 
@@ -109,12 +109,46 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget> implements Ap
       switch (dragMode) {
         case MobileSelectionDragMode.leftSelectionHandle:
           targetRect = selectionRects.first;
+          // Direction defaults to UP (the "natural" direction for a
+          // left-handle drag — user pulling the start of the selection
+          // earlier). But once we have a previous selection to compare
+          // against, derive direction from how `selection.start`
+          // actually moved this tick: if start moved DEEPER in the
+          // document, the user is dragging the left handle DOWN (e.g.
+          // shrinking the selection from the left), and autoscroll
+          // should follow the handle's motion downward when it nears
+          // the bottom edge. Mirrors cursor-mode logic below and the
+          // symmetric rightSelectionHandle case.
           direction = AxisDirection.up;
+          if (lastSelection != null) {
+            final isMovingDown =
+                selection.start.path > lastSelection!.start.path ||
+                (selection.start.path.equals(lastSelection!.start.path) &&
+                    selection.start.offset > lastSelection!.start.offset);
+            direction = isMovingDown ? AxisDirection.down : AxisDirection.up;
+          }
           break;
 
         case MobileSelectionDragMode.rightSelectionHandle:
           targetRect = selectionRects.last;
+          // Direction defaults to DOWN (the natural direction for a
+          // right-handle drag — user pulling the end of the selection
+          // later). But once we have a previous selection, derive
+          // direction from how `selection.end` actually moved: if end
+          // moved SHALLOWER, the user is reversing — dragging the right
+          // handle UP to shrink the selection from the right — and
+          // autoscroll should fire UP when the handle approaches the
+          // top edge so the user can keep dragging past the viewport
+          // boundary. Without this, the right handle hits the AppBar
+          // and selection can never be fully collapsed by drag alone.
           direction = AxisDirection.down;
+          if (lastSelection != null) {
+            final isMovingUp =
+                selection.end.path < lastSelection!.end.path ||
+                (selection.end.path.equals(lastSelection!.end.path) &&
+                    selection.end.offset < lastSelection!.end.offset);
+            direction = isMovingUp ? AxisDirection.up : AxisDirection.down;
+          }
           break;
 
         case MobileSelectionDragMode.cursor:
@@ -151,7 +185,7 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget> implements Ap
         final keyboardDelay = _currentKeyboardInset == 0 ? const Duration(milliseconds: 250) : Duration.zero;
 
         debugPrint(
-          '[SCROLL-DBG]   mobile branch: '
+          '[SELECTION_FIX]   mobile branch: '
           'dragMode=$dragMode '
           'targetRect=$targetRect '
           'endTouchPoint=$endTouchPoint '
@@ -187,22 +221,42 @@ class _ScrollServiceWidgetState extends State<ScrollServiceWidget> implements Ap
             final freshTarget = isLeftHandle ? freshRects.first : freshRects.last;
             if (freshTarget.top >= viewportTop && freshTarget.bottom <= viewportBottom) {
               debugPrint(
-                '[SCROLL-DBG]   viewport-guard: rect $freshTarget inside '
+                '[SELECTION_FIX]   viewport-guard: rect $freshTarget inside '
                 '[$viewportTop, $viewportBottom] — skipping scroll '
                 '(dragMode=$dragMode)',
+              );
+              // The framework's EdgeDraggingAutoScroller is a recursive
+              // self-driving loop: once `startAutoScrollIfNecessary` has
+              // been called with an overflowing rect, it keeps scrolling
+              // on its own timer until that stored rect no longer
+              // overflows. Returning early here SKIPS calling
+              // `startAutoScroll` with the fresh in-viewport rect — so
+              // the framework keeps using the LAST stored rect (from
+              // when the finger was past the edge) and keeps scrolling
+              // even though we've decided we no longer want to. Stop
+              // it explicitly. Verified against repro: without this,
+              // dragging a handle into the keyboard area and then back
+              // up keeps the viewport scrolling and `getNodeInOffset`
+              // resolves the finger to ever-deeper newly-revealed nodes
+              // → selection extends downward instead of following the
+              // finger back up.
+              editorState.autoScroller?.stopAutoScroll();
+              debugPrint(
+                '[SELECTION_FIX]   viewport-guard: stopAutoScroll() called '
+                '(framework loop should halt next tick)',
               );
               return;
             }
 
             debugPrint(
-              '[SCROLL-DBG]   viewport-guard: rect $freshTarget OUTSIDE '
+              '[SELECTION_FIX]   viewport-guard: rect $freshTarget OUTSIDE '
               '[$viewportTop, $viewportBottom] — scrolling '
               '(dragMode=$dragMode)',
             );
           }
 
           debugPrint(
-            '[SCROLL-DBG]   → startAutoScroll fired '
+            '[SELECTION_FIX]   → startAutoScroll fired '
             '(endTouchPoint=$endTouchPoint direction=$direction)',
           );
           // Mobile needs to continuously update scroll position/direction during drag

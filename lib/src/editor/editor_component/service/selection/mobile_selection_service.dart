@@ -331,6 +331,69 @@ class _MobileSelectionServiceWidgetState
       panEndOffset,
     )?.selectable?.getSelectionInRange(panStartOffset, panEndOffset).end;
 
+    final lastPanOffsetBefore = _pan.lastPanOffset.value;
+    final dyDelta = lastPanOffsetBefore == null
+        ? 0.0
+        : panEndOffset.dy - lastPanOffsetBefore.dy;
+    // "Reversal" is mode-specific: rightHandle's natural direction is DOWN,
+    // so going UP is a reverse; leftHandle's natural direction is UP, so
+    // going DOWN is a reverse. >1px threshold filters touch noise.
+    final reversedForHandle =
+        lastPanOffsetBefore != null &&
+        switch (_pan.dragMode) {
+          MobileSelectionDragMode.rightSelectionHandle => dyDelta < -1.0,
+          MobileSelectionDragMode.leftSelectionHandle => dyDelta > 1.0,
+          _ => false,
+        };
+    debugPrint(
+      '[SELECTION_FIX] PAN.update '
+      '${reversedForHandle ? '*** REVERSED *** ' : ''}'
+      'mode=$mode '
+      'panEndOffset=$panEndOffset '
+      'dyDelta=${dyDelta.toStringAsFixed(1)} '
+      'end=${end == null ? 'null' : end.toString()} '
+      'lastPanOffset.before=$lastPanOffsetBefore',
+    );
+
+    // Spurious-reversal-extension guard. When the user reverses finger
+    // direction while autoscroll is active, the viewport keeps scrolling
+    // and `getNodeInOffset(finger_below_viewport)` keeps resolving to a
+    // newly-revealed "deepest visible" node — so the resolved `end`
+    // drifts FURTHER away from the original selection anchor even as the
+    // finger moves BACK toward it. Selection chases the new deep node,
+    // selection-rect-driven autoscroll re-fires on the resulting
+    // `_onSelectionChanged`, viewport scrolls more, loop continues. Log
+    // signature: dyDelta < 0 (going up) but end.path > current end.path.
+    //
+    // Fix: when the finger has reversed AND the resolved end is spurious
+    // (further from anchor instead of closer), drop this tick and stop
+    // the framework autoscroll loop. Selection freezes at last-known-good
+    // until finger crosses back into viewport, at which point
+    // `getNodeInOffset(finger_in_viewport)` resolves to a node closer to
+    // the anchor → spurious check fails → normal path resumes →
+    // selection follows finger. Mirror logic for leftSelectionHandle.
+    final currentSelection = editorState.selection?.normalized;
+    if (reversedForHandle && end != null && currentSelection != null) {
+      final isRight =
+          _pan.dragMode == MobileSelectionDragMode.rightSelectionHandle;
+      final isLeft =
+          _pan.dragMode == MobileSelectionDragMode.leftSelectionHandle;
+      final spurious =
+          (isRight && end.path > currentSelection.end.path) ||
+          (isLeft && end.path < currentSelection.start.path);
+      if (spurious) {
+        editorState.autoScroller?.stopAutoScroll();
+        _pan.lastPanOffset.value = panEndOffset;
+        debugPrint(
+          '[SELECTION_FIX] PAN.update reversal-suppress: '
+          'end.path=${end.path} drifting away from anchor '
+          '(currentSel=${currentSelection.start.path}..${currentSelection.end.path}) '
+          '— frozen + stopAutoScroll',
+        );
+        return editorState.selection;
+      }
+    }
+
     Selection? newSelection;
 
     if (end != null) {
@@ -350,6 +413,12 @@ class _MobileSelectionServiceWidgetState
       _pan.lastPanOffset.value = panEndOffset;
     }
 
+    debugPrint(
+      '[SELECTION_FIX] PAN.update '
+      '  → newSelection=${newSelection?.toString() ?? 'null'} '
+      'lastPanOffset.after=${_pan.lastPanOffset.value}',
+    );
+
     if (newSelection != null) {
       updateSelection(newSelection);
     }
@@ -359,6 +428,11 @@ class _MobileSelectionServiceWidgetState
 
   @override
   void onPanEnd(DragEndDetails details, MobileSelectionDragMode mode) {
+    debugPrint(
+      '[SELECTION_FIX] PAN.end '
+      'mode=$mode '
+      'velocity=${details.velocity.pixelsPerSecond}',
+    );
     _pan.clearPan();
     _pan.dragMode = MobileSelectionDragMode.none;
 
