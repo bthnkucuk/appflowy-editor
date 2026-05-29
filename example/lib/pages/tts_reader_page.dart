@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
+import 'package:provider/provider.dart';
 
 /// Read-along viewer ported from a production reader app. The key
 /// features mirrored — and the reason this example exists — are:
@@ -218,11 +219,21 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     // here. Do NOT mutate `.configuration` / `.showActions` on the
     // standard-map instances in place: they're shared `final` references
     // across every editor in the process.
+    //
+    // The `NoteBlockKeys.type` entry is our custom-block demo: see the
+    // bottom of the file for the matching `NoteBlockComponentBuilder` /
+    // widget / `SelectableMixin` implementation. This is the same
+    // additive pattern a downstream consumer uses to wire in a custom
+    // image, audio card, or callout — register the type → renderer
+    // mapping here and the editor's renderer resolves it on every node
+    // whose `type` matches.
+    final note = NoteBlockComponentBuilder()..showActions = (_) => false;
     return <String, BlockComponentBuilder>{
       ...standardBlockComponentBuilderMap,
       PageBlockKeys.type: page,
       ParagraphBlockKeys.type: paragraph,
       HeadingBlockKeys.type: heading,
+      NoteBlockKeys.type: note,
     };
   }
 
@@ -651,6 +662,20 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
               'cycle through 0.75x, 1x, 1.25x, and 1.5x. Tap any word in '
               'the document to seek directly there.',
         ),
+        // Custom-block demo: a "Note" callout. See the
+        // NoteBlockComponent definitions at the bottom of the file —
+        // this is the canonical pattern downstream reader apps use to
+        // register a custom block (image card, audio cue, callout) into
+        // the editor's renderer map. Tap the bookmark icon in the
+        // gutter to toggle a `bookmarked` attribute via the transaction
+        // API; the text content participates in the read-along stream
+        // like any other paragraph, no note-specific code required.
+        noteNode(
+          text: 'Note: the yellow callout above is a custom block — '
+              'tap the bookmark to flip its state through the editor\'s '
+              'transaction pipeline. Read-along still tracks each word '
+              'inside.',
+        ),
         paragraphNode(
           text: 'Tapping is routed through editorState.tapEvents — '
               'MobileHighlightServiceWidget resolves the word boundary at '
@@ -947,5 +972,229 @@ class _BackToCurrentPill extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Custom block-component demo: a "Note" callout.
+//
+// Mirrors the every-day pattern a downstream reader app uses when it
+// ships custom block types (images, audio cards, callouts, …):
+//
+//   1. A `Keys` class with attribute string constants.
+//   2. A `nodeName(...)` factory helper that returns a `Node` with the
+//      right type + attributes.
+//   3. A `BlockComponentBuilder` subclass — the editor's renderer
+//      registry looks builders up by `node.type` and calls
+//      `build(blockComponentContext)`.
+//   4. A `BlockComponentStatefulWidget` subclass for the actual widget.
+//   5. The widget's `State` mixes in `SelectableMixin`,
+//      `DefaultSelectableMixin` (forwards the selectable contract to an
+//      inner `AppFlowyRichText`), and `BlockComponentConfigurable`
+//      (gives access to the configuration the builder was set up with).
+//   6. The build method wraps everything in `BlockSelectionContainer`
+//      so the selection / highlight / remote-cursor paint layers know
+//      where this block sits.
+//   7. Attribute mutations go through `editorState.transaction
+//      ..updateNode(node, {...}); editorState.apply(transaction)` — the
+//      canonical write path. Direct attribute writes bypass the
+//      transaction broadcast pipeline (history, ToC, dirty tracker)
+//      and will quietly desync the editor's reactive state.
+//
+// Demo behaviour: tap the bookmark icon in the gutter to toggle a
+// `bookmarked` flag. The flag flips via the transaction API, which
+// triggers a rebuild via the editor's transaction stream, which the
+// note widget re-reads on next build to recolour the icon. The text
+// content is rendered with `AppFlowyRichText` so it joins the reader's
+// highlight stream like any other paragraph — section underlay,
+// word-level highlight, tap-to-seek all just work without
+// note-specific code.
+// ---------------------------------------------------------------------------
+
+class NoteBlockKeys {
+  const NoteBlockKeys._();
+
+  static const String type = 'note';
+
+  /// Standard `delta` key — same as paragraph/heading so the package's
+  /// `Node.delta` getter resolves the text content with no special
+  /// handling. Kept as a constant here to mirror the
+  /// `ParagraphBlockKeys`-shape convention downstream codebases use.
+  static const String delta = blockComponentDelta;
+
+  /// Custom attribute: `true` when the reader has bookmarked the note.
+  static const String bookmarked = 'bookmarked';
+}
+
+Node noteNode({String? text, bool bookmarked = false}) {
+  return Node(
+    type: NoteBlockKeys.type,
+    attributes: {
+      NoteBlockKeys.delta: (Delta()..insert(text ?? '')).toJson(),
+      NoteBlockKeys.bookmarked: bookmarked,
+    },
+  );
+}
+
+class NoteBlockComponentBuilder extends BlockComponentBuilder {
+  NoteBlockComponentBuilder({super.configuration});
+
+  @override
+  BlockComponentWidget build(BlockComponentContext blockComponentContext) {
+    final node = blockComponentContext.node;
+    return NoteBlockComponentWidget(
+      key: node.key,
+      node: node,
+      configuration: configuration,
+      showActions: showActions(node),
+      actionBuilder: (context, state) =>
+          actionBuilder(blockComponentContext, state),
+      actionTrailingBuilder: (context, state) =>
+          actionTrailingBuilder(blockComponentContext, state),
+    );
+  }
+}
+
+class NoteBlockComponentWidget extends BlockComponentStatefulWidget {
+  const NoteBlockComponentWidget({
+    super.key,
+    required super.node,
+    super.showActions,
+    super.actionBuilder,
+    super.actionTrailingBuilder,
+    super.configuration = const BlockComponentConfiguration(),
+  });
+
+  @override
+  State<NoteBlockComponentWidget> createState() =>
+      _NoteBlockComponentWidgetState();
+}
+
+class _NoteBlockComponentWidgetState extends State<NoteBlockComponentWidget>
+    with SelectableMixin, DefaultSelectableMixin, BlockComponentConfigurable {
+  @override
+  final forwardKey = GlobalKey(debugLabel: 'note_rich_text');
+
+  @override
+  GlobalKey<State<StatefulWidget>> get containerKey => widget.node.key;
+
+  @override
+  GlobalKey<State<StatefulWidget>> blockComponentKey = GlobalKey(
+    debugLabel: NoteBlockKeys.type,
+  );
+
+  @override
+  BlockComponentConfiguration get configuration => widget.configuration;
+
+  @override
+  Node get node => widget.node;
+
+  late final editorState = Provider.of<EditorState>(context, listen: false);
+
+  /// Canonical block-attribute mutation. Build a transaction off
+  /// `editorState.transaction`, mutate via `updateNode`, hand back to
+  /// `editorState.apply(transaction)` — the editor's broadcast pipeline
+  /// then notifies history, the dirty tracker, the ToC notifier, and any
+  /// downstream `transactionStream` subscribers. Direct
+  /// `node.updateAttributes(...)` bypasses every one of those and is the
+  /// quickest way to desync state.
+  void _toggleBookmark() {
+    final current =
+        widget.node.attributes[NoteBlockKeys.bookmarked] as bool? ?? false;
+    final transaction = editorState.transaction
+      ..updateNode(widget.node, {
+        NoteBlockKeys.bookmarked: !current,
+      });
+    editorState.apply(transaction);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bookmarked =
+        widget.node.attributes[NoteBlockKeys.bookmarked] as bool? ?? false;
+
+    Widget child = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Gutter button — the transaction API demo. Tap to toggle the
+        // `bookmarked` flag via the canonical mutation path. IconButton
+        // owns its own gesture recognizer; the parent
+        // MobileSelectionGestureDetector's onTapUp on the same pointer
+        // ALSO fires and seeks playback to whichever word boundary the
+        // tap landed on — that's fine, an icon tap lands at offset 0,
+        // i.e. the note's first word, which is the intuitive seek
+        // target for "user just interacted with this note".
+        Padding(
+          padding: const EdgeInsets.only(top: 2, right: 4),
+          child: IconButton(
+            icon: Icon(
+              bookmarked ? Icons.bookmark_rounded : Icons.bookmark_outline,
+              size: 18,
+              color: Colors.amber.shade800,
+            ),
+            tooltip: bookmarked
+                ? 'Unbookmark this note'
+                : 'Bookmark this note',
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints.tightFor(
+              width: 28,
+              height: 28,
+            ),
+            padding: EdgeInsets.zero,
+            onPressed: _toggleBookmark,
+          ),
+        ),
+        Expanded(
+          child: AppFlowyRichText(
+            key: forwardKey,
+            delegate: this,
+            node: widget.node,
+            editorState: editorState,
+            placeholderText: '',
+            textSpanDecorator: (textSpan) => textSpan.updateTextStyle(
+              const TextStyle(
+                fontStyle: FontStyle.italic,
+                fontSize: 16,
+                color: Color(0xFF6B5C00),
+              ),
+            ),
+            cursorColor: editorState.editorStyle.cursorColor,
+            selectionColor: editorState.editorStyle.selectionColor,
+            highlightColor: editorState.editorStyle.highlightColor,
+            highlightAreaColor: editorState.editorStyle.highlightAreaColor,
+            cursorWidth: editorState.editorStyle.cursorWidth,
+          ),
+        ),
+      ],
+    );
+
+    child = Container(
+      key: blockComponentKey,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.fromLTRB(4, 6, 12, 6),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.amber.withValues(alpha: 0.35),
+        ),
+      ),
+      child: child,
+    );
+
+    child = BlockSelectionContainer(
+      node: widget.node,
+      delegate: this,
+      listenable: editorState.selectionNotifier,
+      highlight: editorState.highlightNotifier,
+      remoteSelection: editorState.remoteSelections,
+      blockColor: editorState.editorStyle.selectionColor,
+      highlightColor: editorState.editorStyle.highlightColor,
+      highlightAreaColor: editorState.editorStyle.highlightAreaColor,
+      supportTypes: const [BlockSelectionType.block],
+      child: child,
+    );
+
+    return child;
   }
 }
