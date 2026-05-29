@@ -122,8 +122,8 @@ class EditorState extends _EditorStateBase {
 
   // documentRules + _subscription live in [_DocumentRulesMixin].
 
-  // updateSelectionWithReason / updateHighlight / updateTap live in
-  // [_SelectionStyleMixin].
+  // updateSelectionWithReason / updateHighlight / notifyTap +
+  // tapEvents stream live in [_SelectionStyleMixin].
   //
   // The scroll-view listener set, renderBox, and updateAutoScroller live
   // in [_ScrollCoordinatorMixin].

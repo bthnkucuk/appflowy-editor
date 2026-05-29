@@ -18,21 +18,25 @@ import 'package:flutter/rendering.dart' show ScrollDirection;
 ///    the highlight's offset midpoint (lines 324-327 of
 ///    block_highlight_area.dart).
 ///
-/// 2. **`highlightable: true` + `tapNotifier`.** Instead of intercepting
-///    pointer events ourselves, we let
+/// 2. **`highlightable: true` + `editorState.tapEvents` stream.**
+///    Instead of intercepting pointer events ourselves, we let
 ///    [MobileHighlightServiceWidget] do the tap routing — its
-///    `_onDoubleTapUp` resolves the word boundary at the tap and calls
-///    `editorState.updateTap(selection)`. We listen on
-///    `editorState.tapNotifier` to seek. Exact same path the app uses
-///    (`document_details_listener_mixin.tapListener`).
+///    `_onDoubleTapUp` resolves the word boundary at the tap and
+///    publishes that selection on `editorState.tapEvents`, a broadcast
+///    stream. We subscribe with `.listen` and treat each event as a
+///    momentary tap-to-seek. The tap does NOT write the editor's
+///    `selection`, so `BlockSelectionArea` does not paint a gray rect
+///    on the viewer — important because this page sets
+///    `editable: false`.
 ///
 /// 3. **Editor-owned auto-scroll state.** The "back to current" pill
 ///    drives off `editorState.isAutoScrollHighlightNotifier`, not a
 ///    local flag. User drags the editor (reverse scroll) → we call
 ///    `disableAutoScrollHighlight()`. Pill tap →
-///    `enableAutoScrollHighlight(editorScrollController)`. Each tick
-///    calls `highlightChanged(controller)` which scrolls iff the
-///    notifier is true.
+///    `enableAutoScrollHighlight(editorScrollController)`. The mixin
+///    then subscribes to `highlightNotifier` itself, so every
+///    `updateHighlight(...)` tick drives a scroll automatically with no
+///    extra call at the tick callsite.
 ///
 /// 4. **Section-midpoint lookup on tap.** Tap → find which section of
 ///    `node.sections` contains the offset midpoint
@@ -88,6 +92,10 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
   bool _playing = false;
   double _speed = 1.0;
 
+  /// Subscription to the editor's one-shot tap-event stream — cancelled
+  /// in [dispose] so we don't outlive the editor.
+  StreamSubscription<Selection>? _tapEventsSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -130,16 +138,17 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
           last.characterOffset + last.section.characterCount;
     }
 
-    // The editor's MobileHighlightServiceWidget fires tapNotifier on every
-    // tap-up (see mobile_highlight_service.dart:129 → updateTap). We seek
-    // to whichever word the tap landed in.
-    editorState.tapNotifier.addListener(_onTapNotifier);
+    // The editor's MobileHighlightServiceWidget publishes tap-ups onto
+    // editorState.tapEvents (see mobile_highlight_service._onDoubleTapUp).
+    // The stream is broadcast and carries only taps, so there's no
+    // reason to gate or consume — each event is one tap.
+    _tapEventsSubscription = editorState.tapEvents.listen(_onTap);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    editorState.tapNotifier.removeListener(_onTapNotifier);
+    _tapEventsSubscription?.cancel();
     editorScrollController.dispose();
     editorState.dispose();
     super.dispose();
@@ -233,11 +242,11 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
       return;
     }
     setState(() => _currentIndex = i);
+    // The mixin subscribed to `highlightNotifier` when we called
+    // `enableAutoScrollHighlight(...)`, so this single write drives
+    // both the visual highlight and the auto-scroll. No explicit
+    // `highlightChanged(controller)` call is needed.
     editorState.updateHighlight(_tokens[i]);
-    // Drives `scrollToHighlight` iff `isAutoScrollHighlightNotifier` is
-    // true. Mirrors the app's mixin call from
-    // `_skipSubscription.listen` (document_details_listener_mixin:35).
-    editorState.highlightChanged(editorScrollController);
   }
 
   void _play() {
@@ -353,16 +362,13 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     }
   }
 
-  /// Tap routing via `tapNotifier`. Mirrors the app's `tapListener`:
-  /// resolve the enclosing section by offset midpoint, locate the
-  /// matching token, seek there, re-arm auto-scroll.
-  void _onTapNotifier() {
-    final tap = editorState.tapNotifier.value;
-    if (tap == null) return;
-    // Consume the tap immediately — the app's flow clears it via the
-    // highlight stream; here we don't have one, so do it explicitly.
-    editorState.tapNotifier.value = null;
-
+  /// Tap routing via the editor's `tapEvents` stream. Mirrors the
+  /// downstream reader app's `tapListener`, modernized: resolve the
+  /// enclosing section by offset midpoint, locate the matching token,
+  /// seek there, re-arm auto-scroll. The stream carries only taps, so
+  /// there is no reason gate and no consume step — each event is one
+  /// tap and is delivered exactly once.
+  void _onTap(Selection tap) {
     final node = editorState.getNodesInSelection(tap).lastOrNull;
     if (node == null) return;
 
@@ -443,8 +449,8 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
                 editable: false,
                 // `highlightable: true` wires
                 // MobileHighlightServiceWidget — the source of tap
-                // events we consume via tapNotifier. Without this the
-                // tap-to-seek path is dead.
+                // events published on editorState.tapEvents. Without
+                // this the tap-to-seek path is dead.
                 highlightable: true,
                 disableSelectionService: true,
                 disableKeyboardService: true,
@@ -555,11 +561,12 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
               'the document to seek directly there.',
         ),
         paragraphNode(
-          text: 'Tapping is routed through editorState.tapNotifier — '
+          text: 'Tapping is routed through editorState.tapEvents — '
               'MobileHighlightServiceWidget resolves the word boundary at '
-              'the tap and fires updateTap; we listen and seek to that '
-              'word. This is the exact path the production app uses for '
-              'tap-to-seek into a TTS queue.',
+              'the tap and publishes that selection on the broadcast '
+              'stream. We subscribe with .listen and treat each event as '
+              'a one-shot tap-to-seek. This is the exact path the '
+              'downstream reader app uses for tap-to-seek into a TTS queue.',
         ),
         headingNode(level: 2, text: 'Sections vs words'),
         paragraphNode(

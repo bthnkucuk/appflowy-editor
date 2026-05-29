@@ -24,11 +24,42 @@ mixin _SelectionStyleMixin {
   /// The highlight notifier of the editor.
   final PropertyValueNotifier<Selection?> highlightNotifier = PropertyValueNotifier<Selection?>(null);
 
-  /// The tap notifier of the editor.
-  final PropertyValueNotifier<Selection?> tapNotifier = PropertyValueNotifier<Selection?>(null);
-
   /// Remote selection is the selection from other users.
   final PropertyValueNotifier<List<RemoteSelection>> remoteSelections = PropertyValueNotifier<List<RemoteSelection>>([]);
+
+  /// Broadcast stream of one-shot tap-up selections coming out of the
+  /// mobile highlight service (`MobileHighlightServiceWidget`).
+  ///
+  /// Unlike `selectionNotifier`, writing here does not mutate the
+  /// editor's text-selection state and therefore does not paint a
+  /// selection rect via `BlockSelectionArea` — which matters for
+  /// `highlightable: true` + `editable: false` viewers where the editor
+  /// is rendered as a reader and a lingering gray rect would be
+  /// visually wrong.
+  ///
+  /// Consumers subscribe with `.listen` (or `.listen + cancel` for
+  /// disposable owners) and treat each event as a momentary tap, e.g.
+  /// "seek the TTS playhead to this word". The stream is broadcast, so
+  /// multiple consumers can listen concurrently; it closes when
+  /// `EditorState.dispose()` runs.
+  Stream<Selection> get tapEvents => _tapEventsController.stream;
+
+  final StreamController<Selection> _tapEventsController = StreamController<Selection>.broadcast();
+
+  /// Publish a deliberate tap-up onto [tapEvents].
+  ///
+  /// The primary caller is `MobileHighlightServiceWidget._applySelection`
+  /// at the moment a tap-up gesture lands. External callers can also use
+  /// this to inject a synthetic tap — e.g. a programmatic "seek to this
+  /// section" entry-point that wants the same downstream pipeline as a
+  /// real user tap.
+  ///
+  /// Guarded against post-dispose calls so a stray late emission from a
+  /// service that hasn't detached yet doesn't throw.
+  void notifyTap(Selection selection) {
+    if (_tapEventsController.isClosed) return;
+    _tapEventsController.add(selection);
+  }
 
   // ---------------------------------------------------------------------------
   // Selection accessors
@@ -39,8 +70,6 @@ mixin _SelectionStyleMixin {
 
   /// The highlight of the editor.
   Selection? get highlight => highlightNotifier.value;
-
-  Selection? get tap => tapNotifier.value;
 
   /// Sets the selection of the editor.
   ///
@@ -73,11 +102,6 @@ mixin _SelectionStyleMixin {
     if (highlightNotifier.value == value) return;
 
     highlightNotifier.value = value;
-  }
-
-  /// Sets the tap selection of the editor.
-  set tap(Selection? value) {
-    tapNotifier.value = value;
   }
 
   // ---------------------------------------------------------------------------
@@ -135,10 +159,6 @@ mixin _SelectionStyleMixin {
     this.highlight = highlight;
   }
 
-  void updateTap(Selection? tap) {
-    this.tap = tap;
-  }
-
   // ---------------------------------------------------------------------------
   // Style — toggled formatting + slice-upcoming-attributes flag
   // ---------------------------------------------------------------------------
@@ -183,7 +203,7 @@ mixin _SelectionStyleMixin {
   void _disposeSelectionStyle() {
     selectionNotifier.dispose();
     highlightNotifier.dispose();
-    tapNotifier.dispose();
+    _tapEventsController.close();
     remoteSelections.dispose();
     toggledStyleNotifier.dispose();
   }

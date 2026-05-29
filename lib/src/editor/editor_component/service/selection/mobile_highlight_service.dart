@@ -110,6 +110,23 @@ class _MobileHighlightServiceWidgetState
 
   @override
   void updateSelection(Selection? selection) {
+    _applySelection(selection, isTap: false);
+  }
+
+  /// Internal: routes both pan-drag and tap-up through one path so the
+  /// `currentSelection` / highlight bookkeeping stays in sync.
+  ///
+  /// [isTap] is true only from the deliberate tap-up handler. When set,
+  /// the tap-up selection is published on `editorState.tapEvents` —
+  /// a broadcast stream that consumers (TTS read-along, audio-seek
+  /// players, etc.) subscribe to. Crucially we do NOT write the
+  /// editor's `selection` here: in `highlightable: true` +
+  /// `editable: false` viewers writing the selection would make
+  /// `BlockSelectionArea` paint a gray rect that nothing clears. The
+  /// highlight underlay is already updated via `updateHighlight` a few
+  /// lines up. Pan updates do not publish on the stream — the
+  /// pre-refactor code fired tap on every pan tick, which was a wart.
+  void _applySelection(Selection? selection, {required bool isTap}) {
     if (currentSelection.value == selection) {
       return;
     }
@@ -126,7 +143,9 @@ class _MobileHighlightServiceWidgetState
 
     currentSelection.value = selection;
     editorState.updateHighlight(selection);
-    editorState.updateTap(selection);
+    if (isTap && selection != null) {
+      editorState.notifyTap(selection);
+    }
   }
 
   @override
@@ -299,7 +318,9 @@ class _MobileHighlightServiceWidgetState
       clearSelection();
       return;
     }
-    updateSelection(selection);
+    // Route the tap through the tap-event publishing path; pan
+    // updates intentionally use the non-tap path (no stream emission).
+    _applySelection(selection, isTap: true);
   }
 
   // delete this function in the future.

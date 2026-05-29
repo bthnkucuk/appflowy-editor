@@ -112,6 +112,17 @@ enum SelectionUpdateReason {
   remote, // like remote selection
   selectAll,
   searchHighlight, // Highlighting search results
+
+  /// Selection update originating from a tap-driven UI path (e.g. an
+  /// editable editor whose tap places the cursor).
+  ///
+  /// Note: the mobile highlight service does NOT use this reason any
+  /// more — it publishes tap-ups onto `EditorState.tapEvents` instead,
+  /// so a tap in a `highlightable: true` + `editable: false` viewer
+  /// does not write the editor's selection and therefore does not
+  /// paint a selection rect. This enum value remains for code paths
+  /// that legitimately stamp a tap onto `editorState.selection`.
+  tap,
 }
 
 enum SelectionType { inline, block }

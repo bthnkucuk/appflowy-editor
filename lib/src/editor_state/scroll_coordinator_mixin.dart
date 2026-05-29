@@ -28,6 +28,12 @@ mixin _ScrollCoordinatorMixin {
   /// programmatic scroll target).
   Selection? get highlight;
 
+  /// Provided by [_SelectionStyleMixin] — the underlying notifier so
+  /// auto-scroll can subscribe to highlight changes directly instead of
+  /// relying on every consumer to pair `updateHighlight(s)` with an
+  /// explicit scroll-trigger call.
+  PropertyValueNotifier<Selection?> get highlightNotifier;
+
   /// Provided by [_SelectionStyleMixin] — extra info carried by the most
   /// recent selection update. Read for drag-mode detection during
   /// auto-scroll.
@@ -67,6 +73,27 @@ mixin _ScrollCoordinatorMixin {
   /// [scrollToHighlight] short-circuits if the editor disposes between
   /// scheduling and the post-frame callback firing.
   bool _scrollCoordinatorDisposed = false;
+
+  /// Controller captured by the most recent [enableAutoScrollHighlight]
+  /// call. The internal highlight listener uses this to invoke
+  /// [scrollToHighlight] without the consumer having to re-thread the
+  /// controller through every highlight tick.
+  EditorScrollController? _autoScrollController;
+
+  /// Tracks whether [_onHighlightChangedForAutoScroll] is currently
+  /// attached to [highlightNotifier], so repeated calls to
+  /// [enableAutoScrollHighlight] don't stack listeners and trigger N
+  /// scrolls per highlight change.
+  bool _autoScrollListenerAttached = false;
+
+  /// Section the auto-scroll listener has most recently scrolled to.
+  /// Used to coalesce per-tick highlight updates that stay inside the
+  /// same section — the viewport already shows that block, so animating
+  /// to `top - 300` again just stutters. Drops back to "scroll every
+  /// time" when the consumer's `Document.sectionParser` isn't installed
+  /// (no sections → no coalesce key → preserves the original behaviour
+  /// for general highlight viewers).
+  Section? _lastAutoScrolledSection;
 
   // ---------------------------------------------------------------------------
   // Scroll-view listener set
@@ -287,19 +314,80 @@ mixin _ScrollCoordinatorMixin {
     });
   }
 
+  /// Engage auto-scroll-to-highlight for [editorScrollController].
+  ///
+  /// Stores the controller, subscribes once to [highlightNotifier], then
+  /// performs an immediate [scrollToHighlight] so the engagement also
+  /// catches up to whatever highlight was set before the toggle flipped.
+  /// Subsequent [updateHighlight] calls drive the scroll automatically.
+  ///
+  /// Idempotent: calling multiple times rebinds the controller (last call
+  /// wins) but does not stack listeners.
   void enableAutoScrollHighlight(EditorScrollController editorScrollController) {
+    _autoScrollController = editorScrollController;
     isAutoScrollHighlightNotifier.value = true;
-    highlightChanged(editorScrollController);
+    if (!_autoScrollListenerAttached) {
+      highlightNotifier.addListener(_onHighlightChangedForAutoScroll);
+      _autoScrollListenerAttached = true;
+    }
+    // Seed the coalesce key with the section we're about to scroll to;
+    // otherwise the next per-tick highlight inside the same section
+    // would fail the identity check and trigger a redundant scroll.
+    _lastAutoScrolledSection = _resolveHighlightSection(highlight);
+    scrollToHighlight(editorScrollController);
   }
 
+  /// Stop auto-scrolling on highlight changes. Detaches the internal
+  /// listener and forgets the controller so a later
+  /// [enableAutoScrollHighlight] starts from a clean slate.
   void disableAutoScrollHighlight() {
+    if (_autoScrollListenerAttached) {
+      highlightNotifier.removeListener(_onHighlightChangedForAutoScroll);
+      _autoScrollListenerAttached = false;
+    }
+    _autoScrollController = null;
+    _lastAutoScrolledSection = null;
     isAutoScrollHighlightNotifier.value = false;
   }
 
-  void highlightChanged(EditorScrollController editorScrollController) {
-    if (isAutoScrollHighlightNotifier.value) {
-      scrollToHighlight(editorScrollController);
+  /// Internal: subscribed to [highlightNotifier] while auto-scroll is
+  /// engaged. Coalesces per-tick highlights that stay inside the same
+  /// section so word-level pipelines (a 350ms timer in a TTS viewer)
+  /// don't trigger a fresh 700ms scroll animation on every word. When
+  /// no section parser is installed, the section lookup returns null
+  /// and we fall back to the original "scroll on every change" path.
+  void _onHighlightChangedForAutoScroll() {
+    if (_scrollCoordinatorDisposed) return;
+    if (!isAutoScrollHighlightNotifier.value) return;
+    final controller = _autoScrollController;
+    if (controller == null) return;
+
+    final newSel = highlight;
+    if (newSel == null) {
+      // Highlight cleared — drop the coalesce key so the next non-null
+      // highlight triggers a fresh scroll.
+      _lastAutoScrolledSection = null;
+      return;
     }
+
+    final section = _resolveHighlightSection(newSel);
+    if (section != null) {
+      // Same-section identity is preserved by Node.sections's cache, so
+      // identical() is the cheap correct check here.
+      if (identical(section, _lastAutoScrolledSection)) return;
+      _lastAutoScrolledSection = section;
+    } else {
+      // No sections to coalesce against — clear and fall through.
+      _lastAutoScrolledSection = null;
+    }
+
+    scrollToHighlight(controller);
+  }
+
+  Section? _resolveHighlightSection(Selection? selection) {
+    if (selection == null) return null;
+    final node = getNodesInSelection(selection).lastOrNull;
+    return node?.sectionForSelection(selection);
   }
 
   // ---------------------------------------------------------------------------
@@ -308,6 +396,15 @@ mixin _ScrollCoordinatorMixin {
 
   void _disposeScrollCoordinator() {
     _scrollCoordinatorDisposed = true;
+    if (_autoScrollListenerAttached) {
+      // Safe: EditorState.dispose() runs _disposeScrollCoordinator
+      // first (selection-style mixin owns highlightNotifier and is
+      // disposed last), so the notifier is still alive here.
+      highlightNotifier.removeListener(_onHighlightChangedForAutoScroll);
+      _autoScrollListenerAttached = false;
+    }
+    _autoScrollController = null;
+    _lastAutoScrolledSection = null;
     isAutoScrollHighlightNotifier.dispose();
     _onScrollViewScrolledListeners.clear();
   }

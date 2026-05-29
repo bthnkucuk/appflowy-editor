@@ -304,7 +304,196 @@ The example reader page (`example/lib/pages/tts_reader_page.dart`) demonstrates 
 
 ---
 
-## 9. Net-new APIs (additive, no migration needed)
+## 9. `EditorState.highlightChanged(controller)` removed; auto-scroll is section-coalesced
+
+`_ScrollCoordinatorMixin` used to require callers to pair every highlight tick with an explicit `editorState.highlightChanged(controller)` to drive the scroller. The mixin now subscribes to `highlightNotifier` itself the first time you call `enableAutoScrollHighlight(controller)`, so every `updateHighlight(...)` change drives the scroll automatically until you call `disableAutoScrollHighlight()` (or the editor disposes).
+
+The auto-scroll listener also **coalesces by enclosing `Section`** when a `Document.sectionParser` is installed: per-tick highlight updates that stay inside the same section don't trigger a fresh scroll — only crossing into a new section does. This matches the production reader pipeline that explicitly drove `highlightChanged` from a section-change stream; the editor's per-word highlight tick is no longer jittery and the manual coordination drops out.
+
+When no section parser is installed, the listener falls back to "scroll on every change" — preserves behaviour for general highlight viewers.
+
+### What changed concretely
+
+| Before | After |
+| --- | --- |
+| `editorState.enableAutoScrollHighlight(controller);` + per-tick `editorState.updateHighlight(s); editorState.highlightChanged(controller);` | `editorState.enableAutoScrollHighlight(controller);` once, then per-tick `editorState.updateHighlight(s);` (the mixin handles the scroll) |
+| `highlightChanged(controller)` was a public mixin method gated on `isAutoScrollHighlight` | **Removed.** The behaviour is fully expressed by the auto-subscribe; an explicit call would just trigger a redundant scroll. |
+| `enableAutoScrollHighlight` had to be guarded against repeated calls in your own code, or you risked stacking listeners | Engagement is idempotent — calling `enableAutoScrollHighlight` N times still attaches exactly one listener; a single `disableAutoScrollHighlight` fully detaches. |
+| Per-tick highlights inside the same section animated a fresh `top - 300px` scroll each time, producing visible jitter | Same-section ticks are no-ops; only the first highlight in a new section animates a scroll. |
+
+### Migration
+
+```dart
+// Before — tick callsite manually paired the two notifiers
+void _advanceTo(int i) {
+  editorState.updateHighlight(_tokens[i]);
+  editorState.highlightChanged(editorScrollController); // ← delete; method removed
+}
+```
+
+```dart
+// After — one write, mixin handles the scroll (and coalesces by section)
+void _advanceTo(int i) {
+  editorState.updateHighlight(_tokens[i]);
+}
+```
+
+The engagement / disengagement points (`enableAutoScrollHighlight` / `disableAutoScrollHighlight`) are unchanged — engage when the user expects the viewport to follow the highlight (play, skip, return-to-current, tap-to-seek), disengage on user-initiated scroll.
+
+---
+
+## 10. `tapNotifier` / `updateTap` replaced by `editorState.tapEvents` stream
+
+Pre-v7, a tap-up on a `highlightable: true` editor fired three notifiers carrying the same `Selection`: `currentSelection`, `highlightNotifier`, and `tapNotifier`. Consumers that wanted "tap-to-seek" subscribed to `tapNotifier` and had to manually clear it (`editorState.tapNotifier.value = null`) so a re-tap on the same word would re-trigger.
+
+v7 collapses this into a one-shot broadcast stream: `editorState.tapEvents`. The mobile highlight service publishes deliberate tap-ups there and **does not write the editor's `selection`**. The reason for the latter is concrete: a `highlightable: true` + `editable: false` viewer (the read-along reader pattern) would otherwise have `BlockSelectionArea` paint a gray selection rect that nothing in the read-along path ever clears.
+
+### What changed
+
+| Before | After |
+| --- | --- |
+| `editorState.tapNotifier.addListener(myTapListener);` + inside the listener: `editorState.tapNotifier.value = null;` to consume | `editorState.tapEvents.listen(myTapListener);` — the stream is one-shot; nothing to consume |
+| `editorState.updateTap(selection)` | (internal) `editorState.notifyTap(selection)` — only `MobileHighlightServiceWidget` should call this |
+| `tapNotifier` fired on every pan-drag tick AND every tap-up (a pre-existing wart in `MobileHighlightServiceWidget.updateSelection`) | Tap events are only published from the deliberate `_onDoubleTapUp` path; pan-drag updates do not touch the stream. |
+| Tap-up wrote `editorState.selection`, repainting `BlockSelectionArea` even on read-only viewers | Tap-up does NOT write `editorState.selection`. The highlight underlay is still updated via `updateHighlight(selection)` inside the service — that paints the active word; the selection lifecycle is untouched. |
+
+### Removed
+
+- `EditorState.tapNotifier` (field)
+- `EditorState.tap` getter
+- `EditorState.tap` setter
+- `EditorState.updateTap(Selection?)`
+- The back-compat mirror block in `updateSelectionWithReason` that wrote into `tapNotifier` when `reason == SelectionUpdateReason.tap`.
+
+`SelectionUpdateReason.tap` (the enum value) is **kept**. It is still meaningful for code that legitimately routes a tap into `editorState.selection` — for example, an editable editor whose tap-to-place-cursor calls `updateSelectionWithReason(..., reason: tap)`. The mobile highlight service simply no longer takes that path.
+
+### Migration — simple listener pattern
+
+```dart
+// Before
+editorState.tapNotifier.addListener(_onTap);
+void _onTap() {
+  final tap = editorState.tapNotifier.value;
+  if (tap == null) return;
+  editorState.tapNotifier.value = null;  // consume
+  _seekTo(tap);
+}
+```
+
+```dart
+// After
+late final StreamSubscription<Selection> _tapEventsSubscription;
+
+@override
+void initState() {
+  super.initState();
+  _tapEventsSubscription = editorState.tapEvents.listen(_onTap);
+}
+
+@override
+void dispose() {
+  _tapEventsSubscription.cancel();
+  super.dispose();
+}
+
+void _onTap(Selection tap) {
+  _seekTo(tap);
+}
+```
+
+### Migration — downstream reader-app coordination pattern
+
+The downstream production reader app used `tapNotifier` as a coordination signal across two streams (a tap listener AND a highlight stream that read `tapNotifier.value` to override the next emission). The structure is preserved — just swap the notifier for a `StreamSubscription` and carry the cross-stream coordination locally:
+
+```dart
+// Before — tapNotifier as both event source and cross-stream state
+void addListeners() {
+  editorState.tapNotifier.addListener(tapListener);
+  _highlightSubscription = audioHandler.selection.listen((selection) {
+    final value = editorState.tapNotifier.value ?? selection;
+    if (selection != null) {
+      editorState.tapNotifier.value = null;  // consume
+    }
+    if (value != null) editorState.updateHighlight(value);
+  });
+}
+
+Future<void> tapListener() async {
+  final tap = editorState.tapNotifier.value;
+  if (tap == null) return;
+  // ...resolve section, seek audio...
+  while (audioHandler.getNodedMediaItem(index)?.sections == null) {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    if (tap != editorState.tapNotifier.value) break;  // re-tap cancels wait
+  }
+}
+```
+
+```dart
+// After — tapEvents stream is the only event source; cross-stream
+// coordination moves into the consumer as a local field.
+
+Selection? _pendingTap;  // ← carry the coordination state here.
+StreamSubscription<Selection>? _tapEventsSubscription;
+
+void addListeners() {
+  _tapEventsSubscription = editorState.tapEvents.listen(_onTap);
+  _highlightSubscription = audioHandler.selection.listen((selection) {
+    final value = _pendingTap ?? selection;
+    if (selection != null) {
+      _pendingTap = null;  // consume the locally-carried pending tap
+    }
+    if (value != null) editorState.updateHighlight(value);
+  });
+}
+
+void removeListeners() {
+  _tapEventsSubscription?.cancel();
+  _highlightSubscription?.cancel();
+}
+
+void _onTap(Selection tap) {
+  _pendingTap = tap;
+  unawaited(tapListener(tap));
+}
+
+Future<void> tapListener(Selection tap) async {
+  // ...resolve section, seek audio...
+  while (audioHandler.getNodedMediaItem(index)?.sections == null) {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    if (tap != _pendingTap) break;  // re-tap cancels wait via local state
+  }
+}
+```
+
+The key insight: the "consume via `.value = null`" pattern was using the editor's notifier as cross-stream coordination state. That responsibility moves into the consumer (`_pendingTap` here), and the editor exposes a clean one-shot event channel.
+
+### If you used to read `tapNotifier.value` (not just listen)
+
+`tapEvents` is a Stream — there's no `.value` to read between events. Code that previously did `editorState.tapNotifier.value ?? editorState.highlightNotifier.value` (a "show the last tap if there is one, else the live highlight" UI pattern) needs to cache the latest event locally:
+
+```dart
+Selection? _lastTap;
+late final StreamSubscription<Selection> _tapSub =
+    editorState.tapEvents.listen((s) => _lastTap = s);
+
+// Wherever you used to read editorState.tapNotifier.value:
+final visible = _lastTap ?? editorState.highlightNotifier.value;
+```
+
+Cancel `_tapSub` in your widget's `dispose`.
+
+### Programmatic tap injection
+
+If you previously simulated a tap with `editorState.tapNotifier.value = selection`, call `editorState.notifyTap(selection)` instead. It publishes onto the same stream the mobile gesture path uses.
+
+### Bonus: pan-drag no longer fires tap
+
+Before: `MobileHighlightServiceWidget.updateSelection` called `updateTap(selection)` from both the tap-up path and every pan-update tick on the selection-handle drag. Tap listeners that didn't gate carefully were waking up ~60 times/second during a drag. After: only the deliberate `_onDoubleTapUp` path publishes on `tapEvents` — pan-drag updates carry nothing onto the stream.
+
+---
+
+## 11. Net-new APIs (additive, no migration needed)
 
 These don't break anything but are worth knowing about:
 
@@ -327,5 +516,7 @@ These don't break anything but are worth knowing about:
 - [ ] If you used `FilePicker`/`FilePickerService`, switch to the `file_picker` package directly (see CHANGELOG Unreleased entry).
 - [ ] Replace `Node.sectionParser = …` with `document.sectionParser = …` (or `editorState.sectionParser = …`). See §7.
 - [ ] If any consumer wrote to `Section.characterOffset`, move the field onto your playlist item and switch to `Sections.mapWithCharacterOffsets(...)` for stamping. See §8.
+- [ ] Delete every `editorState.highlightChanged(controller)` call from your highlight-tick callsites — the mixin handles it now and the method is gone. See §9.
+- [ ] Migrate `tapNotifier` / `updateTap` / `editorState.tap` to the `tapEvents` stream. If you ever read `tapNotifier.value` (not just `.addListener`), cache the latest event locally. See §10.
 - [ ] Bump your app's Flutter / Dart constraints to `>=3.44.0` / `>=3.12.0`.
 - [ ] Pull this fork via git dependency — it does not publish to pub.dev.
