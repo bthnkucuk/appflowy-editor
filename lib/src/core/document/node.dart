@@ -51,6 +51,21 @@ final class Node extends ChangeNotifier
     for (final child in children) {
       child.parent = this;
     }
+    // Each child's `path` getter may have run and cached `[]` while the
+    // child was still an orphan — typically because `sectionParser`
+    // fires inside the child's own constructor and reads `node.path`
+    // (which without a parent is empty). The assignments above don't
+    // route through any of the tree-mutation helpers that normally
+    // bump the path generation, so without an explicit bump here that
+    // empty `[]` would stick forever — every child of every constructed
+    // subtree would report `path == []` and downstream consumers like
+    // [BlockHighlightArea] would treat all blocks as path-equal, fanning
+    // a single highlight across the whole document. The bump invalidates
+    // every cached path so the next read recomputes against the now-set
+    // parent links.
+    if (children.isNotEmpty) {
+      _bumpPathGeneration();
+    }
 
     if (sectionParser != null && text != null) {
       sections = sectionParser!(this);
@@ -77,6 +92,17 @@ final class Node extends ChangeNotifier
 
     for (final child in node.children) {
       child.parent = node;
+    }
+    // Same caching pitfall as the `Node` constructor — see the bump
+    // call there for the full rationale. `Node.fromJson` recurses
+    // bottom-up: each inner `Node.fromJson` invokes the `Node()`
+    // constructor (which already bumps if it had children), but the
+    // outer parent assignment here still happens AFTER the inner nodes
+    // have finished construction with their parents temporarily null.
+    // Without this bump, leaf nodes loaded from JSON would report
+    // `path == []` for the same reason.
+    if (node.children.isNotEmpty) {
+      _bumpPathGeneration();
     }
 
     return node;
