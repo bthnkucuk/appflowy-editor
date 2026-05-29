@@ -38,6 +38,16 @@ import 'package:flutter/rendering.dart' show ScrollDirection;
 ///    `updateHighlight(...)` tick drives a scroll automatically with no
 ///    extra call at the tick callsite.
 ///
+///    Canonical engage entrypoint: ALWAYS
+///    `editorState.enableAutoScrollHighlight(controller)`. The setter
+///    `editorState.isAutoScrollHighlight = true` and the direct
+///    `isAutoScrollHighlightNotifier.value = true` write only flip the
+///    notifier — they do NOT attach the highlight listener that the
+///    auto-scroll machinery rides on. Mixing the two is a silent
+///    regression: the toggle reads as "engaged" but no scroll actually
+///    fires on subsequent highlight changes. Stick to the
+///    `enable...`/`disable...` pair end-to-end.
+///
 /// 4. **Section-midpoint lookup on tap.** Tap → find which section of
 ///    `node.sections` contains the offset midpoint
 ///    `(tap.start + tap.end) ~/ 2`. Same predicate
@@ -162,10 +172,22 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     super.dispose();
   }
 
-  /// Build a FRESH map of block component builders. The default
-  /// [standardBlockComponentBuilderMap] is a top-level `final` map of
-  /// shared builder instances — mutating their `.configuration` would
-  /// leak into every other example that mounts an editor.
+  /// Build the block-component builder map using the additive pattern a
+  /// reader app typically wants: start from the package's
+  /// [standardBlockComponentBuilderMap] (so heading, paragraph, quote,
+  /// list, image, divider, …, every block type the editor ships,
+  /// continues to render out of the box), spread it into a fresh
+  /// `{...}` literal (the default is a top-level `final` map of shared
+  /// builder instances — mutating a builder in place would leak into
+  /// every other editor mounted in the same process), and override
+  /// only the entries we actually want to retune for read-along.
+  ///
+  /// Here we retune paragraph + heading for tighter vertical padding,
+  /// disable the inline +/action affordances across the board (a
+  /// read-only viewer never needs them), and leave every other block
+  /// alone — the same "spread + override" shape downstream reader apps
+  /// use to inject custom image / media / divider builders without
+  /// re-listing the entire block catalog.
   Map<String, BlockComponentBuilder> _buildBlockComponentBuilders() {
     EdgeInsets paragraphPadding(Node _) =>
         const EdgeInsets.symmetric(vertical: 2);
@@ -188,7 +210,16 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
 
     final page = PageBlockComponentBuilder()..showActions = (_) => false;
 
-    return {
+    // Spread the standard map FIRST so every package-shipped block keeps
+    // working. Override the three we care about with the fresh, tuned
+    // instances we built above — for any other block type a downstream
+    // reader app needs to retune (e.g. a custom image block or quote
+    // styling), construct a new builder instance and add another entry
+    // here. Do NOT mutate `.configuration` / `.showActions` on the
+    // standard-map instances in place: they're shared `final` references
+    // across every editor in the process.
+    return <String, BlockComponentBuilder>{
+      ...standardBlockComponentBuilderMap,
       PageBlockKeys.type: page,
       ParagraphBlockKeys.type: paragraph,
       HeadingBlockKeys.type: heading,
@@ -427,6 +458,39 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
     editorState.enableAutoScrollHighlight(editorScrollController);
   }
 
+  /// Resume reading at [tokenIndex] — the "open a document at the saved
+  /// last-read word" pattern. Used by reader apps that persist the last
+  /// position and want to drop the user back where they left off.
+  ///
+  /// Two pieces of editor API to highlight here:
+  ///
+  /// 1. `enableAutoScrollHighlight(controller)` is the canonical engage
+  ///    point. Direct setter on `isAutoScrollHighlight` would flip the
+  ///    notifier without attaching the highlight listener — the toggle
+  ///    would read engaged but no scroll would actually fire (see the
+  ///    class header §3).
+  ///
+  /// 2. `scrollToHighlight(..., alignToTop: false)` is the resume-vs-tap
+  ///    semantic difference. For taps we land the active word near the
+  ///    top of the viewport (default `alignToTop: true`) so the user
+  ///    has room to read forward. For resume, we want the saved word
+  ///    near the BOTTOM so the user sees the lead-up content above —
+  ///    the saved position is where they STOPPED, not where they're
+  ///    about to begin. `alignToTop: false` only matters on the
+  ///    no-rect fallback path (highlight off-screen at engagement time),
+  ///    which is exactly the resume scenario.
+  void _resumeAt(int tokenIndex) {
+    if (tokenIndex < 0 || tokenIndex >= _tokens.length) return;
+    _currentIndex.value = tokenIndex;
+    editorState.updateHighlight(_tokens[tokenIndex]);
+    editorState.enableAutoScrollHighlight(editorScrollController);
+    editorState.scrollToHighlight(
+      editorScrollController,
+      selection: editorState.highlight,
+      alignToTop: false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -436,6 +500,16 @@ class _TtsReaderPageState extends State<TtsReaderPage> {
       appBar: AppBar(
         title: const Text('Read-Along'),
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: 'Resume from middle of document',
+            icon: const Icon(Icons.bookmark_rounded),
+            onPressed: () {
+              if (_tokens.isEmpty) return;
+              _resumeAt(_tokens.length ~/ 2);
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
