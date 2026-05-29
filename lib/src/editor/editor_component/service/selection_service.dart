@@ -1,11 +1,56 @@
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 
+/// Data passed to a custom [DragAreaBuilder] so the builder can render
+/// the drop indicator without having to re-derive the geometry from
+/// `targetNode.selectable.getBlockRect()` and other internals.
+///
+/// Two extras over the bare `(targetNode, dragOffset)` pair:
+///
+/// - [isCloserToStart]: which side of the target block the cursor is
+///   closer to. Same predicate the editor uses to compute the actual
+///   drop path, so a builder that reads it stays in lockstep with
+///   where the dropped node will actually land.
+/// - [targetBlockRect]: the target block's full **global screen** rect
+///   (top-left + size). Derived from the block's `RenderPadding` and
+///   resolved once, before any layout drift that might happen between
+///   the comparison call and the overlay's deferred build. Builders
+///   read `top`/`bottom` for the horizontal indicator line, or full
+///   bounds for richer drop UIs (e.g. left/right insertion).
+///
+/// `targetBlockRect` is intentionally NOT derived from
+/// `selectable.getBlockRect()` — that returns
+/// `Offset.zero & (parentSize - childOffset)` for selection-painting
+/// purposes, which lands the bottom edge INSIDE the block when the
+/// inner BlockSelectionContainer has a non-zero `childOffsetY` (some
+/// heading blocks have ~8px). `targetBlockRect.bottom` here is the
+/// `RenderPadding`'s actual visual bottom edge.
 class DragAreaBuilderData {
-  DragAreaBuilderData({required this.targetNode, required this.dragOffset});
+  DragAreaBuilderData({
+    required this.targetNode,
+    required this.dragOffset,
+    required this.isCloserToStart,
+    required this.targetBlockRect,
+  });
 
+  /// The block component the cursor is currently hovering over.
   final Node targetNode;
+
+  /// The cursor's global screen position.
   final Offset dragOffset;
+
+  /// `true` when the cursor is closer to [targetBlockRect]'s top edge
+  /// than its bottom edge — i.e. the dropped node will be inserted
+  /// BEFORE [targetNode]. `false` for AFTER. Same predicate the editor
+  /// uses to compute the drop path; reading this keeps a builder in
+  /// lockstep with the actual insertion.
+  final bool isCloserToStart;
+
+  /// The target block's full screen-coordinate rect (top-left + size).
+  /// Builders typically read `top` for "drop before" indicator Y and
+  /// `bottom` for "drop after" Y. Use `left`/`right`/`size.width` for
+  /// horizontal layout decisions.
+  final Rect targetBlockRect;
 }
 
 typedef DragAreaBuilder = Widget Function(BuildContext context, DragAreaBuilderData data);

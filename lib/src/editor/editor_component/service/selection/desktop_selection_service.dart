@@ -593,6 +593,15 @@ class _DesktopSelectionServiceWidgetState
     final startOffset = blockRect.topLeft;
     final endOffset = blockRect.bottomLeft;
 
+    // Capture the selectable's RenderBox ONCE here, OUTSIDE the
+    // OverlayEntry builder closure. The builder runs after the
+    // overlay is inserted into the tree — at that point the widget
+    // tree may have reflowed (drag in progress, scroll happening),
+    // and a fresh `selectable.context.findRenderObject()` inside the
+    // builder could return a DIFFERENT RenderObject than the one
+    // used here to compute `isCloserToStart`. Closing over a single
+    // captured box keeps the comparison and the rendering math
+    // anchored to the same geometry.
     final renderBox = selectable.context.findRenderObject() as RenderBox;
     final globalStartOffset = renderBox.localToGlobal(startOffset);
     final globalEndOffset = renderBox.localToGlobal(endOffset);
@@ -602,33 +611,81 @@ class _DesktopSelectionServiceWidgetState
 
     final isCloserToStart = topDistance < bottomDistance;
 
+    // Pre-compute the target block's full screen-coordinate rect so it
+    // can be handed to a custom [DragAreaBuilder] via
+    // [DragAreaBuilderData.targetBlockRect]. Use `renderBox.size`
+    // directly (the RenderPadding's actual visual bounds) rather than
+    // `blockRect` from `selectable.getBlockRect()`, which is
+    // `Offset.zero & (parentSize - childOffset)` and lands INSIDE the
+    // block when the inner BlockSelectionContainer has a non-zero
+    // `childOffsetY` (some heading blocks have ~8px).
+    final renderSize = renderBox.size;
+    final renderTopGlobal = renderBox.localToGlobal(Offset.zero);
+    final targetBlockRect = renderTopGlobal & renderSize;
+
+    debugPrint(
+      '[DROP-DBG] cursor=$offset '
+      'renderBox.type=${renderBox.runtimeType} '
+      'renderBox.size=$renderSize '
+      'renderBox.globalTop=$renderTopGlobal '
+      'blockRect=$blockRect '
+      'startG=$globalStartOffset endG=$globalEndOffset '
+      'topD=$topDistance bottomD=$bottomDistance '
+      'isCloserToStart=$isCloserToStart '
+      'targetBlockRect=$targetBlockRect',
+    );
+
     _dropTargetEntry = OverlayEntry(
       builder: (context) {
         if (builder != null && node != null) {
           return builder(
             context,
-            DragAreaBuilderData(targetNode: node, dragOffset: offset),
+            DragAreaBuilderData(
+              targetNode: node,
+              dragOffset: offset,
+              isCloserToStart: isCloserToStart,
+              targetBlockRect: targetBlockRect,
+            ),
           );
         }
 
         final overlayRenderBox =
             Overlay.of(context).context.findRenderObject() as RenderBox;
-        final editorRenderBox =
-            selectable.context.findRenderObject() as RenderBox;
 
-        final editorOffset = editorRenderBox.localToGlobal(
+        // Reuse the captured `renderBox` from the closure — see the
+        // note above where it was first resolved. Re-resolving here
+        // would be subject to layout drift while the drag is in
+        // flight.
+        final editorOffset = renderBox.localToGlobal(
           Offset.zero,
           ancestor: overlayRenderBox,
         );
 
+        // Default-builder path: convert the pre-computed `indicatorY`
+        // (in screen coords) into overlay coords by replacing the
+        // global Y origin with the overlay-relative one. Then offset
+        // up by half the line's thickness so the line visually
+        // CENTERS on the boundary instead of starting at it —
+        // `Positioned(top: …)` anchors the line's top edge, so
+        // without recentering a 2px line sits entirely INSIDE the
+        // next block. Centering it (1px above, 1px below the
+        // boundary) reads as "in between" rather than "on top of".
+        final indicatorAnchor =
+            (isCloserToStart ? 0.0 : renderSize.height) + editorOffset.dy;
         final indicatorTop =
-            (isCloserToStart ? startOffset.dy : endOffset.dy) + editorOffset.dy;
+            indicatorAnchor - widget.dropTargetStyle.height / 2;
 
-        final width = blockRect.topRight.dx - startOffset.dx;
+        final width = renderSize.width;
+
+        debugPrint(
+          '[DROP-DBG]   builder editorOffset=$editorOffset '
+          'indicatorAnchor=$indicatorAnchor indicatorTop=$indicatorTop '
+          'width=$width',
+        );
 
         return Positioned(
           top: indicatorTop,
-          left: startOffset.dx + editorOffset.dx,
+          left: editorOffset.dx,
           child: Container(
             height: widget.dropTargetStyle.height,
             width: width,
