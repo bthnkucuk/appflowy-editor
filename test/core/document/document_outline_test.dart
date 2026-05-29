@@ -127,5 +127,97 @@ void main() {
       expect(a, b);
       expect(a == c, false);
     });
+
+    test('selection getter returns a collapsed Selection at the path', () {
+      final entry = OutlineEntry(
+        text: 'Heading',
+        level: 1,
+        nodeId: 'n0',
+        path: const [2],
+        isNested: false,
+      );
+      final selection = entry.selection;
+      expect(selection.isCollapsed, true);
+      expect(selection.start.path, [2]);
+      expect(selection.start.offset, 0);
+    });
+  });
+
+  group('Document.tableOfContents', () {
+    test('synonym for computeOutline() with default args', () {
+      final document = Document.blank(withInitialText: false);
+      document.insert([0], [headingNode(level: 1, text: 'A')]);
+      document.insert([1], [headingNode(level: 2, text: 'B')]);
+
+      expect(document.tableOfContents, document.computeOutline());
+    });
+  });
+
+  group('EditorState.tableOfContents', () {
+    test('emits the current outline on first read', () {
+      final document = Document.blank(withInitialText: false);
+      document.insert([0], [headingNode(level: 1, text: 'Intro')]);
+      document.insert([1], [paragraphNode(text: 'body')]);
+      final state = EditorState(document: document);
+      addTearDown(state.dispose);
+
+      final outline = state.tableOfContents.value;
+      expect(outline.length, 1);
+      expect(outline.first.text, 'Intro');
+    });
+
+    test('the same notifier is returned across reads', () {
+      final state = EditorState.blank();
+      addTearDown(state.dispose);
+
+      expect(identical(state.tableOfContents, state.tableOfContents), true);
+    });
+
+    test('fires listeners when a heading is inserted via apply()', () async {
+      final document = Document.blank(withInitialText: false);
+      document.insert([0], [paragraphNode(text: 'body')]);
+      final state = EditorState(document: document);
+      addTearDown(state.dispose);
+
+      final firedValues = <List<OutlineEntry>>[];
+      state.tableOfContents.addListener(() {
+        firedValues.add(state.tableOfContents.value);
+      });
+
+      final transaction = state.transaction
+        ..insertNode([0], headingNode(level: 1, text: 'New heading'));
+      await state.apply(transaction);
+
+      expect(firedValues, isNotEmpty);
+      expect(firedValues.last.length, 1);
+      expect(firedValues.last.first.text, 'New heading');
+    });
+
+    test('skips listener fire when transaction does not change the outline',
+        () async {
+      // A keystroke inside a paragraph still emits a transaction, but the
+      // computed outline is byte-equal to the previous one — listEquals
+      // short-circuits, no listener fire.
+      final document = Document.blank(withInitialText: false);
+      document.insert([0], [headingNode(level: 1, text: 'Stable')]);
+      document.insert([1], [paragraphNode(text: 'body')]);
+      final state = EditorState(document: document);
+      addTearDown(state.dispose);
+
+      // Engage the notifier so the subscription is attached.
+      state.tableOfContents.value;
+
+      var listenerCount = 0;
+      state.tableOfContents.addListener(() => listenerCount++);
+
+      // Mutate the paragraph (not a heading) — outline shouldn't change.
+      final transaction = state.transaction
+        ..updateNode(document.nodeAtPath([1])!, {
+          ParagraphBlockKeys.delta: (Delta()..insert('different body')).toJson(),
+        });
+      await state.apply(transaction);
+
+      expect(listenerCount, 0);
+    });
   });
 }

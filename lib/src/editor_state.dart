@@ -21,6 +21,7 @@ part 'editor_state/document_rules_mixin.dart';
 part 'editor_state/editor_chrome.dart';
 part 'editor_state/editor_service.dart';
 part 'editor_state/history_mixin.dart';
+part 'editor_state/outline_mixin.dart';
 part 'editor_state/scroll_coordinator_mixin.dart';
 part 'editor_state/selection_style_mixin.dart';
 part 'editor_state/transaction_pipeline_mixin.dart';
@@ -57,7 +58,8 @@ abstract class _EditorStateBase
         _ScrollCoordinatorMixin,
         _DocumentQueryMixin,
         _TransactionPipelineMixin,
-        _DocumentRulesMixin {}
+        _DocumentRulesMixin,
+        _OutlineMixin {}
 
 class EditorState extends _EditorStateBase {
   EditorState({
@@ -138,6 +140,10 @@ class EditorState extends _EditorStateBase {
   void dispose() {
     _disposeScrollCoordinator();
     isDisposed = true;
+    // Order: drop the outline subscription BEFORE the transaction
+    // pipeline closes — otherwise the lazy listener would observe the
+    // upstream broadcast tearing down while still attached.
+    _disposeOutline();
     _disposeTransactionPipeline();
     _disposeHistory();
     onDispose.value += 1;

@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 
 import '../../editor/block_component/heading_block_component/heading_block_component.dart';
+import '../location/position.dart';
+import '../location/selection.dart';
 import 'document.dart';
 import 'node_iterator.dart';
 import 'path.dart';
@@ -43,6 +45,12 @@ class OutlineEntry extends Equatable {
   /// containing top-level block rather than to themselves.
   final bool isNested;
 
+  /// A collapsed [Selection] at the start of the heading's [path].
+  /// Convenience for callers that drive `editorState.scrollToHighlight`
+  /// / `updateHighlight` directly from an outline entry — the common
+  /// downstream "jump to this heading" UX.
+  Selection get selection => Selection.collapsed(Position(path: path));
+
   @override
   List<Object?> get props => [text, level, nodeId, path, isNested];
 }
@@ -62,6 +70,11 @@ extension DocumentOutline on Document {
   /// per-node attribute lookups, and the operation log doesn't carry
   /// "heading-ness" directly. The incremental machinery would cost
   /// more in cognitive load than it saves at realistic document sizes.
+  /// Synonym for `computeOutline()` with the default `maxDepth: 6`,
+  /// kept short so the common UX call (`document.tableOfContents`)
+  /// reads naturally without trailing parens / args.
+  List<OutlineEntry> get tableOfContents => computeOutline();
+
   List<OutlineEntry> computeOutline({int maxDepth = 6}) {
     final entries = <OutlineEntry>[];
     final iter = NodeIterator(document: this, startNode: root);
