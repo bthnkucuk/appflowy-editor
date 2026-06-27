@@ -15,7 +15,7 @@ dependencies:
   super_sliver_list: ^0.4.1
   fractional_indexing_dart: ^1.0.7
   collection: "^1.19.1"
-  device_info_plus: 13.1.0
+  device_info_plus: 13.2.0
   diff_match_patch: "^0.4.1"
   file_picker: ^12.0.0-beta.4
   flutter:
@@ -53,7 +53,7 @@ dev_dependencies:
   intl_utils: "^2.8.14"
   mockito: "^5.6.4"
   network_image_mock: "^2.1.1"
-  path_provider: "^2.0.5"
+  path_provider: "^2.1.6"
   pubspec_dependency_sorter: "^1.0.5"
 
 platforms:
