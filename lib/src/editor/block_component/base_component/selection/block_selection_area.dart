@@ -9,12 +9,7 @@ import 'package:provider/provider.dart';
 
 final _deepEqual = const DeepCollectionEquality().equals;
 
-enum BlockSelectionType {
-  cursor,
-  selection,
-  highlight,
-  block,
-}
+enum BlockSelectionType { cursor, selection, highlight, block }
 
 /// [BlockSelectionArea] is a widget that renders the selection area or the cursor of a block.
 class BlockSelectionArea extends StatefulWidget {
@@ -26,6 +21,7 @@ class BlockSelectionArea extends StatefulWidget {
     required this.cursorColor,
     required this.selectionColor,
     required this.blockColor,
+    this.geometryChanges,
     this.supportTypes = const [
       BlockSelectionType.cursor,
       BlockSelectionType.selection,
@@ -51,6 +47,9 @@ class BlockSelectionArea extends StatefulWidget {
 
   final List<BlockSelectionType> supportTypes;
 
+  /// Changes to the containing text layout that invalidate local rectangles.
+  final Listenable? geometryChanges;
+
   @override
   State<BlockSelectionArea> createState() => _BlockSelectionAreaState();
 }
@@ -68,19 +67,35 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
   // keep the block selection rect to avoid unnecessary rebuild
   Rect? prevBlockRect;
 
+  bool _updateScheduled = false;
+
   @override
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updateSelectionIfNeeded();
-    });
-    widget.listenable.addListener(_clearCursorRect);
+    widget.listenable.addListener(_selectionChanged);
+    widget.geometryChanges?.addListener(_geometryChanged);
+    _scheduleUpdate();
+  }
+
+  @override
+  void didUpdateWidget(covariant BlockSelectionArea oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.listenable != widget.listenable) {
+      oldWidget.listenable.removeListener(_selectionChanged);
+      widget.listenable.addListener(_selectionChanged);
+    }
+    if (oldWidget.geometryChanges != widget.geometryChanges) {
+      oldWidget.geometryChanges?.removeListener(_geometryChanged);
+      widget.geometryChanges?.addListener(_geometryChanged);
+    }
+    _geometryChanged();
   }
 
   @override
   void dispose() {
-    widget.listenable.removeListener(_clearCursorRect);
+    widget.listenable.removeListener(_selectionChanged);
+    widget.geometryChanges?.removeListener(_geometryChanged);
 
     super.dispose();
   }
@@ -137,7 +152,8 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
           final editorState = context.read<EditorState>();
           final dragMode =
               editorState.selectionExtraInfo?[selectionDragModeKey];
-          final shouldBlink = widget.delegate.shouldCursorBlink &&
+          final shouldBlink =
+              widget.delegate.shouldCursorBlink &&
               dragMode != MobileSelectionDragMode.cursor;
 
           final cursor = Cursor(
@@ -177,10 +193,10 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
     }
 
     final selection = widget.listenable.value?.normalized;
-    final path = widget.node.path;
+    final path = selection == null ? null : widget.node.path;
 
     // the current path is in the selection
-    if (selection != null && path.inSelection(selection)) {
+    if (selection != null && path != null && path.inSelection(selection)) {
       if (widget.supportTypes.contains(BlockSelectionType.block) &&
           context.read<EditorState>().selectionType == SelectionType.block) {
         if (!path.inSelection(selection, isSameDepth: true)) {
@@ -230,13 +246,26 @@ class _BlockSelectionAreaState extends State<BlockSelectionArea> {
         prevCursorRect = null;
       });
     }
-
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _updateSelectionIfNeeded();
-    });
   }
 
-  void _clearCursorRect() {
+  void _selectionChanged() {
     prevCursorRect = null;
+    _scheduleUpdate();
+  }
+
+  void _geometryChanged() {
+    _scheduleUpdate();
+  }
+
+  void _scheduleUpdate() {
+    if (_updateScheduled) return;
+    _updateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateScheduled = false;
+      if (mounted) _updateSelectionIfNeeded();
+    });
+    // Notifier changes may arrive while the scheduler is idle. Layout changes
+    // already have a frame; ensureVisualUpdate only requests one when needed.
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 }

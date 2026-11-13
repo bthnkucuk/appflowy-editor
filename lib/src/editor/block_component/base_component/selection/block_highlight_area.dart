@@ -19,6 +19,7 @@ class BlockHighlightArea extends StatefulWidget {
     required this.highlightColor,
     required this.blockColor,
     required this.highlightAreaColor,
+    this.geometryChanges,
     this.supportTypes = const [
       BlockSelectionType.cursor,
       BlockSelectionType.selection,
@@ -46,6 +47,9 @@ class BlockHighlightArea extends StatefulWidget {
 
   final List<BlockSelectionType> supportTypes;
 
+  /// Changes to the containing text layout that invalidate local rectangles.
+  final Listenable? geometryChanges;
+
   @override
   State<BlockHighlightArea> createState() => _BlockSelectionAreaState();
 }
@@ -68,19 +72,35 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
 
   Rect? prevBlockRect;
 
+  bool _updateScheduled = false;
+
   @override
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _updateSelectionIfNeeded();
-    });
-    widget.listenable.addListener(_clearCursorRect);
+    widget.listenable.addListener(_selectionChanged);
+    widget.geometryChanges?.addListener(_geometryChanged);
+    _scheduleUpdate();
+  }
+
+  @override
+  void didUpdateWidget(covariant BlockHighlightArea oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.listenable != widget.listenable) {
+      oldWidget.listenable.removeListener(_selectionChanged);
+      widget.listenable.addListener(_selectionChanged);
+    }
+    if (oldWidget.geometryChanges != widget.geometryChanges) {
+      oldWidget.geometryChanges?.removeListener(_geometryChanged);
+      widget.geometryChanges?.addListener(_geometryChanged);
+    }
+    _geometryChanged();
   }
 
   @override
   void dispose() {
-    widget.listenable.removeListener(_clearCursorRect);
+    widget.listenable.removeListener(_selectionChanged);
+    widget.geometryChanges?.removeListener(_geometryChanged);
 
     super.dispose();
   }
@@ -136,7 +156,8 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
           final editorState = context.read<EditorState>();
           final dragMode =
               editorState.selectionExtraInfo?[selectionDragModeKey];
-          final shouldBlink = widget.delegate.shouldCursorBlink &&
+          final shouldBlink =
+              widget.delegate.shouldCursorBlink &&
               dragMode != MobileSelectionDragMode.cursor;
 
           final cursor = Cursor(
@@ -187,10 +208,10 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
     }
 
     final selection = widget.listenable.value?.normalized;
-    final path = widget.node.path;
+    final path = selection == null ? null : widget.node.path;
 
     // the current path is in the selection
-    if (selection != null && path.inSelection(selection)) {
+    if (selection != null && path != null && path.inSelection(selection)) {
       if (widget.supportTypes.contains(BlockSelectionType.block) &&
           context.read<EditorState>().selectionType == SelectionType.block) {
         if (!path.inSelection(selection, isSameDepth: true)) {
@@ -235,12 +256,15 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
             start: selectionWithouthPath.start.copyWith(path: widget.node.path),
             end: selectionWithouthPath.end.copyWith(path: widget.node.path),
           );
-          final currentSectionRects =
-              widget.delegate.getRectsInSelection(selectionWithPath);
+          final currentSectionRects = widget.delegate.getRectsInSelection(
+            selectionWithPath,
+          );
           prevSection = selectionWithouthPath;
-          setState(() {
-            sectionRects = currentSectionRects;
-          });
+          if (!_deepEqual(sectionRects, currentSectionRects)) {
+            setState(() {
+              sectionRects = currentSectionRects;
+            });
+          }
         }
 
         final rects = widget.delegate.getRectsInSelection(selection);
@@ -261,14 +285,28 @@ class _BlockSelectionAreaState extends State<BlockHighlightArea> {
         prevCursorRect = null;
       });
     }
-
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _updateSelectionIfNeeded();
-    });
   }
 
-  void _clearCursorRect() {
+  void _selectionChanged() {
     prevCursorRect = null;
+    _scheduleUpdate();
+  }
+
+  void _geometryChanged() {
+    prevSection = null;
+    _scheduleUpdate();
+  }
+
+  void _scheduleUpdate() {
+    if (_updateScheduled) return;
+    _updateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateScheduled = false;
+      if (mounted) _updateSelectionIfNeeded();
+    });
+    // Notifier changes may arrive while the scheduler is idle. Layout changes
+    // already have a frame; ensureVisualUpdate only requests one when needed.
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 }
 
@@ -403,13 +441,13 @@ class _HighlightAreaPainter extends CustomPainter {
       // Köşe radiuslarını belirle
       final topLeftRadius =
           previousRow == null || firstBox.left < previousRow.first.left
-              ? 6.0
-              : 0.0;
+          ? 6.0
+          : 0.0;
 
       final topRightRadius =
           previousRow == null || lastBox.right > previousRow.last.right
-              ? 6.0
-              : 0.0;
+          ? 6.0
+          : 0.0;
 
       final bottomLeftRadius =
           nextRow == null || firstBox.left < nextRow.first.left ? 6.0 : 0.0;
@@ -429,8 +467,9 @@ class _HighlightAreaPainter extends CustomPainter {
       path.addRSuperellipse(
         RSuperellipse.fromRectAndCorners(
           rect,
-          topLeft:
-              topLeftRadius > 0 ? Radius.circular(topLeftRadius) : Radius.zero,
+          topLeft: topLeftRadius > 0
+              ? Radius.circular(topLeftRadius)
+              : Radius.zero,
           topRight: topRightRadius > 0
               ? Radius.circular(topRightRadius)
               : Radius.zero,
